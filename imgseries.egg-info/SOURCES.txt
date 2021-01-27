@@ -1,0 +1,13 @@
+README.md
+setup.cfg
+setup.py
+imgseries/__init__.py
+imgseries/config.py
+imgseries/contour_tracking.py
+imgseries/general.py
+imgseries/grey_level.py
+imgseries.egg-info/PKG-INFO
+imgseries.egg-info/SOURCES.txt
+imgseries.egg-info/dependency_links.txt
+imgseries.egg-info/requires.txt
+imgseries.egg-info/top_level.txt

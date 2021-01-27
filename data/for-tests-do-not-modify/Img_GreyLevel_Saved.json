@@ -1,0 +1,42 @@
+{
+    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imov\\data",
+    "folders": [
+        ".."
+    ],
+    "zones": {
+        "zone 1": [
+            45,
+            42,
+            76,
+            90
+        ],
+        "zone 2": [
+            265,
+            226,
+            83,
+            65
+        ],
+        "zone 3": [
+            106,
+            458,
+            432,
+            58
+        ]
+    },
+    "time (utc)": "2020-12-10 11:32:57",
+    "code version": {
+        "imov": {
+            "hash": "9ac824ffbda5bcf6981a1cdc18c916359ab3ac8d",
+            "status": "dirty"
+        },
+        "filo": {
+            "hash": "bfd758d345be319116e12933ca66e9acb2c052e4",
+            "status": "clean",
+            "tag": "v1.1.0"
+        },
+        "plov": {
+            "hash": "1f37588eb5aadf802274faa74bc4abb77ddd8004",
+            "status": "clean"
+        }
+    }
+}

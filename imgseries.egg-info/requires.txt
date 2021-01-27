@@ -1,0 +1,8 @@
+scikit-image
+matplotlib
+numpy
+tqdm
+importlib-metadata
+imgbasics>=0.0.3
+filo>=1.1
+gittools>=0.5

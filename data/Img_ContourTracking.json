@@ -1,0 +1,49 @@
+{
+    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imov\\data",
+    "folders": [
+        "img1",
+        "img2"
+    ],
+    "contours": {
+        "crop": [
+            94,
+            55,
+            425,
+            407
+        ],
+        "position": {
+            "contour 1": [
+                147.32159816523225,
+                266.7370221595187
+            ],
+            "contour 2": [
+                283.43310772427566,
+                286.9812976172301
+            ],
+            "contour 3": [
+                322.9898703929179,
+                249.8820309993573
+            ]
+        },
+        "level": 170,
+        "image": 10
+    },
+    "time (utc)": "2021-01-11 21:13:56",
+    "code version": {
+        "imov": {
+            "hash": "f9f703c0a02a2c7945ae137ae7e5681ac26a391e",
+            "status": "dirty",
+            "tag": "v2.2.1"
+        },
+        "filo": {
+            "hash": "2125bc2e5e11593b51671dc692c193f098df2041",
+            "status": "clean",
+            "tag": "v1.1.2"
+        },
+        "plov": {
+            "hash": "f567e5b98a4a32ae2aaa4adb498ce21f18c58a9c",
+            "status": "clean",
+            "tag": "v1.1.1"
+        }
+    }
+}
