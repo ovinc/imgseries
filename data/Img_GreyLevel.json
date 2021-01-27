@@ -1,45 +1,56 @@
 {
-    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imov\\data",
+    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data",
     "folders": [
         "img1",
         "img2"
     ],
     "zones": {
         "zone 1": [
-            29,
+            13,
             16,
-            545,
-            69
+            146,
+            126
         ],
         "zone 2": [
-            34,
-            413,
-            130,
-            110
+            448,
+            12,
+            144,
+            145
         ],
         "zone 3": [
-            485,
-            436,
-            89,
-            87
+            21,
+            464,
+            575,
+            65
         ]
     },
-    "time (utc)": "2021-01-11 21:21:21",
+    "time (utc)": "2021-01-27 12:33:19",
     "code version": {
-        "imov": {
-            "hash": "f9f703c0a02a2c7945ae137ae7e5681ac26a391e",
-            "status": "dirty",
-            "tag": "v2.2.1"
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.17.2"
+        },
+        "imgseries": {
+            "hash": "15a81df2aff510ba878666cd6abf46752f8393a6",
+            "status": "dirty"
+        },
+        "imgbasics": {
+            "hash": "0cb2f7d85a87c1293f8be79359bedd1683b5ed25",
+            "status": "clean",
+            "tag": "v0.0.3"
         },
         "filo": {
-            "hash": "2125bc2e5e11593b51671dc692c193f098df2041",
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
             "status": "clean",
-            "tag": "v1.1.2"
+            "tag": "v1.1.5"
         },
-        "plov": {
-            "hash": "f567e5b98a4a32ae2aaa4adb498ce21f18c58a9c",
-            "status": "clean",
-            "tag": "v1.1.1"
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.3.2"
+        },
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.19.2"
         }
     }
 }
