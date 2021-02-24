@@ -204,7 +204,7 @@ class ContourTracking(ImgSeries):
 
             except imgbasics.ContourError:
                 # No contour at all detected on image --> return NaN
-                xypa = (NaN, NaN, NaN, NaN)
+                xc, yc, perimeter, area = (NaN,) * 4
 
             else:
 
