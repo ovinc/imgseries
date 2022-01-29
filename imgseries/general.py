@@ -16,7 +16,8 @@ import filo
 import gittools
 
 # local imports
-from .config import filenames, _read, csv_separator, checked_modules
+from .config import filenames, csv_separator, checked_modules
+from .config import _read, _rgb_to_grey
 
 
 # ================ General classes for managing image series =================
@@ -82,6 +83,11 @@ class ImgSeries(filo.Series):
             return _read(self.files[num].file)
         else:
             return self.stack[num]
+
+    @staticmethod
+    def rgb_to_grey(img):
+        """"Convert RGB to grayscale"""
+        return _rgb_to_grey(img)
 
     def show(self, num=0, **kwargs):
         """Show image in a matplotlib window.

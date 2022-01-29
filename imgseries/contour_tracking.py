@@ -44,7 +44,7 @@ class Contours:
         img = self.img_series.read(num=num)
 
         img_crop, crop = imgbasics.imcrop(img)
-        contours = measure.find_contours(img_crop, level)
+        contours = self.img_series._find_contours(img_crop, level)
 
         # Display the cropped image and plot all contours found --------------
 
@@ -102,7 +102,7 @@ class Contours:
         # Load image, crop it, and calculate contours
         img = self.img_series.read(num)
         img_crop = imgbasics.imcrop(img, crop)
-        contours = measure.find_contours(img_crop, level)
+        contours = self.img_series._find_contours(img_crop, level)
 
         fig, ax = plt.subplots()
 
@@ -167,6 +167,11 @@ class ContourTracking(ImgSeries):
         # or contours.load() prior to starting analysis with self.run()
         self.contours = Contours(self)  # empty object
 
+    def _find_contours(self, img, level):
+        """Define how contours are found on an image."""
+        image = img if img.ndim == 2 else self.rgb_to_grey(img)
+        return measure.find_contours(image, level)
+
     # Basic analysis method --------------------------------------------------
 
     def _contour_tracking(self, num, live):
@@ -191,7 +196,7 @@ class ContourTracking(ImgSeries):
             self.ax.axis('off')
             self.ax.set_title(f'img #{num}, grey level {self.level}')
 
-        contours = measure.find_contours(img_crop, self.level)
+        contours = self._find_contours(img_crop, self.level)
 
         data = []
 

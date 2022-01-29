@@ -28,3 +28,8 @@ filenames = {'files': 'Img_Files',  # for file info (timing etc.)
 def _read(file):
     """load file into image array (file: pathlib Path object)."""
     return skimage.io.imread(file)
+
+
+def _rgb_to_grey(img):
+    """How to convert an RGB image to grayscale"""
+    return skimage.color.rgb2gray(img)
