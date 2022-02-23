@@ -43,13 +43,20 @@ class Contours:
         """
         img = self.img_series.read(num=num)
 
-        img_crop, crop = imgbasics.imcrop(img)
+        if img.ndim > 2:
+            kwargs = {}
+        else:
+            kwargs = {'cmap': 'gray'}
+
+        img_crop, crop = imgbasics.imcrop(img, **kwargs)
         contours = self.img_series._find_contours(img_crop, level)
 
         # Display the cropped image and plot all contours found --------------
 
         fig, ax = plt.subplots()
-        ax.imshow(img_crop, cmap='gray')
+
+        ax.imshow(img_crop, **kwargs)
+
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -92,7 +99,7 @@ class Contours:
         Parameters
         ----------
         - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default)
+        (note: cmap is grey by default for images with 1 color channel)
         """
         num = self.data['image']
         level = self.data['level']
@@ -106,7 +113,7 @@ class Contours:
 
         fig, ax = plt.subplots()
 
-        if 'cmap' not in kwargs:
+        if 'cmap' not in kwargs and img.ndim < 3:
             kwargs['cmap'] = 'gray'
         ax.imshow(img_crop, **kwargs)
 
