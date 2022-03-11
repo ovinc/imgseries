@@ -179,7 +179,7 @@ class ImgSeries(filo.Series):
         return nums
 
     def format_data(self, data):
-        """Add file into (name, time, etc.) to analysis results if possible.
+        """Add file info (name, time, etc.) to analysis results if possible.
 
         (self.info is defined only if ImgSeries inherits from filo.Series,
         which is not the case if img data is in a stack).

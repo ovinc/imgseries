@@ -1,7 +1,9 @@
 """Contour tracking on image series."""
 
 # Misc. package imports
+import numbers
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from skimage import measure
 from tqdm import tqdm
 import pandas as pd
@@ -179,7 +181,7 @@ class ContourTracking(ImgSeries):
         image = img if img.ndim == 2 else self.rgb_to_grey(img)
         return measure.find_contours(image, level)
 
-    # Basic analysis method --------------------------------------------------
+    # Basic analysis methods -------------------------------------------------
 
     def _contour_tracking(self, num, live):
         """Find contours at level in file i closest to the reference positions.
@@ -197,26 +199,28 @@ class ContourTracking(ImgSeries):
         img = self.read(num)
         img_crop = imgbasics.imcrop(img, self.crop)
 
-        if live:
-            self.ax.clear()
-            self.ax.imshow(img_crop, cmap='gray')
-            self.ax.axis('off')
-            self.ax.set_title(f'img #{num}, grey level {self.level}')
-
         contours = self._find_contours(img_crop, self.level)
 
-        data = []
+        data = {'analysis': []}     # Stores analysis data (centroid etc.)
+        data['num'] = num
+
+        if live:
+            data['contours'] = []   # Store contour data if required for plot
+            data['image'] = img_crop
 
         for refpos in self.reference_positions:
 
             try:
                 # this time edge=false, because trying to find contour closest
                 # to the recorded centroid position, not edges
-                contour = imgbasics.closest_contour(contours, refpos, edge=True)
+                contour = imgbasics.closest_contour(contours=contours,
+                                                    position=refpos,
+                                                    edge=True)
 
             except imgbasics.ContourError:
                 # No contour at all detected on image --> return NaN
                 xc, yc, perimeter, area = (NaN,) * 4
+                contour = None
 
             else:
 
@@ -228,20 +232,85 @@ class ContourTracking(ImgSeries):
                 perimeter = contprops['perimeter']
                 area = contprops['area']
 
-                if live:
-                    self.ax.plot(x, y, '-r')    # contour
-                    self.ax.plot(xc, yc, '+b')  # centroid position
-
-            data.append((xc, yc, perimeter, area))
-
-        if live:
-            plt.pause(0.001)
+            data['analysis'].append((xc, yc, perimeter, area))
+            if live:
+                data['contours'].append((x, y))
 
         return data
 
-    # Public methods --------------------------------------------------------
+    def _update_reference_positions(self, data):
+        """Next iteration will look for contours close to the current ones."""
+        for i, contour_analysis in enumerate(data['analysis']):
+            if any(qty is NaN for qty in contour_analysis):
+                # There has been a problem in detecting the contour
+                pass
+            else:
+                # if position correctly detected, update where to look next
+                xc, yc, *_ = contour_analysis
+                self.reference_positions[i] = (xc, yc)
 
-    def run(self, start=0, end=None, skip=1, live=False):
+    def _store_data(self, data):
+        # Save data into table
+        line = sum(data['analysis'], start=())  # "Flatten" list of tuples
+        num = data['num']
+        self.analysis_data.loc[num] = line
+
+    def _run(self, num, live, blit=False):
+        data = self._contour_tracking(num, live)
+        self._update_reference_positions(data)
+        self._store_data(data)
+        if live:
+            self._plot(data)
+            if blit:
+                return self.contour_lines + self.centroid_pts + [self.im]
+
+    # Basic plot methods -----------------------------------------------------
+
+    def _plot(self, data):
+
+        img = data['image']
+        num = data['num']
+
+        self.ax.set_title(f'img #{num}, grey level {self.level}')
+
+        if not self.plot_init_done:
+
+            self.im = self.ax.imshow(img, cmap='gray')
+            self.ax.axis('off')
+
+            self.contour_lines = []
+            self.centroid_pts = []
+
+            for contour, analysis in zip(data['contours'], data['analysis']):
+
+                contour_line, = self.ax.plot(*contour, '-r')
+                self.contour_lines.append(contour_line)
+
+                centroid_pt, = self.ax.plot(*analysis[:2], '+b')
+                self.centroid_pts.append(centroid_pt)
+
+            self.fig.tight_layout()
+            self.plot_init_done = True
+
+        else:
+
+            self.im.set_array(img)
+
+            for contour, analysis, line, pt in zip(data['contours'],
+                                                   data['analysis'],
+                                                   self.contour_lines,
+                                                   self.centroid_pts):
+
+                if contour is not None:
+                    line.set_data(*contour)
+                    pt.set_data(*analysis[:2])
+                else:
+                    line.set_data(None, None)
+                    pt.set_data(None, None)
+
+    # Public methods ---------------------------------------------------------
+
+    def run(self, start=0, end=None, skip=1, live=False, blit=False):
         """Follow contours in an image series.
 
         Parameters
@@ -278,32 +347,25 @@ class ContourTracking(ImgSeries):
         names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
         cols = [name + str(k + 1) for k in range(n) for name in names]
 
-        data = pd.DataFrame(index=nums, columns=cols)
-        data.index.name = 'num'
-
-        if live:
-            fig, self.ax = plt.subplots()
+        self.analysis_data = pd.DataFrame(index=nums, columns=cols)
+        self.analysis_data.index.name = 'num'
 
         # Loop ---------------------------------------------------------------
 
-        for num in tqdm(nums):
+        if not live:
+            for num in tqdm(nums):
+                self._run(num, live)
+        else:
+            self.plot_init_done = False
+            self.fig, self.ax = plt.subplots()
+            self.animation = FuncAnimation(fig=self.fig,
+                                           func=self._run,
+                                           fargs=(live, blit),
+                                           frames=nums,
+                                           cache_frame_data=False,
+                                           repeat=False,
+                                           blit=blit)
 
-            track = self._contour_tracking(num, live)
+        # Finalization -------------------------------------------------------
 
-            # next iteration will look for contours close to the current ones
-
-            for i, contour_data in enumerate(track):
-                if any(qty is NaN for qty in data):
-                    # There has been a problem in detecting the contour
-                    pass
-                else:
-                    # if position correctly detected, update where to look next
-                    xc, yc, *_ = contour_data
-                    self.reference_positions[i] = (xc, yc)
-
-            # Save data into table
-            line = sum(track, start=())  # "Flatten" list of tuples
-            data.loc[num] = line
-
-
-        self.format_data(data)
+        self.format_data(self.analysis_data)
