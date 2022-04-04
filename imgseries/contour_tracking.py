@@ -1,7 +1,9 @@
 """Contour tracking on image series."""
 
+# Standard library imports
+import json
+
 # Misc. package imports
-import numbers
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from skimage import measure
@@ -11,6 +13,7 @@ from numpy import nan as NaN
 import imgbasics
 
 # Local imports
+from .config import filenames
 from .general import ImgSeries
 
 
@@ -202,10 +205,10 @@ class ContourTracking(ImgSeries):
         contours = self._find_contours(img_crop, self.level)
 
         data = {'analysis': []}     # Stores analysis data (centroid etc.)
+        data['contours'] = []       # Stores full (x, y) contour data
         data['num'] = num
 
         if live:
-            data['contours'] = []   # Store contour data if required for plot
             data['image'] = img_crop
 
         for refpos in self.reference_positions:
@@ -233,8 +236,7 @@ class ContourTracking(ImgSeries):
                 area = contprops['area']
 
             data['analysis'].append((xc, yc, perimeter, area))
-            if live:
-                data['contours'].append((x, y))
+            data['contours'].append((x, y))
 
         return data
 
@@ -250,9 +252,18 @@ class ContourTracking(ImgSeries):
                 self.reference_positions[i] = (xc, yc)
 
     def _store_data(self, data):
-        # Save data into table
-        line = sum(data['analysis'], start=())  # "Flatten" list of tuples
+        """Store contour and analysis data into dict/table."""
+
         num = data['num']
+        n = len(data['analysis'])
+
+        # Save contour data into dict ----------------------------------------
+        for k in range(n):
+            x, y = data['contours'][k]
+            self.contour_data[k + 1][num] = {'x': list(x), 'y': list(y)}
+
+        # Save analysis data into table --------------------------------------
+        line = sum(data['analysis'], start=())  # "Flatten" list of tuples
         self.analysis_data.loc[num] = line
 
     def _run(self, num, live, blit=False):
@@ -342,7 +353,11 @@ class ContourTracking(ImgSeries):
         self.reference_positions = list(self.contours.data['position'].values())
         n = len(self.reference_positions)
 
-        # Initiate pandas table to store data --------------------------------
+        # Initiate dict to store all contour data (for json saving later) ----
+
+        self.contour_data = {k + 1: {} for k in range(n)}
+
+        # Initiate pandas table to store data (for tsv saving later) ---------
 
         names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
         cols = [name + str(k + 1) for k in range(n) for name in names]
@@ -369,3 +384,12 @@ class ContourTracking(ImgSeries):
         # Finalization -------------------------------------------------------
 
         self.format_data(self.analysis_data)
+
+    def save(self, filename=None):
+
+        super().save(filename=filename)
+
+        name = filenames[self.measurement_type] if filename is None else filename
+        data_file = self.savepath / (name + '_Data.json')
+        with open(data_file, 'w', encoding='utf8') as f:
+            json.dump(self.contour_data, f, indent=4, ensure_ascii=False)
