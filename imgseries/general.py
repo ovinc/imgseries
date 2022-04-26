@@ -41,7 +41,7 @@ class ImgSeries(filo.Series):
           is stored in multiple folders.
         - savepath: folder in which to save analysis data.
         - extension: extension of files to consider (e.g. '.png')
-        - measurement_type: specify 'glevel' or 'ctrack' (optional, for subclasses)
+        - measurement_type: specify 'glevel' or 'ctrack' or (itrack) (optional, for subclasses)
 
         If file series is in a stack rather than in a series of images:
         - stack: path to the stack (.tiff) file
@@ -149,9 +149,11 @@ class ImgSeries(filo.Series):
               containing tab-separated data file and metadata file, respectively.
         """
         name = filenames[self.measurement_type] if filename is None else filename
+        print(name)
         analysis_file = self.savepath / (name + '.tsv')
         metadata_file = self.savepath / (name + '.json')
-
+        print(metadata_file)
+        print(analysis_file)
         # save analysis data -------------------------------------------------
         self.data.to_csv(analysis_file, sep=csv_separator)
 

@@ -3,6 +3,7 @@
 from .general import ImgSeries
 from .grey_level import GreyLevel
 from .contour_tracking import ContourTracking
+from .imbibitionfront_tracking import ImbibitionTracking
 
 from importlib_metadata import version
 
