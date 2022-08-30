@@ -115,25 +115,64 @@ class ImbibitionFront:
         self.img_ref = None
         self.data_method = {}
         self.data_image = {}
+        self.reference = None # True if n_start, n_indexes exist
 
-    def set_reference(self, images=None):
+    def _references_defaults(self, crop):
+        """ Determine the reference image (an average of the references)
+        as well as te number at which the experiment begins
+        """
+
+        n_files = len(self.img_series.files)
+        # the experiment starts
+        im_mean = []
+        im_std_crop = []
+        for i in range(n_files):
+            img = self.img_series.read(i)
+            im_mean.append(img.mean())
+
+            img_crop = imgbasics.imcrop(img, crop)
+            im_std_crop.append(img_crop.std())
+
+        # Determination of n_start per default
+        im_mean = np.array(im_mean)
+        mean = im_mean.mean()
+        bol = (im_mean < mean).astype(int)
+        n_start = np.where(np.diff(bol) == 1)[0][0] + 1
+
+        # Determination of the end images per default
+        im_std_crop = np.array(im_std_crop)
+        n_end = 10  # select the last 10 images
+        mean_crop = im_std_crop[-n_end:].mean()
+        # Around 10% of the mean value (arbitrary choice)
+        condition = (im_std_crop < mean_crop * 1.1) & (0.99 * mean_crop < im_std_crop)
+        n_indexes = np.where(condition == True)[0]
+
+        img_refs = []
+        for num in n_indexes:
+            img_refs.append(self.img_series.read(num))
+
+        self.img_ref = np.stack(img_refs, axis=2).mean(axis=2)
+        self.reference = n_start, n_indexes
+
+    def set_reference(self, n_refs=None, n_start=None):
         """
         Calculate the reference image
 
         Example:
-        n = 100  # number of images on which to average at end of movie
-        images = range(-n, 0) start from n to the last image
+        n_refs = 100  # number of images over which to average at end of movie
+        images = range(-n_refs, 0) start from n to the last image
         """
         img_refs = []
-
-        for i in images:
+        n_indexes = range(-n_refs, 0)
+        for i in n_indexes:
             img_refs.append(self.img_series.read(i))
 
         self.img_ref = np.stack(img_refs, axis=2).mean(axis=2)
+        self.reference = n_start, n_indexes
 
-    def define(self, images=None,
+    def define(self, num=0,
                sigma=None, level_down=None, level_high=None,
-               hough_radii=None, num=0, **cany):
+               hough_radii=None, **cany):
         """Interactively define n contours on an image at level level.
 
         Parameters
@@ -151,22 +190,20 @@ class ImbibitionFront:
         None, but stores in self.data a dictionary with keys:
         'crop', 'position', 'level', 'image'
         """
-        if images is None:
-            img_ref = self.img_series.read(-1)  # take per default the last image
-        else:
-            img_refs = []
-            for i in images:
-                img_refs.append(self.img_series.read(i))
-
-            img_ref = np.stack(img_refs, axis=2).mean(axis=2)
-
+        # Image
         img = self.img_series.read(num=num)
+
+        # Crop image
+        _, crop = imgbasics.imcrop(img)
+
+        if self.reference is None:
+            self._references_defaults(crop)
+
+        img_ref = self.img_ref
+        n_start, n_indexes = self.reference
 
         # substraction to get a better resolution of the imbibition front
         img = img - img_ref
-
-        # crop image
-        _, crop = imgbasics.imcrop(img)
 
         # Filters
         # Remove noise from the image with a gausian filter --------------
@@ -187,7 +224,8 @@ class ImbibitionFront:
         # egdes from the image with
         self.data_image = {'crop': crop,
                            'image': num,
-                           'ref': [images[0], images[-1]],
+                           'ref': n_indexes,
+                           'number start': n_start,
                            'image_ref': img_ref}
 
         self.data_method = {'level_down': level_down,
