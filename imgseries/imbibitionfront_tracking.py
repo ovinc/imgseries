@@ -172,7 +172,7 @@ class ImbibitionFront:
 
     def define(self, num=0,
                sigma=None, level_down=None, level_high=None,
-               hough_radii=None, **cany):
+               hough_radii=None, cany=None):
         """Interactively define n contours on an image at level level.
 
         Parameters
@@ -203,30 +203,33 @@ class ImbibitionFront:
         n_start, n_indexes = self.reference
 
         # substraction to get a better resolution of the imbibition front
-        img = img - img_ref
+        img = (img - img_ref) / img_ref
 
-        # Filters
+        # Filters: see ipython module to understand these default settingd
         # Remove noise from the image with a gausian filter --------------
         if sigma is None:
-            sigma = 2
+            sigma = 3
 
         # Homemade theshold
         if level_down is None:
-            level_down = 0.01
+            level_down = -0.10117
         if level_high is None:
-            level_high = 0.016
+            level_high = -0.095 #-0.1
 
         # Circular imbibition contour
         # Hough transformation to determine imbibition front contour
         if hough_radii is None:
-            hough_radii = np.arange(300, 500, 10)
+            hough_radii = np.arange(250, 350, 10)
+
+        if cany is None:
+            cany = {'sigma': 3, 'low_threshold': 0, 'high_threshold': 0.95}
 
         # egdes from the image with
         self.data_image = {'crop': crop,
                            'image': num,
                            'ref': n_indexes,
                            'number start': n_start,
-                           'image_ref': img_ref}
+                           'img_ref': img_ref}
 
         self.data_method = {'level_down': level_down,
                             'level_high': level_high,
@@ -246,7 +249,7 @@ class ImbibitionFront:
         # Image
         num = self.data_image['image']
         crop = self.data_image['crop']
-        img_ref = self.data_image['image_ref']
+        img_ref = self.img_ref
 
         # Method
         level_down = self.data_method['level_down']
@@ -256,7 +259,7 @@ class ImbibitionFront:
         cany = self.data_method['canny']
 
         # Load image, crop it, and calculate contours
-        img = self.img_series.read(num) - img_ref
+        img = (self.img_series.read(num) - img_ref) / img_ref
         img_crop = imgbasics.imcrop(img, crop)
 
         _, edges, hough, circle = _find_circular_contour(img_crop,
@@ -267,6 +270,7 @@ class ImbibitionFront:
 
         theta = np.arange(0, 360, 0.5)
         r, x0, y0 = circle[0], circle[1], circle[2]
+        print(r)
         x = x0 + r * np.cos(theta)
         y = y0 + r * np.sin(theta)
 
@@ -281,7 +285,7 @@ class ImbibitionFront:
 
         ax2.set_title('edges resulting from successive filters\n\
         (gaussian, homemade threshold and canny)')
-        ax2.imshow(edges, **kwargs)
+        ax2.imshow(edges)
 
         ax3.set_title('hough transformation space')
         ax3.imshow(hough)
@@ -349,7 +353,8 @@ class ImbibitionTracking(ImgSeries):
         [(x1, y1, p1, a1), (y2, y2, p2, a1), ..., (xn, yn, pn, an)] where n is the
         number of contours followed and (x, y), p, a is position, perimeter, area
         """
-        img = self.read(num) - self.img_ref
+        img_ref = self.img_ref
+        img = (self.read(num) - img_ref) / img_ref
         # Choose one channel arbitrary 1
         img_crop = imgbasics.imcrop(img, self.crop)
 
@@ -368,24 +373,29 @@ class ImbibitionTracking(ImgSeries):
                                                         self.hough_radii)
 
         r, x0, y0 = circle[0][0], circle[1], circle[2]
-        self.hough_radii = np.arange(r - 80, r + 200, 20)  # new estimation of range radii
+        radii = np.arange(r - 40, r + 70, 1)
+        self.hough_radii = radii[radii > 50]  # new estimation of range radii
+        #print(self.hough_radii)
 
         # method integration
         avg = _azimuthal_average(img_blur, center=(x0, y0))
         r_pixel = np.arange(0, len(avg))
         dr = np.diff(r_pixel).mean()
-        condition_min = (np.min(np.abs(avg[abs(r - r_pixel) < dr * 20])) == np.abs(avg))  # arbitrary
+        condition_min = (np.max(np.abs(avg[abs(r - r_pixel) < dr * 40])) == np.abs(avg))  # arbitrary
         r_min = r_pixel[condition_min]
         avg_min = avg[condition_min]
-        condition = avg < (avg[r_min[0]] * 1.25)  # arbitrary choice
-        r_width = r_pixel[condition]
+        condition_r = (r_pixel > r_min - 40) & (r_pixel < r_min + 40)
+        avg_r = avg[condition_r]
+        r_r = r_pixel[condition_r]
+        condition = np.abs(avg_r) > (np.abs(avg_r[r_min == r_r]) * 0.9)  # arbitrary choice
+        r_width = r_r[condition]
 
         if live:
             theta = np.arange(0, 360, 0.5)
-            x = x0 + r * np.cos(theta)
-            y = y0 + r * np.sin(theta)
+            x = x0 + r_min * np.cos(theta)
+            y = y0 + r_min * np.sin(theta)
             self.ax1.clear()
-            self.ax1.imshow(img_crop)
+            self.ax1.imshow(img_crop, vmin=-0.1, vmax=0.2)
             self.ax1.axis('off')
             self.ax1.set_title(f'img #{num}')
             self.ax1.plot(x, y, '.', markersize=1, linewidth=1)    # contour
@@ -394,7 +404,7 @@ class ImbibitionTracking(ImgSeries):
             self.ax2.clear()
             self.ax2.plot(r_min, avg_min, 'kd')
             self.ax2.plot(r_pixel, avg, '.-')
-            self.ax2.axvline(x=r)
+            self.ax2.axvline(x=r_min)
             self.ax2.axvline(x=r_width[0],
                              color='k', linestyle='--')
             self.ax2.axvline(x=r_width[-1], color='k',
@@ -432,7 +442,7 @@ class ImbibitionTracking(ImgSeries):
         self.data_method = self.imbibition.data_method
         self.data_image = self.imbibition.data_image
         self.crop = self.data_image['crop']
-        self.img_ref = self.data_image['img_ref']
+        self.img_ref = self.imbibition.img_ref
 
         # Analysis parameters that will be saved into metadata file
         self.parameters['imbibition'] = {}
@@ -464,7 +474,7 @@ class ImbibitionTracking(ImgSeries):
             try:
                 track = self._imbibition_tracking(num, live)
             except IndexError:
-                print('no detection of the contour')
+                print(f'no detection of the contour num={num}')
 
             else:
                 data.loc[num] = track
