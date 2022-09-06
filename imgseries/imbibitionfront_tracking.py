@@ -214,7 +214,7 @@ class ImbibitionFront:
         if level_down is None:
             level_down = -0.10117
         if level_high is None:
-            level_high = -0.095 #-0.1
+            level_high = -0.095  #-0.1
 
         # Circular imbibition contour
         # Hough transformation to determine imbibition front contour
@@ -227,14 +227,14 @@ class ImbibitionFront:
         # egdes from the image with
         self.data_image = {'crop': crop,
                            'image': num,
-                           'ref': n_indexes,
-                           'number start': n_start,
-                           'img_ref': img_ref}
+                           'number start': int(n_start),
+                           'img_ref': img_ref,
+                           'ref': [f'{value}' for value in n_indexes]}
 
         self.data_method = {'level_down': level_down,
                             'level_high': level_high,
                             'sigma': sigma,
-                            'hough_radii': hough_radii,
+                            'hough_radii start': [f'{value}' for value in hough_radii],
                             'canny': cany
                             }
 
@@ -255,7 +255,7 @@ class ImbibitionFront:
         level_down = self.data_method['level_down']
         level_high = self.data_method['level_high']
         sigma = self.data_method['sigma']
-        hough_radii = self.data_method['hough_radii']
+        hough_radii = np.array(self.data_method['hough_radii start']).astype(int)
         cany = self.data_method['canny']
 
         # Load image, crop it, and calculate contours
@@ -270,7 +270,6 @@ class ImbibitionFront:
 
         theta = np.arange(0, 360, 0.5)
         r, x0, y0 = circle[0], circle[1], circle[2]
-        print(r)
         x = x0 + r * np.cos(theta)
         y = y0 + r * np.sin(theta)
 
@@ -296,11 +295,17 @@ class ImbibitionFront:
 
         return ax1
 
-
     def load(self, filename=None):
         """Load contour data from .json file and put it in self.data."""
         self.data_method = self.img_series.load_metadata(filename=filename)['imbibition']['method']
-        self.data_image = self.img_series.load_metadata(filename=filename)['imbibition']['crop image']
+        self.data_image = self.img_series.load_metadata(filename=filename)['imbibition']['image']
+        n_indexes = np.array(self.data_image['ref']).astype(np.int64)
+        img_refs = []
+        for num in n_indexes:
+            img_refs.append(self.img_series.read(num))
+
+        self.img_ref = np.stack(img_refs, axis=2).mean(axis=2)
+        self.data_image['img_ref'] = self.img_ref
 
     @property
     def is_empty(self):
@@ -363,7 +368,7 @@ class ImbibitionTracking(ImgSeries):
         level_high = self.data_method['level_high']
         sigma = self.data_method['sigma']
         if self.hough_radii is None:
-            self.hough_radii = self.data_method['hough_radii']
+            self.hough_radii = np.array(self.data_method['hough_radii start']).astype(np.int64)
         cany = self.data_method['canny']
 
         # method hough
@@ -373,9 +378,8 @@ class ImbibitionTracking(ImgSeries):
                                                         self.hough_radii)
 
         r, x0, y0 = circle[0][0], circle[1], circle[2]
-        radii = np.arange(r - 40, r + 70, 1)
-        self.hough_radii = radii[radii > 50]  # new estimation of range radii
-        #print(self.hough_radii)
+        radii = np.arange(r - 20, r + 20, 1)
+        self.hough_radii = radii[radii > 20]  # new estimation of range radii
 
         # method integration
         avg = _azimuthal_average(img_blur, center=(x0, y0))
@@ -447,11 +451,10 @@ class ImbibitionTracking(ImgSeries):
         # Analysis parameters that will be saved into metadata file
         self.parameters['imbibition'] = {}
         self.parameters['imbibition']['method'] = {x: self.data_method[x]
-                                                   for x in self.data_method
-                                                   if x not in ['hough_radii']}
-        self.parameters['imbibition']['crop image'] = {x: self.data_image[x]
-                                                       for x in self.data_image
-                                                       if x not in ['img_ref']}
+                                                   for x in self.data_method}
+        self.parameters['imbibition']['image'] = {x: self.data_image[x]
+                                                  for x in self.data_image
+                                                  if x not in ['img_ref']}
 
         nums = self.set_analysis_numbers(start, end, skip)
 

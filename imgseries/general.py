@@ -149,14 +149,10 @@ class ImgSeries(filo.Series):
               containing tab-separated data file and metadata file, respectively.
         """
         name = filenames[self.measurement_type] if filename is None else filename
-        print(name)
         analysis_file = self.savepath / (name + '.tsv')
         metadata_file = self.savepath / (name + '.json')
-        print(metadata_file)
-        print(analysis_file)
         # save analysis data -------------------------------------------------
         self.data.to_csv(analysis_file, sep=csv_separator)
-
         # save analysis metadata ---------------------------------------------
         gittools.save_metadata(file=metadata_file, info=self.parameters,
                                module=checked_modules,
