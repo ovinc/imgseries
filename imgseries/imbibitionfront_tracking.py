@@ -27,6 +27,7 @@ from skimage.filters import gaussian
 
 # Local imports
 from .general import ImgSeries
+from drapo import ginput
 
 def _azimuthal_average(image, center=None):
     """
@@ -99,6 +100,60 @@ def _find_circular_contour(img, *args):
 
     return img_blur, edges, hough_res[0], circle
 
+def _find_threshold(im_blur, manual=False):
+    """if level_down and level_down is not defined (None)
+    then a approximate value may be determined by studying the
+    intensition of the droplet
+    """
+    # Find center
+    fig, ax = plt.subplots()
+    ax.set_title('select center then the imbibition front')
+    ax.imshow(im_blur, vmin=-0.1, vmax=0.2)
+    pt = ginput(2)
+    plt.close(fig)
+
+    center = (int(pt[0][0]), int(pt[0][1]))
+    r = np.sqrt((pt[1][0] - center[0])**2 + (pt[1][1] - center[1])**2)
+
+    # global intensity
+    image_test = im_blur
+
+    ii, jj = np.indices(image_test.shape)
+    i_center = center[1]
+    j_center = center[0]
+
+    di = ii - i_center
+    dj = jj - j_center
+
+    dd = np.hypot(di, dj)
+    aa = np.arctan2(dj, di)
+
+    dmin, dmax, dskip = 0, len(image_test)//2, 1
+    ds = list(range(dmin, dmax, dskip))
+    intensities = []
+
+    for d1, d2 in zip(ds[:-1], ds[1:]):
+
+        condition = (dd >= d1) & (dd < d2)
+        img_red = image_test[condition]
+        intensities.append(img_red.mean())
+    intensities = np.array(intensities)
+    # Figure
+    if manual is True:
+        fig, ax = plt.subplots()
+        ax.plot(intensities, 'r')
+        ax.plot(im_blur[center[1]:, center[0]], '--')
+        ax.set_title('select the second minima')
+        pt = ginput(1)
+        plt.close(fig)
+        intensity_min = pt[0][1]
+    else:
+        r_pixel = np.arange(len(intensities))
+        dr = np.diff(r_pixel).mean()
+        condition_min = (np.max(np.abs(intensities[abs(r - r_pixel) < dr * 40])) == np.abs(intensities))  # arbitrary
+        intensity_min = intensities[condition_min][0]
+
+    return intensity_min
 # ==================== Class to manage reference contours ====================
 
 class ImbibitionFront:
@@ -115,7 +170,8 @@ class ImbibitionFront:
         self.img_ref = None
         self.data_method = {}
         self.data_image = {}
-        self.reference = None # True if n_start, n_indexes exist
+        self.level_image = {}
+        self.reference = None  # True if n_start, n_indexes exist
 
     def _references_defaults(self, crop):
         """ Determine the reference image (an average of the references)
@@ -170,9 +226,10 @@ class ImbibitionFront:
         self.img_ref = np.stack(img_refs, axis=2).mean(axis=2)
         self.reference = n_start, n_indexes
 
-    def define(self, num=0,
+    def define(self, num=0, crop=None,
                sigma=None, level_down=None, level_high=None,
-               hough_radii=None, cany=None):
+               hough_radii=None, cany=None,
+               manual=False):
         """Interactively define n contours on an image at level level.
 
         Parameters
@@ -194,7 +251,8 @@ class ImbibitionFront:
         img = self.img_series.read(num=num)
 
         # Crop image
-        _, crop = imgbasics.imcrop(img)
+        if crop is None:
+            _, crop = imgbasics.imcrop(img)
 
         if self.reference is None:
             self._references_defaults(crop)
@@ -211,10 +269,12 @@ class ImbibitionFront:
             sigma = 3
 
         # Homemade theshold
-        if level_down is None:
-            level_down = -0.10117
-        if level_high is None:
-            level_high = -0.095  #-0.1
+        if level_down is None or level_high is None:
+            img_crop = imgbasics.imcrop(img, crop)
+            img_blur = gaussian(img_crop, sigma=sigma)
+            intensity_min = _find_threshold(img_blur, manual=manual)
+            level_down = intensity_min * 1.1  # Threshold arbitrary choice
+            level_high = intensity_min * 0.98  # Threshold arbitrary choice
 
         # Circular imbibition contour
         # Hough transformation to determine imbibition front contour
@@ -224,6 +284,9 @@ class ImbibitionFront:
         if cany is None:
             cany = {'sigma': 3, 'low_threshold': 0, 'high_threshold': 0.95}
 
+        self.level_image[f'{num}'] = (level_down, level_high)
+        thresholds = self.level_image
+
         # egdes from the image with
         self.data_image = {'crop': crop,
                            'image': num,
@@ -231,8 +294,7 @@ class ImbibitionFront:
                            'img_ref': img_ref,
                            'ref': [f'{value}' for value in n_indexes]}
 
-        self.data_method = {'level_down': level_down,
-                            'level_high': level_high,
+        self.data_method = {'thresholds': thresholds,
                             'sigma': sigma,
                             'hough_radii start': [f'{value}' for value in hough_radii],
                             'canny': cany
@@ -252,8 +314,7 @@ class ImbibitionFront:
         img_ref = self.img_ref
 
         # Method
-        level_down = self.data_method['level_down']
-        level_high = self.data_method['level_high']
+        level_down, level_high = self.data_method['thresholds'][f'{num}']
         sigma = self.data_method['sigma']
         hough_radii = np.array(self.data_method['hough_radii start']).astype(int)
         cany = self.data_method['canny']
@@ -364,8 +425,20 @@ class ImbibitionTracking(ImgSeries):
         img_crop = imgbasics.imcrop(img, self.crop)
 
         # Method
-        level_down = self.data_method['level_down']
-        level_high = self.data_method['level_high']
+        # call the threshold corresponding to the image number
+        thresholds = self.data_method['thresholds']
+        thresholds_keys = list(thresholds.keys())
+        thresholds_int = np.array([int(x) for x in thresholds_keys])
+        condition = (thresholds_int <= num)
+        # print(condition.astype(bool), type(condition.astype(bool)[0]), condition.astype(bool)[0] is False)
+        if condition[0] is np.False_:
+
+            threshold = thresholds[thresholds_keys[0]]
+        else:
+            key = thresholds_int[condition][-1]
+            threshold = thresholds[f'{key}']
+
+        level_down, level_high = threshold
         sigma = self.data_method['sigma']
         if self.hough_radii is None:
             self.hough_radii = np.array(self.data_method['hough_radii start']).astype(np.int64)
@@ -422,7 +495,7 @@ class ImbibitionTracking(ImgSeries):
 
     # Public methods --------------------------------------------------------
 
-    def run(self, start=0, end=None, skip=1, live=False):
+    def run(self, start=None, end=None, skip=1, live=False):
         """Follow contours in an image series.
 
         Parameters
@@ -447,6 +520,20 @@ class ImbibitionTracking(ImgSeries):
         self.data_image = self.imbibition.data_image
         self.crop = self.data_image['crop']
         self.img_ref = self.imbibition.img_ref
+
+        # start end in the case it is not defined
+        if start is None:
+            start = self.data_image['number start']
+            print(f'number start {start}')
+
+        if end is None:
+            n_refs = self.data_image['ref']
+            # n_refs.astype(int)
+            for i in range(10):
+                end = int(n_refs[i])
+                if end > 10:
+                    break
+            print(f'number end {end}')
 
         # Analysis parameters that will be saved into metadata file
         self.parameters['imbibition'] = {}
