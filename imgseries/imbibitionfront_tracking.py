@@ -114,6 +114,7 @@ def _find_threshold(im_blur, manual=False):
 
     center = (int(pt[0][0]), int(pt[0][1]))
     r = np.sqrt((pt[1][0] - center[0])**2 + (pt[1][1] - center[1])**2)
+    print(f'rayon {r}')
 
     # global intensity
     image_test = im_blur
@@ -152,8 +153,9 @@ def _find_threshold(im_blur, manual=False):
         dr = np.diff(r_pixel).mean()
         condition_min = (np.max(np.abs(intensities[abs(r - r_pixel) < dr * 40])) == np.abs(intensities))  # arbitrary
         intensity_min = intensities[condition_min][0]
+        print(f'intensity min {intensity_min}')
 
-    return intensity_min
+    return r, intensity_min
 # ==================== Class to manage reference contours ====================
 
 class ImbibitionFront:
@@ -170,8 +172,8 @@ class ImbibitionFront:
         self.img_ref = None
         self.data_method = {}
         self.data_image = {}
-        self.level_image = {}
         self.reference = None  # True if n_start, n_indexes exist
+        self.image_number = None
 
     def _references_defaults(self, crop):
         """ Determine the reference image (an average of the references)
@@ -219,7 +221,7 @@ class ImbibitionFront:
         images = range(-n_refs, 0) start from n to the last image
         """
         img_refs = []
-        n_indexes = range(-n_refs, 0)
+        n_indexes = n_refs
         for i in n_indexes:
             img_refs.append(self.img_series.read(i))
 
@@ -248,6 +250,7 @@ class ImbibitionFront:
         'crop', 'position', 'level', 'image'
         """
         # Image
+        self.image_number = num
         img = self.img_series.read(num=num)
 
         # Crop image
@@ -269,36 +272,42 @@ class ImbibitionFront:
             sigma = 3
 
         # Homemade theshold
+        r = None
         if level_down is None or level_high is None:
             img_crop = imgbasics.imcrop(img, crop)
             img_blur = gaussian(img_crop, sigma=sigma)
-            intensity_min = _find_threshold(img_blur, manual=manual)
-            level_down = intensity_min * 1.1  # Threshold arbitrary choice
-            level_high = intensity_min * 0.98  # Threshold arbitrary choice
+            r, intensity_min = _find_threshold(img_blur, manual=manual)
+            if intensity_min < 0:
+                level_down = intensity_min * 1.1  # Threshold arbitrary choice
+                level_high = intensity_min * 0.98  # Threshold arbitrary choice
+            else:
+                level_down = intensity_min * 0.95
+                level_high = intensity_min * 1.15
 
         # Circular imbibition contour
         # Hough transformation to determine imbibition front contour
         if hough_radii is None:
-            hough_radii = np.arange(250, 350, 10)
+            if r is not None:
+                r = int(r)
+                hough_radii = np.arange(r - 40, r + 40, 1)
+            else:
+                hough_radii = np.arange(250, 350, 10)
 
         if cany is None:
             cany = {'sigma': 3, 'low_threshold': 0, 'high_threshold': 0.95}
 
-        self.level_image[f'{num}'] = (level_down, level_high)
-        thresholds = self.level_image
 
         # egdes from the image with
         self.data_image = {'crop': crop,
-                           'image': num,
                            'number start': int(n_start),
                            'img_ref': img_ref,
                            'ref': [f'{value}' for value in n_indexes]}
 
-        self.data_method = {'thresholds': thresholds,
-                            'sigma': sigma,
-                            'hough_radii start': [f'{value}' for value in hough_radii],
-                            'canny': cany
-                            }
+        self.data_method[f'{num}'] = {'thresholds': (level_down, level_high),
+                                      'sigma': sigma,
+                                      'hough_radii start': [f'{value}' for value in hough_radii],
+                                      'canny': cany
+                                      }
 
     def show(self, **kwargs):
         """Show reference contours used for contour tracking.
@@ -309,15 +318,15 @@ class ImbibitionFront:
         (note: cmap is grey by default)
         """
         # Image
-        num = self.data_image['image']
+        num = self.image_number
         crop = self.data_image['crop']
         img_ref = self.img_ref
 
         # Method
-        level_down, level_high = self.data_method['thresholds'][f'{num}']
-        sigma = self.data_method['sigma']
-        hough_radii = np.array(self.data_method['hough_radii start']).astype(int)
-        cany = self.data_method['canny']
+        level_down, level_high = self.data_method[f'{num}']['thresholds']
+        sigma = self.data_method[f'{num}']['sigma']
+        hough_radii = np.array(self.data_method[f'{num}']['hough_radii start']).astype(int)
+        cany = self.data_method[f'{num}']['canny']
 
         # Load image, crop it, and calculate contours
         img = (self.img_series.read(num) - img_ref) / img_ref
@@ -381,7 +390,8 @@ class ImbibitionTracking(ImgSeries):
 
     name = 'Images Series (ImbibitionTracking)'
 
-    def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
+    def __init__(self, paths='.', extension='.png', savepath='.', intervals=None,
+                 stack=None):
         """Init Contour Tracking analysis object.
 
         PARAMETERS
@@ -403,6 +413,14 @@ class ImbibitionTracking(ImgSeries):
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
         self.imbibition = ImbibitionFront(self)  # empty object
+        # interval within the the hough radii will be searched
+        if intervals is None:
+            self.intervals = {'radi range': (-20, 30, 1),
+                              'minimum range (pixel)': 40,
+                              'imbibition range %': 0.95,
+                              'hough': False}
+        else:
+            self.intervals = intervals
 
     # Basic analysis method --------------------------------------------------
 
@@ -426,23 +444,24 @@ class ImbibitionTracking(ImgSeries):
 
         # Method
         # call the threshold corresponding to the image number
-        thresholds = self.data_method['thresholds']
-        thresholds_keys = list(thresholds.keys())
-        thresholds_int = np.array([int(x) for x in thresholds_keys])
-        condition = (thresholds_int <= num)
+        data_methods = self.data_method
+        data_methods_keys = list(data_methods.keys())
+        data_methods_int = np.sort(np.array([int(x) for x in data_methods_keys]))
+        condition = (data_methods_int <= num)
         # print(condition.astype(bool), type(condition.astype(bool)[0]), condition.astype(bool)[0] is False)
         if condition[0] is np.False_:
-
-            threshold = thresholds[thresholds_keys[0]]
+            data_method = data_methods[data_methods_keys[0]]
         else:
-            key = thresholds_int[condition][-1]
-            threshold = thresholds[f'{key}']
+            key = data_methods_int[condition][-1]
+            data_method = data_methods[f'{key}']
 
-        level_down, level_high = threshold
-        sigma = self.data_method['sigma']
+        level_down, level_high = data_method['thresholds']
+        sigma = data_method['sigma']
         if self.hough_radii is None:
-            self.hough_radii = np.array(self.data_method['hough_radii start']).astype(np.int64)
-        cany = self.data_method['canny']
+            self.hough_radii = np.array(data_method['hough_radii start']).astype(np.int64)
+        if num in data_methods_int:
+            self.hough_radii = np.array(data_method['hough_radii start']).astype(np.int64)
+        cany = data_method['canny']
 
         # method hough
         img_blur, _, _, circle = _find_circular_contour(img_crop,
@@ -450,32 +469,59 @@ class ImbibitionTracking(ImgSeries):
                                                         level_high, cany,
                                                         self.hough_radii)
 
-        r, x0, y0 = circle[0][0], circle[1], circle[2]
-        radii = np.arange(r - 20, r + 20, 1)
-        self.hough_radii = radii[radii > 20]  # new estimation of range radii
+        r_hough, x0, y0 = circle[0][0], circle[1], circle[2]
+        rb1_hough, rb2_hough, step_hough = self.intervals['radi range']
+        rb1_hough, rb2_hough = r_hough + rb1_hough, r_hough + rb2_hough
+        radii = np.arange(rb1_hough, rb2_hough, step_hough)
+        self.hough_radii = radii[radii > 10]  # new estimation of range radii
 
         # method integration
         avg = _azimuthal_average(img_blur, center=(x0, y0))
+        # substraction by its maximum in order to get all the local maximum with (abs)
+        avg = avg - np.max(avg)
         r_pixel = np.arange(0, len(avg))
         dr = np.diff(r_pixel).mean()
-        condition_min = (np.max(np.abs(avg[abs(r - r_pixel) < dr * 40])) == np.abs(avg))  # arbitrary
+        r_range_pixel = self.intervals['minimum range (pixel)']
+        condition_min = (np.max(np.abs(avg[abs(r_hough - r_pixel) < dr * r_range_pixel]))
+                         == np.abs(avg))  # arbitrary
         r_min = r_pixel[condition_min]
         avg_min = avg[condition_min]
-        condition_r = (r_pixel > r_min - 40) & (r_pixel < r_min + 40)
+        condition_r = (r_pixel > r_min - r_range_pixel) & (r_pixel < r_min + r_range_pixel)
         avg_r = avg[condition_r]
         r_r = r_pixel[condition_r]
-        condition = np.abs(avg_r) > (np.abs(avg_r[r_min == r_r]) * 0.9)  # arbitrary choice
+        r_range_width = self.intervals['imbibition range %']
+        condition = np.abs(avg_r) > (np.abs(avg_r[r_min == r_r]) * r_range_width)  # arbitrary choice
         r_width = r_r[condition]
 
         if live:
             theta = np.arange(0, 360, 0.5)
             x = x0 + r_min * np.cos(theta)
             y = y0 + r_min * np.sin(theta)
+            x_hough = x0 + r_hough * np.cos(theta)
+            y_hough = y0 + r_hough * np.sin(theta)
+            # lower and upper limit
+            xb1 = x0 + r_width[0] * np.cos(theta)
+            yb1 = y0 + r_width[0] * np.sin(theta)
+            xb2 = x0 + r_width[-1] * np.cos(theta)
+            yb2 = y0 + r_width[-1] * np.sin(theta)
+            xb1_hough = x0 + rb1_hough * np.cos(theta)
+            yb1_hough = x0 + rb1_hough * np.sin(theta)
+            xb2_hough = x0 + rb2_hough * np.cos(theta)
+            yb2_hough = x0 + rb2_hough * np.sin(theta)
+
             self.ax1.clear()
             self.ax1.imshow(img_crop, vmin=-0.1, vmax=0.2)
             self.ax1.axis('off')
-            self.ax1.set_title(f'img #{num}')
-            self.ax1.plot(x, y, '.', markersize=1, linewidth=1)    # contour
+            if self.intervals['hough'] is False:
+                self.ax1.set_title(f'img #{num} min')
+                self.ax1.plot(x, y, '.', markersize=1, linewidth=1)    # contour
+                self.ax1.plot(xb1, yb1, 'r-', linewidth=0.05, alpha=0.2)
+                self.ax1.plot(xb2, yb2, 'r-', linewidth=0.05, alpha=0.2)
+            else:
+                self.ax1.set_title(f'img #{num} hough')
+                self.ax1.plot(x_hough, y_hough, '.', markersize=1, linewidth=1)    # contour
+                self.ax1.plot(xb1_hough, yb1_hough, 'r-', linewidth=0.05, alpha=0.2)
+                self.ax1.plot(xb2_hough, yb2_hough, 'r-', linewidth=0.05, alpha=0.2)
             self.ax1.plot(x0, y0, 'r+')  # centroid position
 
             self.ax2.clear()
@@ -491,7 +537,10 @@ class ImbibitionTracking(ImgSeries):
 
             plt.pause(0.001)
 
-        return (r_min[0], x0, y0, r_width[0], r_width[-1])
+        if self.intervals['hough'] is False:
+            return (r_min[0], x0, y0, r_width[0], r_width[-1])
+        else:
+            return (r_hough, x0, y0, rb1_hough, rb2_hough)
 
     # Public methods --------------------------------------------------------
 
@@ -529,7 +578,7 @@ class ImbibitionTracking(ImgSeries):
         if end is None:
             n_refs = self.data_image['ref']
             # n_refs.astype(int)
-            for i in range(10):
+            for i in range(40):
                 end = int(n_refs[i])
                 if end > 10:
                     break
@@ -542,6 +591,7 @@ class ImbibitionTracking(ImgSeries):
         self.parameters['imbibition']['image'] = {x: self.data_image[x]
                                                   for x in self.data_image
                                                   if x not in ['img_ref']}
+        self.parameters['imbibition']['run'] = self.intervals
 
         nums = self.set_analysis_numbers(start, end, skip)
 

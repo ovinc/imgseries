@@ -27,7 +27,7 @@ class Contours:
         self.img_series = img_series
         self.data = {}
 
-    def define(self, level, n=1, num=0):
+    def define(self, level, n=1, num=0, crop=None):
         """Interactively define n contours on an image at level level.
 
         Parameters
@@ -43,7 +43,11 @@ class Contours:
         """
         img = self.img_series.read(num=num)
 
-        img_crop, crop = imgbasics.imcrop(img)
+        if crop is None:
+            img_crop, crop = imgbasics.imcrop(img)
+        else:
+            img_crop = imgbasics.imcrop(img, crop)
+
         contours = measure.find_contours(img_crop, level)
 
         # Display the cropped image and plot all contours found --------------
