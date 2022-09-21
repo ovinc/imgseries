@@ -68,6 +68,41 @@ def _azimuthal_average(image, center=None):
 
     return radial_prof
 
+def _limits_extrema(index_target, y_axis, mask=True, tolerance=5):
+    """
+    find indexes limits around the local minimum
+
+    INPUT:
+    index_target (int): index where the local maximum is located
+    y (np.array): array of the y axis
+
+    OUTPUT:
+    xl1, xl2 (tuple): limit between the local extremum et the two other local extremums
+    """
+    sign1 = np.sign(np.diff(y_axis))
+    sign2 = np.diff(sign1)
+    indexes_extrema = np.where(sign2 != 0)[0]
+
+    # mask if minimums are too closed due to the noise of experimental data
+    if mask is True:
+        indexes_extrema += 5  # compensate the mask that keeps lower values
+        diff = np.empty(indexes_extrema.shape)
+        diff[0] = np.inf  # always retain the 1st element
+        diff[1:] = np.abs(np.diff(indexes_extrema))
+        mask = diff > tolerance
+        indexes_extrema = indexes_extrema[mask]
+    # find index of the extrema we want among the indexes extrema with an uncertainty of 15
+    index_extrema = np.max(np.where(abs(indexes_extrema - index_target) < 20)[0])
+
+    # limits
+    y_indexes = np.arange(len(y_axis))
+    index_n1 = indexes_extrema[index_extrema - 1]
+    index_n2 = indexes_extrema[index_extrema + 1]
+
+    xl1, xl2 = y_indexes[index_n1], y_indexes[index_n2]
+
+    return xl1, xl2
+
 def _find_circular_contour(img, *args):
     """Method to find the imbibition contour:
     Hough_circular, is the method to detect a circular contour
@@ -416,9 +451,11 @@ class ImbibitionTracking(ImgSeries):
         # interval within the the hough radii will be searched
         if intervals is None:
             self.intervals = {'radi range': (-20, 30, 1),
-                              'minimum range (pixel)': 40,
+                              'minimum range (pixel)': (-40, 40),
+                              'limits': {'manual': True, 'tolerance': 5},
                               'imbibition range %': 0.95,
-                              'hough': False}
+                              'hough': False
+                              }
         else:
             self.intervals = intervals
 
@@ -475,22 +512,43 @@ class ImbibitionTracking(ImgSeries):
         radii = np.arange(rb1_hough, rb2_hough, step_hough)
         self.hough_radii = radii[radii > 10]  # new estimation of range radii
 
-        # method integration
+        # method detection 2 integration
         avg = _azimuthal_average(img_blur, center=(x0, y0))
-        # substraction by its maximum in order to get all the local maximum with (abs)
-        avg = avg - np.max(avg)
+        # transformation y
+        avg_neg = avg - np.max(avg)
+        avg_neg_abs = np.abs(avg_neg)
+
         r_pixel = np.arange(0, len(avg))
         dr = np.diff(r_pixel).mean()
+
+        # find min
+        # interval limits
         r_range_pixel = self.intervals['minimum range (pixel)']
-        condition_min = (np.max(np.abs(avg[abs(r_hough - r_pixel) < dr * r_range_pixel]))
-                         == np.abs(avg))  # arbitrary
+        rb1, rb2 = r_range_pixel[0], r_range_pixel[1]
+        cond1 = r_pixel - r_hough > dr * rb1
+        cond2 = r_pixel - r_hough < dr * rb2
+        condtot = cond1 & cond2
+        # condition min
+        condition_min = (np.max(avg_neg_abs[condtot])) == avg_neg_abs  # arbitrary
         r_min = r_pixel[condition_min]
         avg_min = avg[condition_min]
-        condition_r = (r_pixel > r_min - r_range_pixel) & (r_pixel < r_min + r_range_pixel)
+
+        # find intersection with 98% of the minimum
+        # transform normalization by the local minimum
+        # choice of percentage
+        percent = self.intervals['imbibition range %']
+        avg_percent = avg_min * (1 + np.sign(avg_min)[0] * (1 - percent))
+        # reduction y axis using fonction _limits_extrma
+        try:
+            limits = self.intervals['limits']
+            rl1, rl2 = _limits_extrema(r_min[0], avg, **limits)
+        except:
+            condition_r = (r_pixel > r_min[0] - 50) & (r_pixel < r_min[0] + 60)
+        else:
+            condition_r = (r_pixel > rl1) & (r_pixel < r_min + rl2)
         avg_r = avg[condition_r]
         r_r = r_pixel[condition_r]
-        r_range_width = self.intervals['imbibition range %']
-        condition = np.abs(avg_r) > (np.abs(avg_r[r_min == r_r]) * r_range_width)  # arbitrary choice
+        condition = avg_r < (avg_percent)
         r_width = r_r[condition]
 
         if live:
@@ -525,13 +583,14 @@ class ImbibitionTracking(ImgSeries):
             self.ax1.plot(x0, y0, 'r+')  # centroid position
 
             self.ax2.clear()
-            self.ax2.plot(r_min, avg_min, 'kd')
             self.ax2.plot(r_pixel, avg, '.-')
-            self.ax2.axvline(x=r_min)
+            self.ax2.plot(r_r, avg_r, '.-')
+            self.ax2.axhline(y=avg_percent)
             self.ax2.axvline(x=r_width[0],
                              color='k', linestyle='--')
             self.ax2.axvline(x=r_width[-1], color='k',
                              linestyle='--')
+            self.ax2.plot(r_min, avg_min, 'kd')
             self.ax2.set_xlabel('radius (index)')
             self.ax2.set_ylabel('intensity (au)')
 
