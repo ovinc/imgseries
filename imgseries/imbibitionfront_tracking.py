@@ -68,7 +68,7 @@ def _azimuthal_average(image, center=None):
 
     return radial_prof
 
-def _limits_extrema(index_target, y_axis, mask=True, tolerance=5):
+def _limits_extrema(index_target, y_axis, mask=True, tolerance=5, utarget=15):
     """
     find indexes limits around the local minimum
 
@@ -85,14 +85,14 @@ def _limits_extrema(index_target, y_axis, mask=True, tolerance=5):
 
     # mask if minimums are too closed due to the noise of experimental data
     if mask is True:
-        indexes_extrema += 5  # compensate the mask that keeps lower values
+        indexes_extrema += int(np.sqrt(tolerance))  # compensate the mask that keeps lower values
         diff = np.empty(indexes_extrema.shape)
         diff[0] = np.inf  # always retain the 1st element
         diff[1:] = np.abs(np.diff(indexes_extrema))
         mask = diff > tolerance
         indexes_extrema = indexes_extrema[mask]
     # find index of the extrema we want among the indexes extrema with an uncertainty of 15
-    index_extrema = np.max(np.where(abs(indexes_extrema - index_target) < 20)[0])
+    index_extrema = np.max(np.where(abs(indexes_extrema - index_target) < utarget)[0])
 
     # limits
     y_indexes = np.arange(len(y_axis))
@@ -452,7 +452,9 @@ class ImbibitionTracking(ImgSeries):
         if intervals is None:
             self.intervals = {'radi range': (-20, 30, 1),
                               'minimum range (pixel)': (-40, 40),
-                              'limits': {'manual': True, 'tolerance': 5},
+                              'limits': {'mask': True,
+                                         'tolerance': 5,
+                                         'utarget': 15},
                               'imbibition range %': 0.95,
                               'hough': False
                               }
@@ -543,7 +545,8 @@ class ImbibitionTracking(ImgSeries):
             limits = self.intervals['limits']
             rl1, rl2 = _limits_extrema(r_min[0], avg, **limits)
         except:
-            condition_r = (r_pixel > r_min[0] - 50) & (r_pixel < r_min[0] + 60)
+            condition_r = (r_pixel > r_min[0] - 50) & (r_pixel < r_min[0] + 90)
+            # print("method limits didn't work")
         else:
             condition_r = (r_pixel > rl1) & (r_pixel < r_min + rl2)
         avg_r = avg[condition_r]
@@ -563,9 +566,9 @@ class ImbibitionTracking(ImgSeries):
             xb2 = x0 + r_width[-1] * np.cos(theta)
             yb2 = y0 + r_width[-1] * np.sin(theta)
             xb1_hough = x0 + rb1_hough * np.cos(theta)
-            yb1_hough = x0 + rb1_hough * np.sin(theta)
+            yb1_hough = y0 + rb1_hough * np.sin(theta)
             xb2_hough = x0 + rb2_hough * np.cos(theta)
-            yb2_hough = x0 + rb2_hough * np.sin(theta)
+            yb2_hough = y0 + rb2_hough * np.sin(theta)
 
             self.ax1.clear()
             self.ax1.imshow(img_crop, vmin=-0.1, vmax=0.2)
