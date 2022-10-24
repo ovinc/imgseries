@@ -54,8 +54,14 @@ class Zones:
         """
         img = self.img_series.read(num=num)
 
+        if img.ndim > 2:
+            kwargs = {}
+        else:
+            kwargs = {'cmap': 'gray'}
+
         fig, ax = plt.subplots()
-        ax.imshow(img, cmap='gray')
+        ax.imshow(img, **kwargs)
+        ax.set_title('All zones defined so far')
 
         zones = {}
 
@@ -63,7 +69,10 @@ class Zones:
 
             msg = f'Select zone {k} / {n}'
 
-            _, cropzone = imgbasics.imcrop(img, message=msg, draggable=draggable)
+            _, cropzone = imgbasics.imcrop(img,
+                                           message=msg,
+                                           draggable=draggable,
+                                           **kwargs)
 
             name = f'zone {k}'
             zones[name] = cropzone

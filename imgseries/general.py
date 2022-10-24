@@ -16,7 +16,8 @@ import filo
 import gittools
 
 # local imports
-from .config import filenames, _read, csv_separator, checked_modules
+from .config import filenames, csv_separator, checked_modules
+from .config import _read, _rgb_to_grey
 
 
 # ================ General classes for managing image series =================
@@ -83,6 +84,11 @@ class ImgSeries(filo.Series):
         else:
             return self.stack[num]
 
+    @staticmethod
+    def rgb_to_grey(img):
+        """"Convert RGB to grayscale"""
+        return _rgb_to_grey(img)
+
     def show(self, num=0, **kwargs):
         """Show image in a matplotlib window.
 
@@ -90,12 +96,12 @@ class ImgSeries(filo.Series):
         ----------
         - num: image identifier in the file series
         - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default)
+        (note: cmap is grey by default for images with 1 color channel)
         """
         img = self.read(num)
         fig, ax = plt.subplots()
 
-        if 'cmap' not in kwargs:
+        if 'cmap' not in kwargs and img.ndim < 3:
             kwargs['cmap'] = 'gray'
 
         ax.imshow(img, **kwargs)
@@ -171,7 +177,7 @@ class ImgSeries(filo.Series):
         return nums
 
     def format_data(self, data):
-        """Add file into (name, time, etc.) to analysis results if possible.
+        """Add file info (name, time, etc.) to analysis results if possible.
 
         (self.info is defined only if ImgSeries inherits from filo.Series,
         which is not the case if img data is in a stack).

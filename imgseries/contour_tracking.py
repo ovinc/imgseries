@@ -1,7 +1,11 @@
 """Contour tracking on image series."""
 
+# Standard library imports
+import json
+
 # Misc. package imports
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from skimage import measure
 from tqdm import tqdm
 import pandas as pd
@@ -9,6 +13,7 @@ from numpy import nan as NaN
 import imgbasics
 
 # Local imports
+from .config import filenames
 from .general import ImgSeries
 
 
@@ -43,17 +48,20 @@ class Contours:
         """
         img = self.img_series.read(num=num)
 
-        if crop is None:
-            img_crop, crop = imgbasics.imcrop(img)
+        if img.ndim > 2:
+            kwargs = {}
         else:
-            img_crop = imgbasics.imcrop(img, crop)
+            kwargs = {'cmap': 'gray'}
 
-        contours = measure.find_contours(img_crop, level)
+        img_crop, crop = imgbasics.imcrop(img, **kwargs)
+        contours = self.img_series._find_contours(img_crop, level)
 
         # Display the cropped image and plot all contours found --------------
 
         fig, ax = plt.subplots()
-        ax.imshow(img_crop, cmap='gray')
+
+        ax.imshow(img_crop, **kwargs)
+
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -96,7 +104,7 @@ class Contours:
         Parameters
         ----------
         - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default)
+        (note: cmap is grey by default for images with 1 color channel)
         """
         num = self.data['image']
         level = self.data['level']
@@ -106,11 +114,11 @@ class Contours:
         # Load image, crop it, and calculate contours
         img = self.img_series.read(num)
         img_crop = imgbasics.imcrop(img, crop)
-        contours = measure.find_contours(img_crop, level)
+        contours = self.img_series._find_contours(img_crop, level)
 
         fig, ax = plt.subplots()
 
-        if 'cmap' not in kwargs:
+        if 'cmap' not in kwargs and img.ndim < 3:
             kwargs['cmap'] = 'gray'
         ax.imshow(img_crop, **kwargs)
 
@@ -171,7 +179,12 @@ class ContourTracking(ImgSeries):
         # or contours.load() prior to starting analysis with self.run()
         self.contours = Contours(self)  # empty object
 
-    # Basic analysis method --------------------------------------------------
+    def _find_contours(self, img, level):
+        """Define how contours are found on an image."""
+        image = img if img.ndim == 2 else self.rgb_to_grey(img)
+        return measure.find_contours(image, level)
+
+    # Basic analysis methods -------------------------------------------------
 
     def _contour_tracking(self, num, live):
         """Find contours at level in file i closest to the reference positions.
@@ -189,26 +202,28 @@ class ContourTracking(ImgSeries):
         img = self.read(num)
         img_crop = imgbasics.imcrop(img, self.crop)
 
+        contours = self._find_contours(img_crop, self.level)
+
+        data = {'analysis': []}     # Stores analysis data (centroid etc.)
+        data['contours'] = []       # Stores full (x, y) contour data
+        data['num'] = num
+
         if live:
-            self.ax.clear()
-            self.ax.imshow(img_crop, cmap='gray')
-            self.ax.axis('off')
-            self.ax.set_title(f'img #{num}, grey level {self.level}')
-
-        contours = measure.find_contours(img_crop, self.level)
-
-        data = []
+            data['image'] = img_crop
 
         for refpos in self.reference_positions:
 
             try:
                 # this time edge=false, because trying to find contour closest
                 # to the recorded centroid position, not edges
-                contour = imgbasics.closest_contour(contours, refpos, edge=True)
+                contour = imgbasics.closest_contour(contours=contours,
+                                                    position=refpos,
+                                                    edge=True)
 
             except imgbasics.ContourError:
                 # No contour at all detected on image --> return NaN
                 xc, yc, perimeter, area = (NaN,) * 4
+                contour = None
 
             else:
 
@@ -220,20 +235,93 @@ class ContourTracking(ImgSeries):
                 perimeter = contprops['perimeter']
                 area = contprops['area']
 
-                if live:
-                    self.ax.plot(x, y, '-r')    # contour
-                    self.ax.plot(xc, yc, '+b')  # centroid position
-
-            data.append((xc, yc, perimeter, area))
-
-        if live:
-            plt.pause(0.001)
+            data['analysis'].append((xc, yc, perimeter, area))
+            data['contours'].append((x, y))
 
         return data
 
-    # Public methods --------------------------------------------------------
+    def _update_reference_positions(self, data):
+        """Next iteration will look for contours close to the current ones."""
+        for i, contour_analysis in enumerate(data['analysis']):
+            if any(qty is NaN for qty in contour_analysis):
+                # There has been a problem in detecting the contour
+                pass
+            else:
+                # if position correctly detected, update where to look next
+                xc, yc, *_ = contour_analysis
+                self.reference_positions[i] = (xc, yc)
 
-    def run(self, start=0, end=None, skip=1, live=False):
+    def _store_data(self, data):
+        """Store contour and analysis data into dict/table."""
+
+        num = data['num']
+        n = len(data['analysis'])
+
+        # Save contour data into dict ----------------------------------------
+        for k in range(n):
+            x, y = data['contours'][k]
+            self.contour_data[k + 1][num] = {'x': list(x), 'y': list(y)}
+
+        # Save analysis data into table --------------------------------------
+        line = sum(data['analysis'], start=())  # "Flatten" list of tuples
+        self.analysis_data.loc[num] = line
+
+    def _run(self, num, live, blit=False):
+        data = self._contour_tracking(num, live)
+        self._update_reference_positions(data)
+        self._store_data(data)
+        if live:
+            self._plot(data)
+            if blit:
+                return self.contour_lines + self.centroid_pts + [self.im]
+
+    # Basic plot methods -----------------------------------------------------
+
+    def _plot(self, data):
+
+        img = data['image']
+        num = data['num']
+
+        self.ax.set_title(f'img #{num}, grey level {self.level}')
+
+        if not self.plot_init_done:
+
+            self.im = self.ax.imshow(img, cmap='gray')
+            self.ax.axis('off')
+
+            self.contour_lines = []
+            self.centroid_pts = []
+
+            for contour, analysis in zip(data['contours'], data['analysis']):
+
+                contour_line, = self.ax.plot(*contour, '-r')
+                self.contour_lines.append(contour_line)
+
+                centroid_pt, = self.ax.plot(*analysis[:2], '+b')
+                self.centroid_pts.append(centroid_pt)
+
+            self.fig.tight_layout()
+            self.plot_init_done = True
+
+        else:
+
+            self.im.set_array(img)
+
+            for contour, analysis, line, pt in zip(data['contours'],
+                                                   data['analysis'],
+                                                   self.contour_lines,
+                                                   self.centroid_pts):
+
+                if contour is not None:
+                    line.set_data(*contour)
+                    pt.set_data(*analysis[:2])
+                else:
+                    line.set_data(None, None)
+                    pt.set_data(None, None)
+
+    # Public methods ---------------------------------------------------------
+
+    def run(self, start=0, end=None, skip=1, live=False, blit=False):
         """Follow contours in an image series.
 
         Parameters
@@ -265,37 +353,43 @@ class ContourTracking(ImgSeries):
         self.reference_positions = list(self.contours.data['position'].values())
         n = len(self.reference_positions)
 
-        # Initiate pandas table to store data --------------------------------
+        # Initiate dict to store all contour data (for json saving later) ----
+
+        self.contour_data = {k + 1: {} for k in range(n)}
+
+        # Initiate pandas table to store data (for tsv saving later) ---------
 
         names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
         cols = [name + str(k + 1) for k in range(n) for name in names]
 
-        data = pd.DataFrame(index=nums, columns=cols)
-        data.index.name = 'num'
-
-        if live:
-            fig, self.ax = plt.subplots()
+        self.analysis_data = pd.DataFrame(index=nums, columns=cols)
+        self.analysis_data.index.name = 'num'
 
         # Loop ---------------------------------------------------------------
 
-        for num in tqdm(nums):
+        if not live:
+            for num in tqdm(nums):
+                self._run(num, live)
+        else:
+            self.plot_init_done = False
+            self.fig, self.ax = plt.subplots()
+            self.animation = FuncAnimation(fig=self.fig,
+                                           func=self._run,
+                                           fargs=(live, blit),
+                                           frames=nums,
+                                           cache_frame_data=False,
+                                           repeat=False,
+                                           blit=blit)
 
-            track = self._contour_tracking(num, live)
+        # Finalization -------------------------------------------------------
 
-            # next iteration will look for contours close to the current ones
+        self.format_data(self.analysis_data)
 
-            for i, contour_data in enumerate(track):
-                if any(qty is NaN for qty in data):
-                    # There has been a problem in detecting the contour
-                    pass
-                else:
-                    # if position correctly detected, update where to look next
-                    xc, yc, *_ = contour_data
-                    self.reference_positions[i] = (xc, yc)
+    def save(self, filename=None):
 
-            # Save data into table
-            line = sum(track, start=())  # "Flatten" list of tuples
-            data.loc[num] = line
+        super().save(filename=filename)
 
-
-        self.format_data(data)
+        name = filenames[self.measurement_type] if filename is None else filename
+        data_file = self.savepath / (name + '_Data.json')
+        with open(data_file, 'w', encoding='utf8') as f:
+            json.dump(self.contour_data, f, indent=4, ensure_ascii=False)

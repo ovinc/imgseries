@@ -28,20 +28,20 @@
         "level": 170,
         "image": 10
     },
-    "time (utc)": "2021-01-27 12:40:34",
+    "time (utc)": "2022-04-04 10:16:29",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.17.2"
         },
         "imgseries": {
-            "hash": "15a81df2aff510ba878666cd6abf46752f8393a6",
+            "hash": "d32f4400c3e3a45f6b76c223960ffc9be28b7e10",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "0cb2f7d85a87c1293f8be79359bedd1683b5ed25",
+            "hash": "07bcf6c2abd2815d81c72c1297a2aa83d8793c31",
             "status": "clean",
-            "tag": "v0.0.3"
+            "tag": "v0.2.0"
         },
         "filo": {
             "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
