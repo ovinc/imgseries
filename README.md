@@ -6,6 +6,7 @@ Image analysis tools for image series, based on the following classes:
 - `ImgSeries`: general class for image series,
 - `GreyLevel`: evolution of average gray level of selected zone(s),
 - `ContourTracking`: track objects by contour(s) detection.
+- `ImbibitionFront`: track objects by (circular) contour(s) using another method of detection
 
 
 Install
@@ -139,6 +140,47 @@ ct.contours.show()  # Show contours on reference image used to select them
 
 # NOTE: method below only available for image series, not for stacks
 ct.load_info()   # if necessary to look back at num / file correspondence
+```
+
+
+`ImbibitionFront`: object tracking circular contours using hough method
+-----------------------------------------------------------------
+
+```python
+from imgseries import ImbibitionFront
+
+# Run analysis ---------------------------------------------------------------
+
+imbt = ImbibitionFront(paths=['img1', 'img2'], savepath='analysis')
+
+num1 = 10  # image number
+# settings performed on the image
+params_contour = {'sigma': 2.5,  # gaussian filter perfrmed on the image
+                  'level_down': None,  # manual threshold if None default seetings are applied
+                  'level_high': None,
+                  'hough_radii': None,
+                  'cany': {'sigma': 1.5, 'low_threshold': 0.1, 'high_threshold': 0.95}, # secaond gaussian filter and thereshods
+                  'manual': False, # option to target the point where the manual threshold is going to be applied
+                  'crop': None} # crop the image
+imbt.imbibition.define(num=num1, **params_contour) #define these parameters to the image num1=10
+imbt.imbibition.show(vmin=-0.1, vmax=0.2) # show the resulting contour detected
+
+# run
+intervals = {'radi range': (-20, 20, 1),  # range of pixel where the hough method is performed
+             'minimum range (pixel)': (-20, 20), # range of pixel where the minimum is detected from the integration curve
+             'imbibition range %': 0.9, # distance in percent between the minimum and
+             'limits': {'manual': True, 'tolerance': 5, 'utarget':10}, # options applied function that determine the implicit function
+             'hough': True} # if hough True save radius from the hough detection else save the radius from the integration detection
+
+imbt.intervals = intervals # perform these settings for the run
+imbt.run(skip=1, live=False) # run actual analysis
+imbt.data    # pandas dataframe containing the results --> plot() etc. methods available
+imbt.save()  # save results to csv file
+
+# Load analysis results afterwards (need save() to have been called) ---------
+imbt = ImbibitonFront(savepath='analysis')  # No need to specify paths here
+imbt.imbibition.load()  # load settings performed on the images
+imbt.load() # load analysis results (including time) as pandas DataFrame
 ```
 
 See doctrings and Jupyter Notebooks for examples and method options.
