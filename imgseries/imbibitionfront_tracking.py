@@ -142,7 +142,7 @@ def _find_threshold(im_blur, manual=False):
     """
     # Find center
     fig, ax = plt.subplots()
-    ax.set_title('select center then the imbibition front')
+    ax.set_title('select center then the imbibition front (image blur)')
     ax.imshow(im_blur, vmin=-0.1, vmax=0.2)
     pt = ginput(2)
     plt.close(fig)
