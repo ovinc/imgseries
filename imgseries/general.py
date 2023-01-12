@@ -32,8 +32,7 @@ class ImgSeries(filo.Series):
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
 
-    def __init__(self, paths='.', extension='.png', savepath='.',
-                 measurement_type=None, stack=None):
+    def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
         """Init image series object.
 
         Parameters
@@ -48,10 +47,7 @@ class ImgSeries(filo.Series):
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
         """
-        self.measurement_type = measurement_type  # for data loading/saving
-        self.data = None      # Data that will be saved in analysis file
-
-        self.is_stack = False if stack is None else True
+        self.is_stack = bool(stack)
 
         if self.is_stack:
 
@@ -111,6 +107,18 @@ class ImgSeries(filo.Series):
         ax.axis('off')
 
         return ax
+
+
+class Analysis:
+    """Tools for analysis subclasses. Used as multiple inheritance."""
+
+    def __init__(self, measurement_type=None):
+        """Parameters:
+
+        - measurement_type: specify 'glevel' or 'ctrack'
+        """
+        self.measurement_type = measurement_type  # for data loading/saving
+        self.data = None      # Data that will be saved in analysis file
 
     # Tools for analysis subclasses ==========================================
 

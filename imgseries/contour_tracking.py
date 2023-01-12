@@ -14,7 +14,7 @@ import imgbasics
 
 # Local imports
 from .config import filenames
-from .general import ImgSeries
+from .general import ImgSeries, Analysis
 
 
 # ==================== Class to manage reference contours ====================
@@ -151,7 +151,7 @@ class Contours:
 # ==================== Class for Contour Tracking Analysis ===================
 
 
-class ContourTracking(ImgSeries):
+class ContourTracking(ImgSeries, Analysis):
     """Class to track contours on image series."""
 
     name = 'Images Series (ContourTracking)'
@@ -172,8 +172,13 @@ class ContourTracking(ImgSeries):
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
         """
-        super().__init__(paths=paths, savepath=savepath, extension=extension,
-                         measurement_type='ctrack', stack=stack)
+        ImgSeries.__init__(self,
+                           paths=paths,
+                           savepath=savepath,
+                           extension=extension,
+                           stack=stack)
+
+        Analysis.__init__(self, measurement_type='ctrack')
 
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()

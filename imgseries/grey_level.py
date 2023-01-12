@@ -12,7 +12,7 @@ import imgbasics
 from imgbasics.cropping import _cropzone_draw
 
 # Local imports
-from .general import ImgSeries
+from .general import ImgSeries, Analysis
 
 
 # ==================== Class to manage zones of interest =====================
@@ -118,7 +118,7 @@ class Zones:
 # ================================ Main Class ================================
 
 
-class GreyLevel(ImgSeries):
+class GreyLevel(ImgSeries, Analysis):
     """Class to perform analysis of average grey level on image series."""
 
     name = 'Images Series (GreyLevel)'  # used for __repr__
@@ -139,8 +139,13 @@ class GreyLevel(ImgSeries):
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
         """
-        super().__init__(paths=paths, savepath=savepath, extension=extension,
-                         measurement_type='glevel', stack=stack)
+        ImgSeries.__init__(self,
+                           paths=paths,
+                           savepath=savepath,
+                           extension=extension,
+                           stack=stack)
+
+        Analysis.__init__(self, measurement_type='glevel')
 
         # empty zones object, needs to be filled with zones.define() or
         # zones.load() prior to starting analysis with self.run()
