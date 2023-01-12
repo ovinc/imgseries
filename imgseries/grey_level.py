@@ -11,7 +11,7 @@ import imgbasics
 
 # Local imports
 from .general import ImgSeries, Analysis
-from .image_transform import Zones
+from .image_parameters import Zones
 
 
 class GreyLevel(ImgSeries, Analysis):
