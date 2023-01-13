@@ -12,10 +12,10 @@ from imgbasics.cropping import _cropzone_draw
 from drapo import linput
 
 
-# ================================ Base class ================================
+# =============================== Base classes ===============================
 
 class ImageParameter:
-    """Base class to define common methods for different transform classes."""
+    """Base class to define common methods for different parameters."""
 
     parameter_type = None  # define in subclasses (e.g. "zones")
 
@@ -29,6 +29,9 @@ class ImageParameter:
         self.img_series = img_series  # ImgSeries object on which to define zones
         self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}
 
+    def __repr__(self):
+        return f'{self.__class__.__name__} object {self.data}'
+
     def _get_imshow_kwargs(self, img):
         """Define kwargs to pass to imshow (to have grey by default for 2D)"""
         return {'cmap': 'gray'} if img.ndim < 3 else {}
@@ -41,7 +44,7 @@ class ImageParameter:
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        all_data = self.img_series.load_metadata(filename=filename)
+        all_data = self._load(filename=filename)
         self.data = all_data[self.parameter_type]
 
     @property
@@ -49,10 +52,26 @@ class ImageParameter:
         return not self.data
 
 
+class TransformParameter(ImageParameter):
+    """Base class for global transorms on image series (rotation, crop etc.)"""
+
+    def _load(self, filename=None):
+        """Load parameter data from .json file."""
+        return self.img_series.load_transform(filename=filename)
+
+
+class AnalysisParameter(ImageParameter):
+    """Base class for parameters used in analysis (contours, zones, etc.)"""
+
+    def _load(self, filename=None):
+        """Load parameter data from .json file."""
+        return self.img_series.load_metadata(filename=filename)
+
+
 # ============================= Basic transforms =============================
 
 
-class Rotation(ImageParameter):
+class Rotation(TransformParameter):
     """Class to store and manage rotation angles on series of images."""
 
     parameter_type = 'rotation'
@@ -93,7 +112,7 @@ class Rotation(ImageParameter):
         self.data = {'angle': angle}
 
     def show(self, num=0, **kwargs):
-        """show the defined zones on image (image id num if specified)
+        """Show the rotated image.
 
         Parameters
         ----------
@@ -113,10 +132,52 @@ class Rotation(ImageParameter):
         return ax
 
 
+class Crop(TransformParameter):
+    """Class to store and manage global cropping (ROI) on series of images."""
+
+    parameter_type = 'crop'
+
+    def define(self, num=0, draggable=False):
+        """Interactively define ROI
+
+        Parameters
+        ----------
+        - num: image ('num' id) on which to define rotation angle. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        - draggable: use draggable rectangle from drapo to define crop zones
+          instead of clicking to define opposite rectangle corners.
+
+        Output
+        ------
+        None, but stores in self.data the (x, y, width, height) as a value in
+        a dict with key "zone".
+        """
+        img = self.img_series.read(num=num)
+        kwargs = self._get_imshow_kwargs(img)
+        _, cropzone = imgbasics.imcrop(img, draggable=draggable, **kwargs)
+        self.data = {'zone': cropzone}
+
+    def show(self, num=0, **kwargs):
+        """Show the defined ROI on the full image.
+
+        Parameters
+        ----------
+        - num: id number of image on which to show the zones (default first one).
+        - **kwargs: matplotlib keyword arguments for ax.imshow()
+        (note: cmap is grey by default for 2D images, see ImgSeries.show())
+        """
+        ax = self.img_series.show(num, **kwargs)
+        ax.set_title(f'Crop Zone (img #{num})')
+        _cropzone_draw(ax, self.data['zone'], c='r')
+        return ax
+
+
 # ================== Parameters for specific analysis types ==================
 
 
-class Zones(ImageParameter):
+class Zones(AnalysisParameter):
     """Class to store and manage areas of interest on series of images."""
 
     parameter_type = 'zones'
@@ -186,7 +247,7 @@ class Zones(ImageParameter):
         return ax
 
 
-class Contours(ImageParameter):
+class Contours(AnalysisParameter):
     """Class to store and manage reference contours param in image series."""
 
     parameter_type = 'contours'

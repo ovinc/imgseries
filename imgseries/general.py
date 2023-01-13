@@ -39,7 +39,7 @@ class ImgSeries(filo.Series):
         ----------
         - paths can be a string, path object, or a list of str/paths if data
           is stored in multiple folders.
-        - savepath: folder in which to save analysis data.
+        - savepath: folder in which to save parameter / analysis data.
         - extension: extension of files to consider (e.g. '.png')
         - measurement_type: specify 'glevel' or 'ctrack' (optional, for subclasses)
 
@@ -79,6 +79,25 @@ class ImgSeries(filo.Series):
             return _read(self.files[num].file)
         else:
             return self.stack[num]
+
+    def load_transform(self, filename=None):
+        """Return transform parameters (crop, rotation, etc.)
+        from json file as a dictionary.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        name = filenames['transform'] if filename is None else filename
+        return self._load_json(name)
+
+    def _load_json(self, filename):
+        """"Load json file"""
+        file = self.savepath / (filename + '.json')
+        with open(file, 'r', encoding='utf8') as f:
+            data = json.load(f)
+        return data
 
     @staticmethod
     def rgb_to_grey(img):
@@ -144,10 +163,7 @@ class Analysis:
         filename='Test' will load from Test.json.
         """
         name = filenames[self.measurement_type] if filename is None else filename
-        metadata_file = self.savepath / (name + '.json')
-        with open(metadata_file, 'r', encoding='utf8') as f:
-            metadata = json.load(f)
-        return metadata
+        return self._load_json(name)
 
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.

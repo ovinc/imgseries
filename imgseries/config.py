@@ -19,7 +19,9 @@ csv_separator = '\t'
 
 filenames = {'files': 'Img_Files',  # for file info (timing etc.)
              'glevel': 'Img_GreyLevel',           # program will add .tsv or
-             'ctrack': 'Img_ContourTracking'}     # .json depending on context
+             'ctrack': 'Img_ContourTracking',     # .json depending on context
+             'transform': 'Img_Transform',  # this is to store rotation angle etc.
+             }
 
 
 # ======================== Define how to load images =========================
