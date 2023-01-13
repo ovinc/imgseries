@@ -74,8 +74,6 @@ images.read(10)
 images.show(10)
 ```
 
-**Note** The `save()`, `load()` and `load_metadata()` methods are for use in the `GreyLevel` and `ContourTracking` subclasses.
-
 
 `GreyLevel`: average grey level analysis in image series
 --------------------------------------------------------
@@ -122,7 +120,7 @@ from imgseries import ContourTracking
 ct = ContourTracking(paths=['img1', 'img2'], savepath='analysis')
 
 # If working with a tiff stack:
-gl = ContourTracking(stack='ImgStack.tif', savepath='analysis')
+ct = ContourTracking(stack='ImgStack.tif', savepath='analysis')
 
 ct.contours.define()  # interactively select contours to follow on image
 ct.contours.load()    # alternative to define() where contours are loaded from saved metadata
@@ -157,6 +155,7 @@ See doctrings and Jupyter Notebooks for examples and method options.
 - imgbasics (basic image processing)
 - filo (file series management)
 - gittools (get git commit info)
+- drapo (interactive tools for matplotlib figures)
 
 
 ## Python version

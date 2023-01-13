@@ -1,10 +1,18 @@
 """Classes to store various parameters: crop zones, rotations, contours, etc."""
 
+# Standard library
+from math import pi
+
 # Non-standard modules
 import matplotlib.pyplot as plt
+import numpy as np
 import imgbasics
+from imgbasics.transform import rotate
 from imgbasics.cropping import _cropzone_draw
+from drapo import linput
 
+
+# ================================ Base class ================================
 
 class ImageParameter:
     """Base class to define common methods for different transform classes."""
@@ -39,6 +47,73 @@ class ImageParameter:
     @property
     def is_empty(self):
         return not self.data
+
+
+# ============================= Basic transforms =============================
+
+
+class Rotation(ImageParameter):
+    """Class to store and manage rotation angles on series of images."""
+
+    parameter_type = 'rotation'
+
+    def define(self, num=0, vertical=False):
+        """Interactively define rotation angle by drawing a line.
+
+        Parameters
+        ----------
+        - num: image ('num' id) on which to define rotation angle. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        - direction: can be horizontal (default, vertical=False) or vertical;
+          the drawn line will be brought to this direction after rotation.
+
+        Output
+        ------
+        None, but stores in self.data the rotation angle with key "angle"
+        """
+        img = self.img_series.read(num=num)
+        kwargs = self._get_imshow_kwargs(img)
+
+        fig, ax = plt.subplots()
+        ax.imshow(img, **kwargs)
+
+        direction_name = 'vertical' if vertical else 'horizontal'
+        ax.set_title(f'Draw {direction_name} line')
+
+        (x1, y1), (x2, y2) = linput()
+        dx = x1 - x2
+        dy = y1 - y2
+        a, b = (dx, dy) if vertical else (dy, dx)
+
+        angle = - np.arctan2(a, b) * 180 / pi
+        plt.close(fig)
+
+        self.data = {'angle': angle}
+
+    def show(self, num=0, **kwargs):
+        """show the defined zones on image (image id num if specified)
+
+        Parameters
+        ----------
+        - num: id number of image on which to show the zones (default first one).
+        - **kwargs: matplotlib keyword arguments for ax.imshow()
+        (note: cmap is grey by default for 2D images, see ImgSeries.show())
+        """
+        img = self.img_series.read(num=num)
+        kwargs = self._get_imshow_kwargs(img)
+
+        fig, ax = plt.subplots()
+
+        img_rot = rotate(img, angle=self.data['angle'], resize=True, order=3)
+        ax.imshow(img_rot, **kwargs)
+        ax.set_title(f"Rotation: {self.data['angle']:.1f}° (img #{num})")
+
+        return ax
+
+
+# ================== Parameters for specific analysis types ==================
 
 
 class Zones(ImageParameter):
@@ -216,4 +291,3 @@ class Contours(ImageParameter):
         plt.show()
 
         return ax
-
