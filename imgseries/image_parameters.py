@@ -7,7 +7,6 @@ from math import pi
 import matplotlib.pyplot as plt
 import numpy as np
 import imgbasics
-from imgbasics.transform import rotate
 from imgbasics.cropping import _cropzone_draw
 from drapo import linput
 
@@ -46,6 +45,10 @@ class ImageParameter:
         """
         all_data = self._load(filename=filename)
         self.data = all_data[self.parameter_type]
+
+    def reset(self):
+        """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
+        self.data = {}
 
     @property
     def is_empty(self):
@@ -92,7 +95,7 @@ class Rotation(TransformParameter):
         ------
         None, but stores in self.data the rotation angle with key "angle"
         """
-        img = self.img_series.read(num=num)
+        img = self.img_series.read(num=num, transform=False)
         kwargs = self._get_imshow_kwargs(img)
 
         fig, ax = plt.subplots()
@@ -104,7 +107,7 @@ class Rotation(TransformParameter):
         (x1, y1), (x2, y2) = linput()
         dx = x1 - x2
         dy = y1 - y2
-        a, b = (dx, dy) if vertical else (dy, dx)
+        a, b = (dx, dy) if vertical else (dy, -dx)
 
         angle = - np.arctan2(a, b) * 180 / pi
         plt.close(fig)
@@ -120,20 +123,31 @@ class Rotation(TransformParameter):
         - **kwargs: matplotlib keyword arguments for ax.imshow()
         (note: cmap is grey by default for 2D images, see ImgSeries.show())
         """
-        img = self.img_series.read(num=num)
-        kwargs = self._get_imshow_kwargs(img)
-
-        fig, ax = plt.subplots()
-
-        img_rot = rotate(img, angle=self.data['angle'], resize=True, order=3)
-        ax.imshow(img_rot, **kwargs)
-        ax.set_title(f"Rotation: {self.data['angle']:.1f}° (img #{num})")
-
+        ax = self.img_series.show(num=num, **kwargs)
+        try:
+            ax.set_title(f"Rotation: {self.data['angle']:.1f}° (img #{num})")
+        except KeyError:
+            ax.set_title("No rotation defined")
         return ax
+
+    @property
+    def angle(self):
+        try:
+            return self.data['angle']
+        except KeyError:
+            return
+
+    @angle.setter
+    def angle(self, value):
+        self.data['angle'] = value
 
 
 class Crop(TransformParameter):
-    """Class to store and manage global cropping (ROI) on series of images."""
+    """Class to store and manage global cropping (ROI) on series of images.
+
+    IMPORTANT NOTE: crop zones have to be defined AFTER defining a rotation,
+    because they are applied on the coordinates of the rotated image.
+    """
 
     parameter_type = 'crop'
 
@@ -154,8 +168,11 @@ class Crop(TransformParameter):
         None, but stores in self.data the (x, y, width, height) as a value in
         a dict with key "zone".
         """
-        img = self.img_series.read(num=num)
+        self.img_series.crop.reset()
+
+        img = self.img_series.read(num=num)    # rotation is applied here
         kwargs = self._get_imshow_kwargs(img)
+
         _, cropzone = imgbasics.imcrop(img, draggable=draggable, **kwargs)
         self.data = {'zone': cropzone}
 
@@ -168,10 +185,35 @@ class Crop(TransformParameter):
         - **kwargs: matplotlib keyword arguments for ax.imshow()
         (note: cmap is grey by default for 2D images, see ImgSeries.show())
         """
-        ax = self.img_series.show(num, **kwargs)
-        ax.set_title(f'Crop Zone (img #{num})')
-        _cropzone_draw(ax, self.data['zone'], c='r')
+        img = self.img_series.read(num=num, transform=False)
+
+        if not self.img_series.rotation.is_empty:
+            img = self.img_series._rotate(img)
+
+        kwargs = self._get_imshow_kwargs(img)
+
+        _, ax = plt.subplots()
+        ax.imshow(img, **kwargs)
+
+        try:
+            _cropzone_draw(ax, self.data['zone'], c='r')
+        except KeyError:
+            ax.set_title('No crop zone defined')
+        else:
+            ax.set_title(f'Crop Zone (img #{num})')
+
         return ax
+
+    @property
+    def zone(self):
+        try:
+            return self.data['zone']
+        except KeyError:
+            return
+
+    @zone.setter
+    def zone(self, value):
+        self.data['zone'] = value
 
 
 # ================== Parameters for specific analysis types ==================

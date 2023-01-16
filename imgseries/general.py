@@ -10,14 +10,15 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 from skimage import io
-
-# Homemade modules
 import filo
 import gittools
+import imgbasics
+from imgbasics.transform import rotate
 
 # local imports
 from .config import filenames, csv_separator, checked_modules
 from .config import _read, _rgb_to_grey
+from .image_parameters import Rotation, Crop
 
 
 # ================ General classes for managing image series =================
@@ -32,21 +33,30 @@ class ImgSeries(filo.Series):
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
 
-    def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
+    def __init__(self,
+                 paths='.',
+                 extension='.png',
+                 savepath='.',
+                 stack=None):
         """Init image series object.
 
         Parameters
         ----------
         - paths can be a string, path object, or a list of str/paths if data
           is stored in multiple folders.
-        - savepath: folder in which to save parameter / analysis data.
+
         - extension: extension of files to consider (e.g. '.png')
-        - measurement_type: specify 'glevel' or 'ctrack' (optional, for subclasses)
+
+        - savepath: folder in which to save parameter / analysis data.
 
         If file series is in a stack rather than in a series of images:
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
         """
+        # Image transforms that are applied to all images of the series.
+        self.rotation = Rotation(self)
+        self.crop = Crop(self)
+
         self.is_stack = bool(stack)
 
         if self.is_stack:
@@ -73,12 +83,36 @@ class ImgSeries(filo.Series):
             self.parameters = {'path': str(self.savepath.resolve()),
                                'folders': folders}
 
-    def read(self, num=0):
-        """Load image data (image identifier num across folders)."""
+    def _rotate(self, img):
+        """Rotate image according to pre-defined rotation parameters"""
+        return rotate(img,
+                      angle=self.rotation.data['angle'],
+                      resize=True,
+                      order=3)
+
+    def _crop(self, img):
+        """Crop image according to pre-defined crop parameters"""
+        return imgbasics.imcrop(img, self.crop.data['zone'])
+
+    def read(self, num=0, transform=True):
+        """Load image data (image identifier num across folders).
+
+        By default, if transforms are defined on the image (rotation, crop)
+        Then they are applied here. Put transform=False to only load the raw
+        image in the stack.
+        """
         if not self.is_stack:
-            return _read(self.files[num].file)
+            img = _read(self.files[num].file)
         else:
-            return self.stack[num]
+            img = self.stack[num]
+
+        if transform and not self.rotation.is_empty:
+            img = self._rotate(img)
+
+        if transform and not self.crop.is_empty:
+            img = self._crop(img)
+
+        return img
 
     def load_transform(self, filename=None):
         """Return transform parameters (crop, rotation, etc.)
@@ -104,16 +138,18 @@ class ImgSeries(filo.Series):
         """"Convert RGB to grayscale"""
         return _rgb_to_grey(img)
 
-    def show(self, num=0, **kwargs):
+    def show(self, num=0, transform=True, **kwargs):
         """Show image in a matplotlib window.
 
         Parameters
         ----------
         - num: image identifier in the file series
+        - transform: if True (default), apply global rotation and crop (if defined)
+                     if False, load raw image.
         - **kwargs: matplotlib keyword arguments for ax.imshow()
         (note: cmap is grey by default for images with 1 color channel)
         """
-        img = self.read(num)
+        img = self.read(num, transform=transform)
         fig, ax = plt.subplots()
 
         if 'cmap' not in kwargs and img.ndim < 3:
@@ -122,7 +158,9 @@ class ImgSeries(filo.Series):
         ax.imshow(img, **kwargs)
 
         title = 'Image' if self.is_stack else self.files[num].name
-        ax.set_title(f'{title} (#{num})')
+        raw_info = ' [RAW]' if not transform else ''
+
+        ax.set_title(f'{title} (#{num}){raw_info}')
         ax.axis('off')
 
         return ax

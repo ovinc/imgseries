@@ -43,6 +43,8 @@ If running on a Windows machine and using the parallel option in some of the ana
 `ImgSeries`: general image series manipulation
 ----------------------------------------------
 
+See also the notebook with examples and details: *Examples_ImgSeries.ipynb*
+
 ```python
 from imgseries import ImgSeries
 
@@ -58,6 +60,11 @@ images.files[10].file  # actual file object (pathlib.Path)
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
+# Define global transform applied on all images (rotation + crop) ------------
+images.rotation.define()
+images.crop.define()   # (see details in notebook)
+
+# Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
 images.save_info()  # save above info in a csv file
 images.load_info()  # Load info from previously saved csv data (overwrites images.files)
@@ -69,14 +76,14 @@ images.load_time('Time_File.txt')  # Keep images.files but update its time infor
 
 images = ImgSeries(stack='ImgStack.tif')
 
-# now only these attributes and methods are available among the ones above:
-images.read(10)
-images.show(10)
+# All methods/attributes above available, except those associated with timestamps
 ```
 
 
 `GreyLevel`: average grey level analysis in image series
 --------------------------------------------------------
+
+See also the notebook with examples and details: *Examples_GreyLevel.ipynb*
 
 ```python
 from imgseries import GreyLevel
@@ -89,6 +96,11 @@ gl = GreyLevel(paths=['img1', 'img2'], savepath='analysis')
 # If working with a tiff stack:
 gl = GreyLevel(stack='ImgStack.tif', savepath='analysis')
 
+# Define global transform if necessary (see above in ImgSeries)
+gl.rotation.define()
+gl.crop.define()
+
+# Prepare and run analysis
 gl.zones.define()  # interactively select zones on image
 gl.zones.load()    # alternative to define() where zones are loaded from saved metadata
 gl.run()   # run actual analysis (parallel computation available)
@@ -112,6 +124,8 @@ See doctrings and Jupyter Notebooks for examples and method options.
 `ContourTracking`: object tracking using contours in image series
 -----------------------------------------------------------------
 
+See also the notebook with examples and details: *Examples_ContourTracking.ipynb*
+
 ```python
 from imgseries import ContourTracking
 
@@ -122,6 +136,11 @@ ct = ContourTracking(paths=['img1', 'img2'], savepath='analysis')
 # If working with a tiff stack:
 ct = ContourTracking(stack='ImgStack.tif', savepath='analysis')
 
+# Define global transform if necessary (see above in ImgSeries)
+ct.rotation.define()
+ct.crop.define()
+
+# Prepare and run analysis
 ct.contours.define()  # interactively select contours to follow on image
 ct.contours.load()    # alternative to define() where contours are loaded from saved metadata
 ct.run()   # run actual analysis (no parallel computation available)
