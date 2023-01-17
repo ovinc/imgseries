@@ -94,6 +94,19 @@ class ImgSeries(filo.Series):
         """Crop image according to pre-defined crop parameters"""
         return imgbasics.imcrop(img, self.crop.data['zone'])
 
+    def _from_json(self, filename):
+        """"Load json file"""
+        file = self.savepath / (filename + '.json')
+        with open(file, 'r', encoding='utf8') as f:
+            data = json.load(f)
+        return data
+
+    def _to_json(self, data, filename):
+        """"Save data (dict) to json file"""
+        file = self.savepath / (filename + '.json')
+        with open(file, 'w', encoding='utf8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+
     def read(self, num=0, transform=True):
         """Load image data (image identifier num across folders).
 
@@ -123,15 +136,21 @@ class ImgSeries(filo.Series):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        name = filenames['transform'] if filename is None else filename
-        return self._load_json(name)
+        self.rotation.reset()
+        self.crop.reset()
 
-    def _load_json(self, filename):
-        """"Load json file"""
-        file = self.savepath / (filename + '.json')
-        with open(file, 'r', encoding='utf8') as f:
-            data = json.load(f)
-        return data
+        fname = filenames['transform'] if filename is None else filename
+        transform_data = self._from_json(fname)
+
+        self.rotation.data = transform_data['rotation']
+        self.crop.data = transform_data['crop']
+
+    def save_transform(self, filename=None):
+        """Save transform parameters (crop, rotation etc.) into json file."""
+        fname = filenames['transform'] if filename is None else filename
+        transform_data = {'rotation': self.rotation.data,
+                          'crop': self.crop.data}
+        self._to_json(transform_data, fname)
 
     @staticmethod
     def rgb_to_grey(img):
@@ -201,7 +220,7 @@ class Analysis:
         filename='Test' will load from Test.json.
         """
         name = filenames[self.measurement_type] if filename is None else filename
-        return self._load_json(name)
+        return self._from_json(name)
 
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.

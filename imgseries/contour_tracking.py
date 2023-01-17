@@ -259,6 +259,5 @@ class ContourTracking(ImgSeries, Analysis):
         super().save(filename=filename)
 
         name = filenames[self.measurement_type] if filename is None else filename
-        data_file = self.savepath / (name + '_Data.json')
-        with open(data_file, 'w', encoding='utf8') as f:
-            json.dump(self.contour_data, f, indent=4, ensure_ascii=False)
+        data_filename = name + '_Data'
+        self._to_json(self.contour_data, data_filename)

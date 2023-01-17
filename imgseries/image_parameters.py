@@ -367,7 +367,7 @@ class Contours(AnalysisParameter):
         img = self.img_series.read(num)
         contours = self.img_series._find_contours(img, level)
 
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         if 'cmap' not in kwargs and img.ndim < 3:
             kwargs['cmap'] = 'gray'

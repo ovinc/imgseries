@@ -23,17 +23,51 @@ stackfolder = Path('data/stack')
 stack = stackfolder / 'ImgStack.tif'
 
 
-# ========================= Test getting image time ==========================
 
+# ======================== Test general image series =========================
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_info('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
+
+def test_set_global_transform():
+    """Setting a global transform (rotation, crop) on image series"""
+    n = 22
+
+    images.rotation.reset()
+    images.crop.reset()
+
+    images.rotation.angle = -66.6
+    img_raw = images.read(n, transform=False)
+    img_rot = images.read(n)
+
+    images.crop.zone = (186, 193, 391, 500)
+    img_crop = images.read(n)
+
+    assert img_raw.shape == (550, 608)
+    assert img_rot.shape == (776, 746)
+    assert img_crop.shape == (500, 391)
+
+
+def test_load_global_transform():
+    """Loading a saved global transform (rotation, crop)"""
+    n = 11
+
+    images.rotation.reset()
+    images.crop.reset()
+    images.load_transform()
+
+    img_raw = images.read(n, transform=False)
+    img_tot = images.read(n)
+
+    assert img_raw.shape == (550, 608)
+    assert img_tot.shape == (500, 391)
+
 
 def test_img_time():
     """General test of setting and getting image times."""
     n = 33
     assert round(images.info.loc[n, 'time (unix)']) == 1599832463
-    assert images.info.loc[n, 'folder'] == 'img2'
+    assert images.info.loc[n, 'folder'] == '../img2'
     assert images.info.loc[n, 'filename'] == 'img-00643.png'
 
 
@@ -42,7 +76,7 @@ def test_img_time_update():
     n = 40
     images.load_time('Img_Files_Rounded.tsv')
     assert images.info.loc[n, 'time (unix)'] == 1599832477
-    images.load_info('Img_Files_Saved.tsv')  # resset to previous state
+    images.load_time('Img_Files_Saved.tsv')  # resset to previous state
 
 
 # =============== Test avg gray level analysis on image series ===============

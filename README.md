@@ -61,8 +61,11 @@ images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
 # Define global transform applied on all images (rotation + crop) ------------
+# (see details in notebook)
 images.rotation.define()
-images.crop.define()   # (see details in notebook)
+images.crop.define()
+images.save_transform()  # save rotation and crop parameters in a json file
+images.load_transform()  # load rotation and crop parameters from json file
 
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
@@ -99,6 +102,7 @@ gl = GreyLevel(stack='ImgStack.tif', savepath='analysis')
 # Define global transform if necessary (see above in ImgSeries)
 gl.rotation.define()
 gl.crop.define()
+# or gl.load_transform()
 
 # Prepare and run analysis
 gl.zones.define()  # interactively select zones on image
@@ -139,6 +143,7 @@ ct = ContourTracking(stack='ImgStack.tif', savepath='analysis')
 # Define global transform if necessary (see above in ImgSeries)
 ct.rotation.define()
 ct.crop.define()
+# or ct.load_transform()
 
 # Prepare and run analysis
 ct.contours.define()  # interactively select contours to follow on image
