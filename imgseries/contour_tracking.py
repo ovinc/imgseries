@@ -215,7 +215,7 @@ class ContourTracking(ImgSeries, Analysis):
         self.level = self.contours.data['level']
 
         # Analysis parameters that will be saved into metadata file
-        self.parameters['contours'] = self.contours.data
+        self.metadata['contours'] = self.contours.data
 
         nums = self.set_analysis_numbers(start, end, skip)
 

@@ -12,12 +12,10 @@ import matplotlib.pyplot as plt
 from skimage import io
 import filo
 import gittools
-import imgbasics
-from imgbasics.transform import rotate
 
 # local imports
 from .config import filenames, csv_separator, checked_modules
-from .config import _read, _rgb_to_grey
+from .config import _read, _rgb_to_grey, _rotate, _crop
 from .image_parameters import Rotation, Crop
 
 
@@ -57,42 +55,28 @@ class ImgSeries(filo.Series):
         self.rotation = Rotation(self)
         self.crop = Crop(self)
 
+        # Done here because self.stack will be an array, and bool(array)
+        # generates warnings / errors
         self.is_stack = bool(stack)
 
         if self.is_stack:
-
+            self.stack_path = Path(stack)
             self.stack = io.imread(stack, plugin="tifffile")
             self.savepath = Path(savepath)
-
-            # Below, pre-populate parameters to be saved as metadata. Other metadata
-            # will be added to this dict before saving into metadata file
-
-            stack_path = os.path.relpath(Path(stack), self.savepath)
-            self.parameters = {'stack': stack_path}
-
         else:
-
-            # Inherit useful methods for file series
-
-            super().__init__(paths=paths, extension=extension, savepath=savepath)
-
-            # Pre-populate metadata & parameters as explained above
-
-            folders = [os.path.relpath(f, self.savepath) for f in self.folders]
-
-            self.parameters = {'path': str(self.savepath.resolve()),
-                               'folders': folders}
+            # Inherit useful methods and attributes for file series
+            # (including self.savepath)
+            super().__init__(paths=paths,
+                             extension=extension,
+                             savepath=savepath)
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
-        return rotate(img,
-                      angle=self.rotation.data['angle'],
-                      resize=True,
-                      order=3)
+        return _rotate(img, angle=self.rotation.data['angle'])
 
     def _crop(self, img):
         """Crop image according to pre-defined crop parameters"""
-        return imgbasics.imcrop(img, self.crop.data['zone'])
+        return _crop(img, self.crop.data['zone'])
 
     def _from_json(self, filename):
         """"Load json file"""
@@ -196,7 +180,16 @@ class Analysis:
         self.measurement_type = measurement_type  # for data loading/saving
         self.data = None      # Data that will be saved in analysis file
 
-    # Tools for analysis subclasses ==========================================
+        if self.is_stack:
+            # Below, pre-populate parameters to be saved as metadata.
+            # Other metadata will be added to this dict before saving
+            # into metadata file
+            stack_path = os.path.relpath(self.stack_path, self.savepath)
+            self.metadata = {'stack': stack_path}
+        else:
+            folders = [os.path.relpath(f, self.savepath) for f in self.folders]
+            self.metadata = {'path': str(self.savepath.resolve()),
+                             'folders': folders}
 
     def load(self, filename=None):
         """Load analysis data from tsv file and return it as pandas DataFrame.
@@ -243,7 +236,11 @@ class Analysis:
         self.data.to_csv(analysis_file, sep=csv_separator)
 
         # save analysis metadata ---------------------------------------------
-        gittools.save_metadata(file=metadata_file, info=self.parameters,
+
+        self.metadata['rotation'] = self.rotation.data
+        self.metadata['crop'] = self.crop.data
+
+        gittools.save_metadata(file=metadata_file, info=self.metadata,
                                module=checked_modules,
                                dirty_warning=True, notag_warning=True,
                                nogit_ok=True, nogit_warning=True)

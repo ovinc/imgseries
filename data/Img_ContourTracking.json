@@ -1,46 +1,41 @@
 {
-    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data",
+    "path": "/Users/ovincent/Python-OV/imgseries/data",
     "folders": [
         "img1",
         "img2"
     ],
     "contours": {
-        "crop": [
-            94,
-            55,
-            425,
-            407
-        ],
         "position": {
             "contour 1": [
-                147.32159816523225,
-                266.7370221595187
+                241.32159816523225,
+                321.7370221595187
             ],
             "contour 2": [
-                283.43310772427566,
-                286.9812976172301
+                377.43310772427566,
+                341.9812976172301
             ],
             "contour 3": [
-                322.9898703929179,
-                249.8820309993573
+                416.98987039291785,
+                304.8820309993573
             ]
         },
         "level": 170,
         "image": 10
     },
-    "time (utc)": "2022-04-04 10:16:29",
+    "rotation": {},
+    "crop": {},
+    "time (utc)": "2023-01-17 18:57:16",
     "code version": {
         "skimage": {
             "status": "not a git repository",
-            "tag": "v0.17.2"
+            "tag": "v0.18.3"
         },
         "imgseries": {
-            "hash": "d32f4400c3e3a45f6b76c223960ffc9be28b7e10",
+            "hash": "f57bf3a2bbf24f70d447ef52dbdc10dff476ef40",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "07bcf6c2abd2815d81c72c1297a2aa83d8793c31",
-            "status": "clean",
+            "status": "not a git repository",
             "tag": "v0.2.0"
         },
         "filo": {
@@ -50,11 +45,11 @@
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.3.2"
+            "tag": "v3.4.3"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.19.2"
+            "tag": "v1.20.3"
         }
     }
 }

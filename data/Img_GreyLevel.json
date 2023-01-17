@@ -1,5 +1,5 @@
 {
-    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data",
+    "path": "/Users/ovincent/Python-OV/imgseries/data",
     "folders": [
         "img1",
         "img2"
@@ -24,20 +24,30 @@
             65
         ]
     },
-    "time (utc)": "2021-01-27 12:33:19",
+    "rotation": {
+        "angle": -0.3425123582361368
+    },
+    "crop": {
+        "zone": [
+            10,
+            8,
+            591,
+            536
+        ]
+    },
+    "time (utc)": "2023-01-17 18:41:18",
     "code version": {
         "skimage": {
             "status": "not a git repository",
-            "tag": "v0.17.2"
+            "tag": "v0.18.3"
         },
         "imgseries": {
-            "hash": "15a81df2aff510ba878666cd6abf46752f8393a6",
+            "hash": "f57bf3a2bbf24f70d447ef52dbdc10dff476ef40",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "0cb2f7d85a87c1293f8be79359bedd1683b5ed25",
-            "status": "clean",
-            "tag": "v0.0.3"
+            "status": "not a git repository",
+            "tag": "v0.2.0"
         },
         "filo": {
             "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
@@ -46,11 +56,11 @@
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.3.2"
+            "tag": "v3.4.3"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.19.2"
+            "tag": "v1.20.3"
         }
     }
 }

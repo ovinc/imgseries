@@ -7,9 +7,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import imgbasics
 
 # Local imports
+from .config import _crop
 from .general import ImgSeries, Analysis
 from .image_parameters import Zones
 
@@ -62,7 +62,7 @@ class GreyLevel(ImgSeries, Analysis):
         glevels = []
         img = self.read(num)
         for cropzone in self.zones.data.values():
-            img_crop = imgbasics.imcrop(img, cropzone)
+            img_crop = _crop(img, cropzone)
             glevel = np.mean(img_crop)
             glevels.append(glevel)
         return glevels
@@ -102,7 +102,7 @@ class GreyLevel(ImgSeries, Analysis):
             raise AttributeError(msg)
 
         # Analysis parameters that will be saved into metadata file
-        self.parameters['zones'] = self.zones.data
+        self.metadata['zones'] = self.zones.data
 
         nums = self.set_analysis_numbers(start, end, skip)
         nimg = len(nums)
