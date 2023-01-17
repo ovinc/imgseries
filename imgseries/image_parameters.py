@@ -306,18 +306,16 @@ class Contours(AnalysisParameter):
         Output
         ------
         None, but stores in self.data a dictionary with keys:
-        'crop', 'position', 'level', 'image'
+        'position', 'level', 'image'
         """
         img = self.img_series.read(num=num)
         kwargs = self._get_imshow_kwargs(img)
-
-        img_crop, crop = imgbasics.imcrop(img, **kwargs)
-        contours = self.img_series._find_contours(img_crop, level)
+        contours = self.img_series._find_contours(img, level)
 
         # Display the cropped image and plot all contours found --------------
 
         fig, ax = plt.subplots()
-        ax.imshow(img_crop, **kwargs)
+        ax.imshow(img, **kwargs)
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -349,8 +347,7 @@ class Contours(AnalysisParameter):
 
         plt.close(fig)
 
-        self.data = {'crop': crop,
-                     'position': positions,
+        self.data = {'position': positions,
                      'level': level,
                      'image': num}
 
@@ -364,19 +361,17 @@ class Contours(AnalysisParameter):
         """
         num = self.data['image']
         level = self.data['level']
-        crop = self.data['crop']
         positions = self.data['position']
 
         # Load image, crop it, and calculate contours
         img = self.img_series.read(num)
-        img_crop = imgbasics.imcrop(img, crop)
-        contours = self.img_series._find_contours(img_crop, level)
+        contours = self.img_series._find_contours(img, level)
 
         fig, ax = plt.subplots()
 
         if 'cmap' not in kwargs and img.ndim < 3:
             kwargs['cmap'] = 'gray'
-        ax.imshow(img_crop, **kwargs)
+        ax.imshow(img, **kwargs)
 
         # Find contours closest to reference positions and plot them
         for contour in contours:

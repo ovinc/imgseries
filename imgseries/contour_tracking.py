@@ -72,16 +72,14 @@ class ContourTracking(ImgSeries, Analysis):
         number of contours followed and (x, y), p, a is position, perimeter, area
         """
         img = self.read(num)
-        img_crop = imgbasics.imcrop(img, self.crop)
-
-        contours = self._find_contours(img_crop, self.level)
+        contours = self._find_contours(img, self.level)
 
         data = {'analysis': []}     # Stores analysis data (centroid etc.)
         data['contours'] = []       # Stores full (x, y) contour data
         data['num'] = num
 
         if live:
-            data['image'] = img_crop
+            data['image'] = img
 
         for refpos in self.reference_positions:
 
@@ -215,7 +213,6 @@ class ContourTracking(ImgSeries, Analysis):
             raise AttributeError(msg)
 
         self.level = self.contours.data['level']
-        self.crop = self.contours.data['crop']
 
         # Analysis parameters that will be saved into metadata file
         self.parameters['contours'] = self.contours.data
