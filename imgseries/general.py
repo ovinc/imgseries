@@ -5,6 +5,7 @@
 import json
 import os
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Nonstandard
 import pandas as pd
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 from skimage import io
 import filo
 import gittools
+from tqdm import tqdm
 
 # local imports
 from .config import filenames, csv_separator, checked_modules
@@ -191,29 +193,133 @@ class Analysis:
             self.metadata = {'path': str(self.savepath.resolve()),
                              'folders': folders}
 
-    def load(self, filename=None):
-        """Load analysis data from tsv file and return it as pandas DataFrame.
+    def run(self, start=0, end=None, skip=1, parallel=False, nprocess=None):
+        """Start analysis of image sequence.
 
-        If filename is not specified, use default filenames.
+        PARAMETERS
+        ----------
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.tsv.
+        - parallel: if True, distribute computation across different processes.
+          (only available if calculations on each image is independent of
+          calculations on the other images)
+
+        - nprocess: number of process workers; if None (default), use default
+          in ProcessPoolExecutor, depends on the number of cores of computer)
+
+        OUTPUT
+        ------
+        Pandas dataframe with image numbers as the index, and with columns
+        containing timestamps and the calculated data.
+
+        WARNING
+        -------
+        If running on a Windows machine and using the parallel option, the
+        function call must not be run during import of the file containing
+        the script (i.e. the function must be in a `if __name__ == '__main__'`
+        block). This is because apparently multiprocessing imports the main
+        program initially, which causes recursive problems.
         """
-        name = filenames[self.measurement_type] if filename is None else filename
-        analysis_file = self.savepath / (name + '.tsv')
-        data = pd.read_csv(analysis_file, index_col='num', sep=csv_separator)
-        return data
+        self.initial_check()         # define in subclasses
+        self.add_metadata()          # define in subclasses
+        self.prepare_data_storage()  # define in subclasses
 
-    def load_metadata(self, filename=None):
-        """Return analysis metadata from json file as a dictionary.
+        self.nums = self.set_analysis_numbers(start, end, skip)
+        self.nimg = len(self.nums)
 
-        If filename is not specified, use default filenames.
+        if parallel:  # ================================= Multiprocessing mode
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.json.
+            futures = {}
+
+            with ProcessPoolExecutor(max_workers=nprocess) as executor:
+
+                for num in self.nums:
+                    future = executor.submit(self._analysis, num)
+                    futures[num] = future
+
+                # Waitbar ----------------------------------------------------
+                futures_list = list(futures.values())
+                for future in tqdm(as_completed(futures_list), total=self.nimg):
+                    pass
+
+                # Get results ------------------------------------------------
+                for num, future in futures.items():
+                    data = future.result()
+                    self.store_data(data)
+
+        else:  # ============================================= Sequential mode
+
+            for num in tqdm(self.nums):
+                data = self._analysis(num)
+                self.store_data(data)
+
+        # Finalize and format data -------------------------------------------
+
+        self.format_data()
+
+    def set_analysis_numbers(self, start, end, skip):
+        """Generate subset of image numbers to be analyzed."""
+        if self.is_stack:
+            npts, *_ = self.stack.shape
+            all_nums = list(range(npts))
+            nums = all_nums[start:end:skip]
+        else:
+            files = self.files[start:end:skip]
+            nums = [file.num for file in files]
+        return nums
+
+    def format_data(self):
+        """Add file info (name, time, etc.) to analysis results if possible.
+
+        (self.info is defined only if ImgSeries inherits from filo.Series,
+        which is not the case if img data is in a stack).
         """
-        name = filenames[self.measurement_type] if filename is None else filename
-        return self._from_json(name)
+        data_table = self.generate_pandas_data()
+
+        if self.is_stack:
+            self.data = data_table
+        else:
+            self.data = pd.concat([self.info, data_table],
+                                  axis=1,
+                                  join='inner')
+
+    def initial_check(self):
+        """Check everything is OK before starting analysis.
+
+        Define in subclasses."""
+        pass
+
+    def add_metadata(self):
+        """Add useful analysis parameters etc. to the self.metadata dict.
+
+        (later saved in the metadata json file)
+        Define in subclasses."""
+        pass
+
+    def prepare_data_storage(self):
+        """How to prepare structure(s) that will hold the analyzed data.
+
+        Define in subclasses."""
+        pass
+
+    def _analysis(self):
+        """Analysis process on single image. Returns data handled by store_data.
+
+        Define in subclasses."""
+
+    def store_data(self, data):
+        """How to store data generated by analysis on a single image.
+
+        Define in subclasses."""
+        pass
+
+    def generate_pandas_data(self):
+        """How to convert data generated by store_data() into a pandas table.
+
+        Define in subclasses."""
+        pass
 
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.
@@ -245,24 +351,26 @@ class Analysis:
                                dirty_warning=True, notag_warning=True,
                                nogit_ok=True, nogit_warning=True)
 
-    def set_analysis_numbers(self, start, end, skip):
-        """Generate subset of image numbers to be analyzed."""
-        if self.is_stack:
-            npts, *_ = self.stack.shape
-            all_nums = list(range(npts))
-            nums = all_nums[start:end:skip]
-        else:
-            files = self.files[start:end:skip]
-            nums = [file.num for file in files]
-        return nums
+    def load(self, filename=None):
+        """Load analysis data from tsv file and return it as pandas DataFrame.
 
-    def format_data(self, data):
-        """Add file info (name, time, etc.) to analysis results if possible.
+        If filename is not specified, use default filenames.
 
-        (self.info is defined only if ImgSeries inherits from filo.Series,
-        which is not the case if img data is in a stack).
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.tsv.
         """
-        if self.is_stack:
-            self.data = data
-        else:
-            self.data = pd.concat([self.info, data], axis=1, join='inner')
+        name = filenames[self.measurement_type] if filename is None else filename
+        analysis_file = self.savepath / (name + '.tsv')
+        data = pd.read_csv(analysis_file, index_col='num', sep=csv_separator)
+        return data
+
+    def load_metadata(self, filename=None):
+        """Return analysis metadata from json file as a dictionary.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        name = filenames[self.measurement_type] if filename is None else filename
+        return self._from_json(name)

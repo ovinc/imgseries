@@ -67,7 +67,7 @@ def test_img_time():
     """General test of setting and getting image times."""
     n = 33
     assert round(images.info.loc[n, 'time (unix)']) == 1599832463
-    assert images.info.loc[n, 'folder'] == '../img2'
+    assert images.info.loc[n, 'folder'] in ['../img2', '..\\img2']
     assert images.info.loc[n, 'filename'] == 'img-00643.png'
 
 
