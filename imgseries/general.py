@@ -10,6 +10,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 # Nonstandard
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from skimage import io
 import filo
 import gittools
@@ -193,7 +194,10 @@ class Analysis:
             self.metadata = {'path': str(self.savepath.resolve()),
                              'folders': folders}
 
-    def run(self, start=0, end=None, skip=1, parallel=False, nprocess=None):
+    def run(self,
+            start=0, end=None, skip=1,
+            parallel=False, nprocess=None,
+            live=False, blit=False):
         """Start analysis of image sequence.
 
         PARAMETERS
@@ -209,6 +213,9 @@ class Analysis:
         - nprocess: number of process workers; if None (default), use default
           in ProcessPoolExecutor, depends on the number of cores of computer)
 
+        - live: if True, plot analysis results in real time.
+        - blit: if True, use blitting to speed up live display
+
         OUTPUT
         ------
         Pandas dataframe with image numbers as the index, and with columns
@@ -222,12 +229,12 @@ class Analysis:
         block). This is because apparently multiprocessing imports the main
         program initially, which causes recursive problems.
         """
-        self.initial_check()         # define in subclasses
-        self.add_metadata()          # define in subclasses
-        self.prepare_data_storage()  # define in subclasses
-
         self.nums = self.set_analysis_numbers(start, end, skip)
         self.nimg = len(self.nums)
+
+        self.initial_check()
+        self.add_metadata()
+        self.prepare_data_storage()
 
         if parallel:  # ================================= Multiprocessing mode
 
@@ -236,7 +243,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self._analysis, num)
+                    future = executor.submit(self._analysis, num, live)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -251,13 +258,37 @@ class Analysis:
 
         else:  # ============================================= Sequential mode
 
-            for num in tqdm(self.nums):
-                data = self._analysis(num)
-                self.store_data(data)
+            if not live:
+                for num in tqdm(self.nums):
+                    data = self._analysis(num, live)
+                    self.store_data(data)
+            else:
+                self.plot_init_done = False
+                self.fig, self.ax = plt.subplots()
+                self.animation = FuncAnimation(fig=self.fig,
+                                               func=self._run_live,
+                                               frames=self.nums,
+                                               cache_frame_data=False,
+                                               repeat=False,
+                                               blit=blit)
 
         # Finalize and format data -------------------------------------------
 
         self.format_data()
+
+    def _run_live(self, num):
+        data = self._analysis(num, live=True)
+        self.store_data(data)
+        return self._plot(data)
+
+    def _plot(self, data):
+        """How to plot data during live views of analysis.
+
+        Define in subclasses.
+
+        ATTENTION: has to return moving artists if using blitting
+        """
+        pass
 
     def set_analysis_numbers(self, start, end, skip):
         """Generate subset of image numbers to be analyzed."""
@@ -304,8 +335,18 @@ class Analysis:
         Define in subclasses."""
         pass
 
-    def _analysis(self):
+    def _analysis(self, num, live=False):
         """Analysis process on single image. Returns data handled by store_data.
+
+        Parameters
+        ----------
+        - num: file number identifier across the image file series
+        - live: if True, analysis results are displayed in real time
+
+
+        Output
+        ------
+        - data, handled by self.store_data()
 
         Define in subclasses."""
 

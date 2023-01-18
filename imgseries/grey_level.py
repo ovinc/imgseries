@@ -45,15 +45,17 @@ class GreyLevel(ImgSeries, Analysis):
 
     # Basic analysis method --------------------------------------------------
 
-    def _analysis(self, num):
+    def _analysis(self, num, live=False):
         """Basic analysis function, to be threaded or multiprocessed.
 
         Parameters
         ----------
         - num: file number identifier across the image file series
+        - live: if True, analysis results are displayed in real time
 
         Output
         ------
+        - data, handled by self.store_data()
         """
         glevels = []
         img = self.read(num)
