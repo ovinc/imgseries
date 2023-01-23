@@ -11,6 +11,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Slider
 from skimage import io
 import filo
 import gittools
@@ -66,12 +67,14 @@ class ImgSeries(filo.Series):
             self.stack_path = Path(stack)
             self.stack = io.imread(stack, plugin="tifffile")
             self.savepath = Path(savepath)
+            self.total_img_number, *_ = self.stack.shape
         else:
             # Inherit useful methods and attributes for file series
             # (including self.savepath)
             super().__init__(paths=paths,
                              extension=extension,
                              savepath=savepath)
+            self.total_img_number = len(self.files)
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
@@ -98,7 +101,7 @@ class ImgSeries(filo.Series):
         """Load image data (image identifier num across folders).
 
         By default, if transforms are defined on the image (rotation, crop)
-        Then they are applied here. Put transform=False to only load the raw
+        then they are applied here. Put transform=False to only load the raw
         image in the stack.
         """
         if not self.is_stack:
@@ -170,6 +173,34 @@ class ImgSeries(filo.Series):
         ax.axis('off')
 
         return ax
+
+    def inspect(self, **kwargs):
+        """Interactively inspect image stack."""
+        fig, ax = plt.subplots()
+
+        img = self.read()
+        if 'cmap' not in kwargs and img.ndim < 3:
+            kwargs['cmap'] = 'gray'
+
+        ax.imshow(img, **kwargs)
+
+        ax_slider = fig.add_axes([0.1, 0.01, 0.8, 0.04])
+        slider = Slider(ax=ax_slider,
+                        label='#',
+                        valmin=0,
+                        valinit=0,
+                        valmax=self.total_img_number - 1,
+                        valstep=1,
+                        color='steelblue', alpha=0.3)
+
+        def update(num):
+            img = self.read(num)
+            ax.clear()
+            ax.imshow(img, **kwargs)
+
+        slider.on_changed(update)
+
+        return slider
 
 
 class Analysis:
