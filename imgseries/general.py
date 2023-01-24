@@ -209,7 +209,11 @@ class Analysis:
     def __init__(self, measurement_type=None):
         """Parameters:
 
-        - measurement_type: specify 'glevel' or 'ctrack'
+        - measurement_type: specify 'glevel', 'ctrack',
+
+        NOTE: subclasses must define a self.plot_type object, which indicates
+        which plotting class has to be used for live visualization.
+        (ONLY if live view is needed).
         """
         self.measurement_type = measurement_type  # for data loading/saving
         self.data = None      # Data that will be saved in analysis file
@@ -263,7 +267,7 @@ class Analysis:
         self.nums = self.set_analysis_numbers(start, end, skip)
         self.nimg = len(self.nums)
 
-        self.initial_check()
+        self.initialize()
         self.add_metadata()
         self.prepare_data_storage()
 
@@ -274,7 +278,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self._analysis, num, live)
+                    future = executor.submit(self.analysis, num, live)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -291,35 +295,20 @@ class Analysis:
 
             if not live:
                 for num in tqdm(self.nums):
-                    data = self._analysis(num, live)
+                    data = self.analyze(num, live)
                     self.store_data(data)
             else:
-                self.plot_init_done = False
-                self.fig, self.ax = plt.subplots()
-                self.animation = FuncAnimation(fig=self.fig,
-                                               func=self._run_live,
-                                               frames=self.nums,
-                                               cache_frame_data=False,
-                                               repeat=False,
-                                               blit=blit)
+                # plot uses self.live_analysis to calculate and store data
+                self.live_plot = self.plot_type(analysis=self, blit=blit)
 
         # Finalize and format data -------------------------------------------
 
         self.format_data()
 
-    def _run_live(self, num):
-        data = self._analysis(num, live=True)
+    def live_analysis(self, num):
+        data = self.analyze(num, live=True)
         self.store_data(data)
-        return self._plot(data)
-
-    def _plot(self, data):
-        """How to plot data during live views of analysis.
-
-        Define in subclasses.
-
-        ATTENTION: has to return moving artists if using blitting
-        """
-        pass
+        return data
 
     def set_analysis_numbers(self, start, end, skip):
         """Generate subset of image numbers to be analyzed."""
@@ -347,8 +336,8 @@ class Analysis:
                                   axis=1,
                                   join='inner')
 
-    def initial_check(self):
-        """Check everything is OK before starting analysis.
+    def initialize(self):
+        """Check everything OK before starting analysis & initialize params.
 
         Define in subclasses."""
         pass
@@ -366,7 +355,7 @@ class Analysis:
         Define in subclasses."""
         pass
 
-    def _analysis(self, num, live=False):
+    def analyze(self, num, live=False):
         """Analysis process on single image. Returns data handled by store_data.
 
         Parameters
