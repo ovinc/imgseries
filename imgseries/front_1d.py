@@ -2,12 +2,11 @@
 
 # Non-standard modules
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 # Local imports
-from .config import _crop
-from .general import ImgSeries, Analysis
+from .general import ImgSeries
+from .analysis import Analysis
 
 
 class Front1D(ImgSeries, Analysis):

@@ -8,7 +8,8 @@ import imgbasics
 
 # Local imports
 from .config import filenames
-from .general import ImgSeries, Analysis
+from .general import ImgSeries
+from .analysis import Analysis
 from .image_parameters import Contours
 from .plot import AnimatedPlot
 
@@ -54,7 +55,16 @@ class ContourTracking(ImgSeries, Analysis):
         image = img if img.ndim == 2 else self.rgb_to_grey(img)
         return measure.find_contours(image, level)
 
-    # Basic analysis methods -------------------------------------------------
+    def _update_reference_positions(self, data):
+        """Next iteration will look for contours close to the current ones."""
+        for i, contour_analysis in enumerate(data['analysis']):
+            if any(qty is NaN for qty in contour_analysis):
+                # There has been a problem in detecting the contour
+                pass
+            else:
+                # if position correctly detected, update where to look next
+                xc, yc, *_ = contour_analysis
+                self.reference_positions[i] = (xc, yc)
 
     def analyze(self, num, live=False):
         """Find contours at level in file i closest to the reference positions.
@@ -109,17 +119,6 @@ class ContourTracking(ImgSeries, Analysis):
         self._update_reference_positions(data)
 
         return data
-
-    def _update_reference_positions(self, data):
-        """Next iteration will look for contours close to the current ones."""
-        for i, contour_analysis in enumerate(data['analysis']):
-            if any(qty is NaN for qty in contour_analysis):
-                # There has been a problem in detecting the contour
-                pass
-            else:
-                # if position correctly detected, update where to look next
-                xc, yc, *_ = contour_analysis
-                self.reference_positions[i] = (xc, yc)
 
     def initialize(self):
         """Check everything OK before starting analysis & initialize params."""
@@ -196,7 +195,7 @@ class ContourTrackingPlot(AnimatedPlot):
         num = data['num']
         self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
 
-        self.im = self.ax.imshow(img, cmap='gray')
+        self.imshow = self.ax.imshow(img, cmap='gray')
 
         self.ax.axis('off')
         self.fig.tight_layout()
@@ -212,7 +211,7 @@ class ContourTrackingPlot(AnimatedPlot):
             centroid_pt, = self.ax.plot(*analysis[:2], '+b')
             self.centroid_pts.append(centroid_pt)
 
-        self.updated_artists = self.contour_lines + self.centroid_pts + [self.im]
+        self.updated_artists = self.contour_lines + self.centroid_pts + [self.imshow]
 
     def update_plot(self, data):
         """What to do upon iterations of the plot after the first time."""
@@ -220,7 +219,7 @@ class ContourTrackingPlot(AnimatedPlot):
         num = data['num']
         self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
 
-        self.im.set_array(img)
+        self.imshow.set_array(img)
 
         for contour, analysis, line, pt in zip(data['contours'],
                                                data['analysis'],

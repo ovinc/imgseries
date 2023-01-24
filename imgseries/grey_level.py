@@ -6,7 +6,8 @@ import pandas as pd
 
 # Local imports
 from .config import _crop
-from .general import ImgSeries, Analysis
+from .general import ImgSeries
+from .analysis import Analysis
 from .image_parameters import Zones
 
 
@@ -42,8 +43,6 @@ class GreyLevel(ImgSeries, Analysis):
         # empty zones object, needs to be filled with zones.define() or
         # zones.load() prior to starting analysis with self.run()
         self.zones = Zones(self)
-
-    # Basic analysis method --------------------------------------------------
 
     def analyze(self, num, live=False):
         """Basic analysis function, to be threaded or multiprocessed.
