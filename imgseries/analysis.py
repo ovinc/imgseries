@@ -21,8 +21,11 @@ class Analysis:
 
         - measurement_type: specify 'glevel', 'ctrack',
 
-        NOTE: subclasses must define a self.LivePlot object, which indicates
-        which plotting class has to be used for live visualization.
+        NOTE: subclasses must define a
+
+        self.LivePlot object, and a self.Plot object, which indicate
+        which plotting classes has to be used for live and a-posteriori
+        visualizations.
         (ONLY if live view is needed).
         """
         self.measurement_type = measurement_type  # for data loading/saving

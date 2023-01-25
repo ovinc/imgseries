@@ -241,5 +241,5 @@ class ImgSeries(filo.Series):
         - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
         """
         nums = self._set_substack(start, end, skip)
-        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        splot = self.Plot(self, transform=transform, **kwargs)
         return splot.animate(nums=nums, blit=blit)

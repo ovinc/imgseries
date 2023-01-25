@@ -3,18 +3,85 @@
 # Non-standard modules
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Local imports
 from .config import _crop
 from .general import ImgSeries
 from .analysis import Analysis
 from .image_parameters import Zones
+from .plot import ImagePlot
+
+
+# ======================= Plotting / Animation classes =======================
+
+
+class GreyLevelResultsPlot(ImagePlot):
+
+    def create_plot(self):
+        self.fig, (self.ax, self.ax_curves) = plt.subplots(2, 1)
+
+    def get_data(self, num):
+        return self.img_series.regenerate_data(num)
+
+    def first_plot(self, data):
+        """What to do the first time data arrives on the plot.
+
+        self.updated_artists must be defined here.
+        """
+        img = data['image']
+        num = data['num']
+        glevels = data['glevels']
+
+        # image
+        self.ax.set_title(f'img #{num}')
+        self.imshow = self.ax.imshow(img, cmap='gray')
+        self.ax.axis('off')
+
+        # curves
+        self.curves = []
+        self.pts = []
+
+        for zone_name, glevel in zip(self.img_series.zones.data, glevels):
+            full_data = self.img_series.data[zone_name]
+            curve, = self.ax_curves.plot(full_data, label=zone_name)
+            color = curve.get_color()
+            pt, = self.ax_curves.plot(num, glevel, 'o', c=color)
+            self.curves.append(curve)
+            self.pts.append(pt)
+
+        self.ax_curves.legend()
+        self.fig.tight_layout()
+
+        self.updated_artists = self.pts + [self.imshow]
+
+    def update_plot(self, data):
+        """What to do upon iterations of the plot after the first time."""
+        img = data['image']
+        num = data['num']
+        glevels = data['glevels']
+
+        self.ax.set_title(f'img #{num}')
+
+        self.imshow.set_array(img)
+        for pt, glevel in zip(self.pts, glevels):
+            pt.set_data((num, glevel))
+
+
+# =========================== Main ANALYSIS class ============================
 
 
 class GreyLevel(ImgSeries, Analysis):
     """Class to perform analysis of average grey level on image series."""
 
     name = 'Images Series (GreyLevel)'  # used for __repr__
+
+    # Type of graph used for live view of analysis
+    LivePlot = None
+
+    # Type of graph used for a-posteriori visualization of analysis
+    # with animate() and inspect()
+    Plot = GreyLevelResultsPlot
 
     def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
         """Analysis of avg gray level on selected zone in series of images.
@@ -97,6 +164,17 @@ class GreyLevel(ImgSeries, Analysis):
                                   columns=zone_names)
         data_table.index.name = 'num'
         return data_table
+
+    def regenerate_data(self, num):
+        """How to go back to raw dict of data from self.data.
+
+        Useful for plotting / animating results again after analysis, among
+        other things.
+        """
+        data = {'num': num}
+        data['image'] = self.read(num=num)
+        data['glevels'] = list(self.data.filter(like='zone').loc[num])
+        return data
 
     def regenerate(self, filename=None):
         """Save data and metadata into tsv/json files."""
