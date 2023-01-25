@@ -88,7 +88,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self.analysis, num, live=False)
+                    future = executor.submit(self.analyze, num, live=False)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -183,6 +183,9 @@ class Analysis:
         Define in subclasses."""
         pass
 
+    def _set_filename(self, filename):
+        return filenames[self.measurement_type] if filename is None else filename
+
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.
 
@@ -196,7 +199,7 @@ class Analysis:
               e.g. filename='Test' will create Test.tsv and Test.json files,
               containing tab-separated data file and metadata file, respectively.
         """
-        name = filenames[self.measurement_type] if filename is None else filename
+        name = self._set_filename(filename)
         analysis_file = self.savepath / (name + '.tsv')
         metadata_file = self.savepath / (name + '.json')
 
@@ -221,7 +224,7 @@ class Analysis:
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.tsv.
         """
-        name = filenames[self.measurement_type] if filename is None else filename
+        name = self._set_filename(filename)
         analysis_file = self.savepath / (name + '.tsv')
         data = pd.read_csv(analysis_file, index_col='num', sep=csv_separator)
         return data
@@ -234,5 +237,19 @@ class Analysis:
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        name = filenames[self.measurement_type] if filename is None else filename
+        name = self._set_filename(filename)
         return self._from_json(name)
+
+    def regenerate(self, filename=None):
+        """Load saved data, metadata and regenerate objects from them.
+
+        Is used to reset the system in a state similar to the end of the
+        analysis that was made before saving the results.
+        """
+        # load data from files
+        self.data = self.load(filename=filename)
+        self.metadata = self.load_metadata(filename=filename)
+
+        # re-apply transforms (rotation, crop etc.)
+        self.rotation.data = self.metadata['rotation']
+        self.crop.data = self.metadata['crop']

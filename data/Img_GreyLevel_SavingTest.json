@@ -1,7 +1,8 @@
 {
     "path": "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data",
     "folders": [
-        ".."
+        "img1",
+        "img2"
     ],
     "zones": {
         "zone 1": [
@@ -23,20 +24,31 @@
             65
         ]
     },
-    "time (utc)": "2021-01-27 12:35:29",
+    "rotation": {
+        "angle": -0.3425123582361368
+    },
+    "crop": {
+        "zone": [
+            10,
+            8,
+            591,
+            536
+        ]
+    },
+    "time (utc)": "2023-01-25 15:35:03",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.17.2"
         },
         "imgseries": {
-            "hash": "15a81df2aff510ba878666cd6abf46752f8393a6",
+            "hash": "fdd37822407146639b21d459efa39b26a87ed623",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "0cb2f7d85a87c1293f8be79359bedd1683b5ed25",
+            "hash": "95ab3694d6b2b6525bbd25ebe9dc0319eaeeeab8",
             "status": "clean",
-            "tag": "v0.0.3"
+            "tag": "v0.2.1"
         },
         "filo": {
             "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",

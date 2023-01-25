@@ -97,3 +97,12 @@ class GreyLevel(ImgSeries, Analysis):
                                   columns=zone_names)
         data_table.index.name = 'num'
         return data_table
+
+    def regenerate(self, filename=None):
+        """Save data and metadata into tsv/json files."""
+
+        # Load data
+        super().regenerate(filename=filename)
+
+        # regenerate internal zones object
+        self.zones.load(filename=filename)

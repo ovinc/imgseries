@@ -249,6 +249,21 @@ class ContourTracking(ImgSeries, Analysis):
 
         super().save(filename=filename)
 
-        name = filenames[self.measurement_type] if filename is None else filename
+        name = self._set_filename(filename)
         data_filename = name + '_Data'
         self._to_json(self.contour_data, data_filename)
+
+    def regenerate(self, filename=None):
+        """Save data and metadata into tsv/json files."""
+
+        # Load data
+        super().regenerate(filename=filename)
+
+        # Load complete contour data
+        name = self._set_filename(filename)
+        data_filename = name + '_Data'
+        self.contour_data = self._from_json(data_filename)
+
+        # regenerate internal contours object
+        self.contours.load(filename=filename)
+
