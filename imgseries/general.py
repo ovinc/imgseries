@@ -6,7 +6,6 @@ from pathlib import Path
 
 # Nonstandard
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 from skimage import io
 import filo
 
@@ -14,9 +13,49 @@ import filo
 from .config import filenames
 from .config import _read, _rgb_to_grey, _rotate, _crop
 from .image_parameters import Rotation, Crop
+from .plot import ImagePlot
 
 
-# ================ General classes for managing image series =================
+
+class ImgSeriesPlot(ImagePlot):
+    """See ImagePlot for details."""
+
+    def create_plot(self):
+        self.fig, self.ax = plt.subplots()
+
+    def get_data(self, num):
+        img = self.img_series.read(num, transform=self.transform)
+        return {'num': num, 'image': img}
+
+    def first_plot(self, data):
+
+        if 'cmap' not in self.kwargs and data['image'].ndim < 3:
+            self.kwargs['cmap'] = 'gray'
+
+        self.imshow = self.ax.imshow(data['image'], **self.kwargs)
+
+        self._display_info(data)
+        self.ax.axis('off')
+
+        self.updated_artists = [self.imshow]
+
+    def update_plot(self, data):
+        self.imshow.set_array(data['image'])
+        self._display_info(data)
+
+    def _display_info(self, data):
+
+        num = data['num']
+
+        if self.img_series.is_stack:
+            title = 'Image'
+        else:
+            title = self.img_series.files[num].name
+
+        raw_info = ' [RAW]' if not self.transform else ''
+
+        self.ax.set_title(f'{title} (#{num}){raw_info}')
+
 
 
 class ImgSeries(filo.Series):
@@ -60,14 +99,12 @@ class ImgSeries(filo.Series):
             self.stack_path = Path(stack)
             self.stack = io.imread(stack, plugin="tifffile")
             self.savepath = Path(savepath)
-            self.total_img_number, *_ = self.stack.shape
         else:
             # Inherit useful methods and attributes for file series
             # (including self.savepath)
             super().__init__(paths=paths,
                              extension=extension,
                              savepath=savepath)
-            self.total_img_number = len(self.files)
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
@@ -89,6 +126,17 @@ class ImgSeries(filo.Series):
         file = self.savepath / (filename + '.json')
         with open(file, 'w', encoding='utf8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
+
+    def _set_substack(self, start, end, skip):
+        """Generate subset of image numbers to be displayed/analyzed."""
+        if self.is_stack:
+            npts, *_ = self.stack.shape
+            all_nums = list(range(npts))
+            nums = all_nums[start:end:skip]
+        else:
+            files = self.files[start:end:skip]
+            nums = [file.num for file in files]
+        return nums
 
     def read(self, num=0, transform=True):
         """Load image data (image identifier num across folders).
@@ -151,45 +199,45 @@ class ImgSeries(filo.Series):
         - **kwargs: matplotlib keyword arguments for ax.imshow()
         (note: cmap is grey by default for images with 1 color channel)
         """
-        img = self.read(num, transform=transform)
-        fig, ax = plt.subplots()
+        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        splot.create_plot()
+        splot.plot(num=num)
+        return splot.ax
 
-        if 'cmap' not in kwargs and img.ndim < 3:
-            kwargs['cmap'] = 'gray'
+    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
+        """Interactively inspect image stack.
 
-        ax.imshow(img, **kwargs)
+        Parameters:
 
-        title = 'Image' if self.is_stack else self.files[num].name
-        raw_info = ' [RAW]' if not transform else ''
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
 
-        ax.set_title(f'{title} (#{num}){raw_info}')
-        ax.axis('off')
+        - transform: if True (default), apply global rotation and crop (if defined)
+                     if False, use raw images.
 
-        return ax
+        - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
+        """
+        nums = self._set_substack(start, end, skip)
+        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        return splot.inspect(nums=nums)
 
-    def inspect(self, **kwargs):
-        """Interactively inspect image stack."""
-        fig, ax = plt.subplots()
+    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
+        """Interactively inspect image stack.
 
-        img = self.read()
-        if 'cmap' not in kwargs and img.ndim < 3:
-            kwargs['cmap'] = 'gray'
+        Parameters:
 
-        imshow = ax.imshow(img, **kwargs)
-        fig.subplots_adjust(bottom=0.1)
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
 
-        ax_slider = fig.add_axes([0.1, 0.01, 0.8, 0.04])
-        slider = Slider(ax=ax_slider,
-                        label='#',
-                        valmin=0,
-                        valinit=0,
-                        valmax=self.total_img_number - 1,
-                        valstep=1,
-                        color='steelblue', alpha=0.5)
+        - transform: if True (default), apply global rotation and crop (if defined)
+                     if False, use raw images.
 
-        def update(num):
-            imshow.set_array(self.read(num))
+        - blit: if True, use blitting for faster animation.
 
-        slider.on_changed(update)
-
-        return slider
+        - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
+        """
+        nums = self._set_substack(start, end, skip)
+        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        return splot.animate(nums=nums, blit=blit)

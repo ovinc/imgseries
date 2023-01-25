@@ -74,7 +74,7 @@ class Analysis:
         block). This is because apparently multiprocessing imports the main
         program initially, which causes recursive problems.
         """
-        self.nums = self.set_analysis_numbers(start, end, skip)
+        self.nums = self._set_substack(start, end, skip)
         self.nimg = len(self.nums)
 
         self.initialize()
@@ -119,17 +119,6 @@ class Analysis:
         data = self.analyze(num, live=True)
         self.store_data(data)
         return data
-
-    def set_analysis_numbers(self, start, end, skip):
-        """Generate subset of image numbers to be analyzed."""
-        if self.is_stack:
-            npts, *_ = self.stack.shape
-            all_nums = list(range(npts))
-            nums = all_nums[start:end:skip]
-        else:
-            files = self.files[start:end:skip]
-            nums = [file.num for file in files]
-        return nums
 
     def format_data(self):
         """Add file info (name, time, etc.) to analysis results if possible.

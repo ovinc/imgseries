@@ -4,6 +4,7 @@
 from skimage import measure
 import pandas as pd
 from numpy import nan as NaN
+import matplotlib.pyplot as plt
 import imgbasics
 
 # Local imports
@@ -11,7 +12,7 @@ from .config import filenames
 from .general import ImgSeries
 from .analysis import Analysis
 from .image_parameters import Contours
-from .plot import AnimatedPlot
+from .plot import ImagePlot
 
 
 class ContourTracking(ImgSeries, Analysis):
@@ -184,7 +185,13 @@ class ContourTracking(ImgSeries, Analysis):
         self._to_json(self.contour_data, data_filename)
 
 
-class ContourTrackingPlot(AnimatedPlot):
+class ContourTrackingPlot(ImagePlot):
+
+    def create_plot(self):
+        self.fig, self.ax = plt.subplots()
+
+    def get_data(self, num):
+        return self.img_series.live_analysis(num)
 
     def first_plot(self, data):
         """What to do the first time data arrives on the plot.
@@ -193,8 +200,8 @@ class ContourTrackingPlot(AnimatedPlot):
         """
         img = data['image']
         num = data['num']
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
 
+        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
         self.imshow = self.ax.imshow(img, cmap='gray')
 
         self.ax.axis('off')
