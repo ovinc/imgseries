@@ -21,7 +21,7 @@ class Analysis:
 
         - measurement_type: specify 'glevel', 'ctrack',
 
-        NOTE: subclasses must define a self.plot_type object, which indicates
+        NOTE: subclasses must define a self.LivePlot object, which indicates
         which plotting class has to be used for live visualization.
         (ONLY if live view is needed).
         """
@@ -88,7 +88,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self.analysis, num, live)
+                    future = executor.submit(self.analysis, num, live=False)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -105,11 +105,13 @@ class Analysis:
 
             if not live:
                 for num in tqdm(self.nums):
-                    data = self.analyze(num, live)
+                    data = self.analyze(num, live=False)
                     self.store_data(data)
             else:
                 # plot uses self.live_analysis to calculate and store data
-                self.live_plot = self.plot_type(analysis=self, blit=blit)
+                live_plot = self.LivePlot(self)
+                # without self.animation, the animation is garbage collected
+                self.animation = live_plot.animate(nums=self.nums, blit=blit)
 
         # Finalize and format data -------------------------------------------
 

@@ -57,7 +57,6 @@ class ImgSeriesPlot(ImagePlot):
         self.ax.set_title(f'{title} (#{num}){raw_info}')
 
 
-
 class ImgSeries(filo.Series):
     """Class to manage series of images, possibly in several folders."""
 
@@ -66,6 +65,9 @@ class ImgSeries(filo.Series):
 
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
+
+    # Plotting class used for displaying, inspecting and playing images
+    Plot = ImgSeriesPlot
 
     def __init__(self,
                  paths='.',
@@ -199,7 +201,7 @@ class ImgSeries(filo.Series):
         - **kwargs: matplotlib keyword arguments for ax.imshow()
         (note: cmap is grey by default for images with 1 color channel)
         """
-        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        splot = self.Plot(self, transform=transform, **kwargs)
         splot.create_plot()
         splot.plot(num=num)
         return splot.ax
@@ -219,7 +221,7 @@ class ImgSeries(filo.Series):
         - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
         """
         nums = self._set_substack(start, end, skip)
-        splot = ImgSeriesPlot(self, transform=transform, **kwargs)
+        splot = self.Plot(self, transform=transform, **kwargs)
         return splot.inspect(nums=nums)
 
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):

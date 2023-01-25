@@ -15,10 +15,82 @@ from .image_parameters import Contours
 from .plot import ImagePlot
 
 
+class ContourTrackingPlot(ImagePlot):
+
+    def create_plot(self):
+        self.fig, self.ax = plt.subplots()
+
+    def first_plot(self, data):
+        """What to do the first time data arrives on the plot.
+
+        self.updated_artists must be defined here.
+        """
+        img = data['image']
+        num = data['num']
+
+        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
+        self.imshow = self.ax.imshow(img, cmap='gray')
+
+        self.ax.axis('off')
+        self.fig.tight_layout()
+
+        self.contour_lines = []
+        self.centroid_pts = []
+
+        for contour, analysis in zip(data['contours'], data['analysis']):
+
+            contour_line, = self.ax.plot(*contour, '-r')
+            self.contour_lines.append(contour_line)
+
+            centroid_pt, = self.ax.plot(*analysis[:2], '+b')
+            self.centroid_pts.append(centroid_pt)
+
+        self.updated_artists = self.contour_lines + self.centroid_pts + [self.imshow]
+
+    def update_plot(self, data):
+        """What to do upon iterations of the plot after the first time."""
+        img = data['image']
+        num = data['num']
+
+        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
+
+        self.imshow.set_array(img)
+
+        for contour, analysis, line, pt in zip(data['contours'],
+                                               data['analysis'],
+                                               self.contour_lines,
+                                               self.centroid_pts):
+
+            if contour is not None:
+                line.set_data(*contour)
+                pt.set_data(*analysis[:2])
+            else:
+                line.set_data(None, None)
+                pt.set_data(None, None)
+
+
+class ContourTrackingLivePlot(ContourTrackingPlot):
+
+    def get_data(self, num):
+        return self.img_series.live_analysis(num)
+
+
+class ContourTrackingDataPlot(ContourTrackingPlot):
+
+    def get_data(self, num):
+        return self.img_series.live_analysis(num)
+
+
 class ContourTracking(ImgSeries, Analysis):
     """Class to track contours on image series."""
 
     name = 'Images Series (ContourTracking)'
+
+    # Type of graph used for live view of analysis
+    LivePlot = ContourTrackingLivePlot
+
+    # Type of graph used for a-posteriori visualization of analysis
+    Plot = ContourTrackingDataPlot
 
     def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
         """Init Contour Tracking analysis object.
@@ -47,9 +119,6 @@ class ContourTracking(ImgSeries, Analysis):
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
         self.contours = Contours(self)
-
-        # Type of graph used for live view of analysis
-        self.plot_type = ContourTrackingPlot
 
     def _find_contours(self, img, level):
         """Define how contours are found on an image."""
@@ -183,59 +252,3 @@ class ContourTracking(ImgSeries, Analysis):
         name = filenames[self.measurement_type] if filename is None else filename
         data_filename = name + '_Data'
         self._to_json(self.contour_data, data_filename)
-
-
-class ContourTrackingPlot(ImagePlot):
-
-    def create_plot(self):
-        self.fig, self.ax = plt.subplots()
-
-    def get_data(self, num):
-        return self.img_series.live_analysis(num)
-
-    def first_plot(self, data):
-        """What to do the first time data arrives on the plot.
-
-        self.updated_artists must be defined here.
-        """
-        img = data['image']
-        num = data['num']
-
-        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
-        self.imshow = self.ax.imshow(img, cmap='gray')
-
-        self.ax.axis('off')
-        self.fig.tight_layout()
-
-        self.contour_lines = []
-        self.centroid_pts = []
-
-        for contour, analysis in zip(data['contours'], data['analysis']):
-
-            contour_line, = self.ax.plot(*contour, '-r')
-            self.contour_lines.append(contour_line)
-
-            centroid_pt, = self.ax.plot(*analysis[:2], '+b')
-            self.centroid_pts.append(centroid_pt)
-
-        self.updated_artists = self.contour_lines + self.centroid_pts + [self.imshow]
-
-    def update_plot(self, data):
-        """What to do upon iterations of the plot after the first time."""
-        img = data['image']
-        num = data['num']
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
-
-        self.imshow.set_array(img)
-
-        for contour, analysis, line, pt in zip(data['contours'],
-                                               data['analysis'],
-                                               self.contour_lines,
-                                               self.centroid_pts):
-
-            if contour is not None:
-                line.set_data(*contour)
-                pt.set_data(*analysis[:2])
-            else:
-                line.set_data(None, None)
-                pt.set_data(None, None)
