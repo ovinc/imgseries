@@ -29,7 +29,9 @@ class ImgSeriesPlot(ImagePlot):
 
     def first_plot(self, data):
 
-        _, self.imshow = self.ax.imshow(data['image'], **self.kwargs)
+        self.imshow = self.img_series._imshow(data['image'],
+                                              ax=self.ax,
+                                              **self.kwargs)
 
         self._display_info(data)
         self.ax.axis('off')
@@ -109,6 +111,16 @@ class ImgSeries(filo.Series):
                              extension=extension,
                              savepath=savepath)
 
+        # Get type of images (1 color channel or more)
+        # try except is if image series does not link to physical images
+        # e.g. when loading analysis results when images not present
+        try:
+            img = self.read()
+        except IndexError:
+            pass
+        else:
+            self.ndim = img.ndim
+
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
         return _rotate(img, angle=self.rotation.data['angle'])
@@ -141,7 +153,7 @@ class ImgSeries(filo.Series):
             nums = [file.num for file in files]
         return nums
 
-    def _get_imshow_kwargs(self, img):
+    def _get_imshow_kwargs(self):
         """Define kwargs to pass to imshow (to have grey by default for 2D)."""
 
         if not self.contrast.is_empty:
@@ -151,30 +163,30 @@ class ImgSeries(filo.Series):
 
         if not self.colors.is_empty:
             kwargs = {**kwargs, **self.colors.data}
-        elif img.ndim < 3:
+        elif self.ndim < 3:
             kwargs = {**kwargs, 'cmap': 'gray'}
 
         return kwargs
 
-    def _imshow(self, ax, num, transform=True, **kwargs):
+    def _imshow(self, img, ax=None, **kwargs):
         """Use plt.imshow() with default kwargs and/or additional ones
 
         Parameters
         ----------
-        - ax: axes in which to display the image
+        - img: image to display (numpy array or equivalent)
 
-        - num: number of the image to load and display
-
-        - transform: apply global transforms (rotation, crop)
+        - ax: axes in which to display the image. If not specified, create new
+              ones
 
         - kwargs: any keyword-argument to pass to imshow() (overrides default
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        img = self.read(num=num, transform=transform)
-        default_kwargs = self._get_imshow_kwargs(img)
+        if ax is None:
+            _, ax = plt.subplots()
+        default_kwargs = self._get_imshow_kwargs()
         kwargs = {**default_kwargs, **kwargs}
-        return img, ax.imshow(img, **kwargs)
+        return ax.imshow(img, **kwargs)
 
     @staticmethod
     def rgb_to_grey(img):

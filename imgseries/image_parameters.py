@@ -93,7 +93,7 @@ class Contrast(DisplayParameter):
 
     parameter_type = 'contrast'
 
-    def define(self, num=0):
+    def define(self, num=0, **kwargs):
         """Interactively define ROI
 
         Parameters
@@ -102,15 +102,20 @@ class Contrast(DisplayParameter):
           this number can be different from the name written in the image
           filename, because num always starts at 0 in the first folder.
 
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
         Output
         ------
         None, but stores in self.data the (x, y, width, height) as a value in
         a dict with key "zone".
         """
         fig = plt.figure(figsize=(12, 5))
-
         ax_img = fig.add_axes([0.05, 0.05, 0.5, 0.9])
-        img, imshow = self.img_series._imshow(ax_img, num=num)
+
+        img = self.img_series.read(num=num)
+        imshow = self.img_series._imshow(img, ax=ax_img, **kwargs)
 
         img_object, = ax_img.get_images()
         vmin, vmax = img_object.get_clim()
@@ -251,7 +256,8 @@ class Rotation(TransformParameter):
         None, but stores in self.data the rotation angle with key "angle"
         """
         fig, ax = plt.subplots()
-        *_, = self.img_series.imshow(ax, num=num, transform=False, **kwargs)
+        img = self.img_series.read(num=num, transform=False)
+        self.img_series._imshow(img, ax=ax, **kwargs)
 
         direction_name = 'vertical' if vertical else 'horizontal'
         ax.set_title(f'Draw {direction_name} line')
@@ -278,7 +284,8 @@ class Rotation(TransformParameter):
           (note: cmap is grey by default for 2D images)
         """
         _, ax = plt.subplots()
-        *_, = self.img_series.imshow(ax, num=num, **kwargs)
+        img = self.img_series.read(num=num)
+        self.img_series._imshow(img, ax=ax, **kwargs)
 
         try:
             ax.set_title(f"Rotation: {self.data['angle']:.1f}° (img #{num})")
@@ -349,14 +356,12 @@ class Crop(TransformParameter):
           (note: cmap is grey by default for 2D images)
         """
         img = self.img_series.read(num=num, transform=False)
-        default_kwargs = self.img_series._get_imshow_kwargs(img)
-        kwargs = {**default_kwargs, **kwargs}
 
         if not self.img_series.rotation.is_empty:
             img = self.img_series._rotate(img)
 
         _, ax = plt.subplots()
-        ax.imshow(img, **kwargs)
+        self.img_series._imshow(img, ax=ax, **kwargs)
 
         try:
             _cropzone_draw(ax, self.data['zone'], c='r')
@@ -413,7 +418,10 @@ class Zones(AnalysisParameter):
         Values: tuples (x, y, width, height)
         """
         fig, ax = plt.subplots()
-        img, _ = self.img_series._imshow(ax, num=num, **kwargs)
+
+        img = self.img_series.read(num=num)
+        self.img_series._imshow(img, ax=ax, **kwargs)
+
         ax.set_title('All zones defined so far')
 
         zones = {}
@@ -446,8 +454,11 @@ class Zones(AnalysisParameter):
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
+        img = self.img_series.read(num=num)
+
         _, ax = plt.subplots()
-        *_, = self.img_series._imshow(ax, num=num, **kwargs)
+        self.img_series._imshow(img, ax=ax, **kwargs)
+
         ax.set_title(f'Analysis Zones (img #{num})')
 
         for zone in self.data.values():
@@ -482,11 +493,13 @@ class Contours(AnalysisParameter):
         'position', 'level', 'image'
         """
         fig, ax = plt.subplots()
-        img, _ = self.img_series._imshow(ax, num=num, **kwargs)
+
+        img = self.img_series.read(num=num)
         contours = self.img_series._find_contours(img, level)
 
         # Plot all contours found --------------------------------------------
 
+        self.img_series._imshow(img, ax=ax, **kwargs)
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -540,7 +553,7 @@ class Contours(AnalysisParameter):
         contours = self.img_series._find_contours(img, level)
 
         _, ax = plt.subplots()
-        *_, = self.img_series._imshow(ax, num=num, **kwargs)
+        self.img_series._imshow(img, ax=ax, **kwargs)
 
         # Find contours closest to reference positions and plot them
         for contour in contours:

@@ -23,11 +23,8 @@ class ImagePlot:
         """
         self.img_series = img_series
         self.transform = transform
+        self.kwargs = kwargs
         self.plot_init_done = False
-
-        # Determine if kwargs need to be added etc. for imshow()
-        img = self.img_series.read()
-        self.kwargs = self.img_series._get_imshow_kwargs(img)
 
     def plot(self, num):
         """How to plot data during live views of analysis."""
