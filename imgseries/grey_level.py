@@ -35,7 +35,7 @@ class GreyLevelResultsPlot(ImagePlot):
 
         # image
         self.ax.set_title(f'img #{num}')
-        self.imshow = self.ax.imshow(img, cmap='gray')
+        self.imshow = self.ax.imshow(img, **self.kwargs)
         self.ax.axis('off')
 
         # curves

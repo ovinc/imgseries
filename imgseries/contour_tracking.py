@@ -31,7 +31,7 @@ class ContourTrackingPlot(ImagePlot):
         num = data['num']
 
         self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
-        self.imshow = self.ax.imshow(img, cmap='gray')
+        self.imshow = self.ax.imshow(img, **self.kwargs)
 
         self.ax.axis('off')
         self.fig.tight_layout()

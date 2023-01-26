@@ -19,9 +19,10 @@ checked_modules = skimage, imgseries, imgbasics, filo, matplotlib, numpy
 csv_separator = '\t'
 
 filenames = {'files': 'Img_Files',  # for file info (timing etc.)
+             'transform': 'Img_Transform',  # this is to store rotation angle etc.
+             'display': 'Img_Display',  # store display options (contrast, cmap etc.)
              'glevel': 'Img_GreyLevel',           # program will add .tsv or
              'ctrack': 'Img_ContourTracking',     # .json depending on context
-             'transform': 'Img_Transform',  # this is to store rotation angle etc.
              }
 
 
@@ -46,3 +47,23 @@ def _rotate(img, angle):
 def _crop(img, zone):
     """Crop an image to zone (X0, Y0, Width, Height)"""
     return imgbasics.imcrop(img, zone)
+
+# =========================== Pixel and bit depths ===========================
+
+def _max_possible_pixel_value(img):
+    """Return max pixel value depending on img type, for use in plt.imshow.
+
+    Input
+    -----
+    img: numpy array
+
+    Output
+    ------
+    vmax: max pixel value (int or float or None)
+    """
+    if img.dtype == 'uint8':
+        return 2**8 - 1
+    elif img.dtype == 'uint16':
+        return 2**16 - 1
+    else:
+        return None

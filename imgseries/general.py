@@ -12,7 +12,7 @@ import filo
 # local imports
 from .config import filenames
 from .config import _read, _rgb_to_grey, _rotate, _crop
-from .image_parameters import Rotation, Crop
+from .image_parameters import Rotation, Crop, Contrast, Colors
 from .plot import ImagePlot
 
 
@@ -29,10 +29,7 @@ class ImgSeriesPlot(ImagePlot):
 
     def first_plot(self, data):
 
-        if 'cmap' not in self.kwargs and data['image'].ndim < 3:
-            self.kwargs['cmap'] = 'gray'
-
-        self.imshow = self.ax.imshow(data['image'], **self.kwargs)
+        _, self.imshow = self.ax.imshow(data['image'], **self.kwargs)
 
         self._display_info(data)
         self.ax.axis('off')
@@ -93,6 +90,10 @@ class ImgSeries(filo.Series):
         self.rotation = Rotation(self)
         self.crop = Crop(self)
 
+        # Display options (do not impact analysis)
+        self.contrast = Contrast(self)
+        self.colors = Colors(self)
+
         # Done here because self.stack will be an array, and bool(array)
         # generates warnings / errors
         self.is_stack = bool(stack)
@@ -140,6 +141,46 @@ class ImgSeries(filo.Series):
             nums = [file.num for file in files]
         return nums
 
+    def _get_imshow_kwargs(self, img):
+        """Define kwargs to pass to imshow (to have grey by default for 2D)."""
+
+        if not self.contrast.is_empty:
+            kwargs = {**self.contrast.data}
+        else:
+            kwargs = {}
+
+        if not self.colors.is_empty:
+            kwargs = {**kwargs, **self.colors.data}
+        elif img.ndim < 3:
+            kwargs = {**kwargs, 'cmap': 'gray'}
+
+        return kwargs
+
+    def _imshow(self, ax, num, transform=True, **kwargs):
+        """Use plt.imshow() with default kwargs and/or additional ones
+
+        Parameters
+        ----------
+        - ax: axes in which to display the image
+
+        - num: number of the image to load and display
+
+        - transform: apply global transforms (rotation, crop)
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        img = self.read(num=num, transform=transform)
+        default_kwargs = self._get_imshow_kwargs(img)
+        kwargs = {**default_kwargs, **kwargs}
+        return img, ax.imshow(img, **kwargs)
+
+    @staticmethod
+    def rgb_to_grey(img):
+        """"Convert RGB to grayscale"""
+        return _rgb_to_grey(img)
+
     def read(self, num=0, transform=True):
         """Load image data (image identifier num across folders).
 
@@ -160,46 +201,19 @@ class ImgSeries(filo.Series):
 
         return img
 
-    def load_transform(self, filename=None):
-        """Return transform parameters (crop, rotation, etc.)
-        from json file as a dictionary.
-
-        If filename is not specified, use default filenames.
-
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.json.
-        """
-        self.rotation.reset()
-        self.crop.reset()
-
-        fname = filenames['transform'] if filename is None else filename
-        transform_data = self._from_json(fname)
-
-        self.rotation.data = transform_data['rotation']
-        self.crop.data = transform_data['crop']
-
-    def save_transform(self, filename=None):
-        """Save transform parameters (crop, rotation etc.) into json file."""
-        fname = filenames['transform'] if filename is None else filename
-        transform_data = {'rotation': self.rotation.data,
-                          'crop': self.crop.data}
-        self._to_json(transform_data, fname)
-
-    @staticmethod
-    def rgb_to_grey(img):
-        """"Convert RGB to grayscale"""
-        return _rgb_to_grey(img)
-
     def show(self, num=0, transform=True, **kwargs):
         """Show image in a matplotlib window.
 
         Parameters
         ----------
         - num: image identifier in the file series
+
         - transform: if True (default), apply global rotation and crop (if defined)
                      if False, load raw image.
-        - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default for images with 1 color channel)
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         splot = self.Plot(self, transform=transform, **kwargs)
         splot.create_plot()
@@ -218,7 +232,9 @@ class ImgSeries(filo.Series):
         - transform: if True (default), apply global rotation and crop (if defined)
                      if False, use raw images.
 
-        - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         nums = self._set_substack(start, end, skip)
         splot = self.Plot(self, transform=transform, **kwargs)
@@ -238,8 +254,74 @@ class ImgSeries(filo.Series):
 
         - blit: if True, use blitting for faster animation.
 
-        - kwargs: any keyword to pass to plt.imshow() (e.g. cmap='plasma')
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         nums = self._set_substack(start, end, skip)
         splot = self.Plot(self, transform=transform, **kwargs)
         return splot.animate(nums=nums, blit=blit)
+
+    def load_transform(self, filename=None):
+        """Load transform parameters (crop, rotation, etc.) from json file.
+
+        Transforms are applied and stored in self.rotation, self.crop, etc.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        self.rotation.reset()
+        self.crop.reset()
+
+        fname = filenames['transform'] if filename is None else filename
+        transform_data = self._from_json(fname)
+
+        self.rotation.data = transform_data['rotation']
+        self.crop.data = transform_data['crop']
+
+    def save_transform(self, filename=None):
+        """Save transform parameters (crop, rotation etc.) into json file.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        fname = filenames['transform'] if filename is None else filename
+        transform_data = {'rotation': self.rotation.data,
+                          'crop': self.crop.data}
+        self._to_json(transform_data, fname)
+
+    def load_display(self, filename=None):
+        """Load display parameters (contrast, colormapn etc.) from json file.
+
+        Display options are applied and stored in self.contrast, etc.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        self.contrast.reset()
+        self.colors.reset()
+
+        fname = filenames['display'] if filename is None else filename
+        display_data = self._from_json(fname)
+
+        self.contrast.data = display_data['contrast']
+        self.crop.data = display_data['colors']
+
+    def save_display(self, filename=None):
+        """Save  display parameters (contrast, colormapn etc.) into json file.
+
+        If filename is not specified, use default filenames.
+
+        If filename is specified, it must be an str without the extension, e.g.
+        filename='Test' will load from Test.json.
+        """
+        fname = filenames['display'] if filename is None else filename
+        display_data = {'contrast': self.contrast.data,
+                        'colors': self.colors.data}
+        self._to_json(display_data, fname)

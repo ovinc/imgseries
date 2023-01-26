@@ -9,17 +9,25 @@ class ImagePlot:
     """Base class for plotting of images and additional data for animations."""
 
     def __init__(self, img_series, transform=True, **kwargs):
-        """Parameters:
+        """Parameters
+           ----------
 
         - img_series: image series or analysis series (e.g. GreyLevel)
+
         - transform: if True (default), apply global rotation and crop (if defined)
                      if False, use raw images.
-        - **kwargs: any useful kwargs to pass to imshow().
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         self.img_series = img_series
         self.transform = transform
-        self.kwargs = kwargs
         self.plot_init_done = False
+
+        # Determine if kwargs need to be added etc. for imshow()
+        img = self.img_series.read()
+        self.kwargs = self.img_series._get_imshow_kwargs(img)
 
     def plot(self, num):
         """How to plot data during live views of analysis."""

@@ -5,10 +5,14 @@ from math import pi
 
 # Non-standard modules
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider, Button
 import numpy as np
 import imgbasics
 from imgbasics.cropping import _cropzone_draw
 from drapo import linput
+
+# Local imports
+from .config import _max_possible_pixel_value
 
 
 # =============================== Base classes ===============================
@@ -31,10 +35,6 @@ class ImageParameter:
     def __repr__(self):
         return f'{self.__class__.__name__} object {self.data}'
 
-    def _get_imshow_kwargs(self, img):
-        """Define kwargs to pass to imshow (to have grey by default for 2D)"""
-        return {'cmap': 'gray'} if img.ndim < 3 else {}
-
     def load(self, filename=None):
         """Load parameter data from .json file and put it in self.data.
 
@@ -55,8 +55,22 @@ class ImageParameter:
         return not self.data
 
 
+class DisplayParameter(ImageParameter):
+    """Base class for global dispaly options (contrast changes, colormaps, etc.)
+
+    These parameters DO NOT impact analysis (only options for image display)
+    """
+
+    def _load(self, filename=None):
+        """Load parameter data from .json file."""
+        pass
+
+
 class TransformParameter(ImageParameter):
-    """Base class for global transorms on image series (rotation, crop etc.)"""
+    """Base class for global transorms on image series (rotation, crop etc.)
+
+    These parameters DO impact analysis and are stored in metadata.
+    """
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
@@ -71,6 +85,143 @@ class AnalysisParameter(ImageParameter):
         return self.img_series.load_metadata(filename=filename)
 
 
+# =============== Display parameters (do not impact analysis) ================
+
+
+class Contrast(DisplayParameter):
+    """Class to store and manage contrast / brightness change."""
+
+    parameter_type = 'contrast'
+
+    def define(self, num=0):
+        """Interactively define ROI
+
+        Parameters
+        ----------
+        - num: image ('num' id) on which to define contrast. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        Output
+        ------
+        None, but stores in self.data the (x, y, width, height) as a value in
+        a dict with key "zone".
+        """
+        fig = plt.figure(figsize=(12, 5))
+
+        ax_img = fig.add_axes([0.05, 0.05, 0.5, 0.9])
+        img, imshow = self.img_series._imshow(ax_img, num=num)
+
+        img_object, = ax_img.get_images()
+        vmin, vmax = img_object.get_clim()
+        vmax_max = _max_possible_pixel_value(img)
+
+        ax_hist = fig.add_axes([0.7, 0.45, 0.25, 0.5])
+        ax_hist.hist(img.flatten(), bins='auto')
+        ax_hist.set_xlim((0, vmax_max))
+
+        min_line = ax_hist.axvline(vmin, color='k')
+        max_line = ax_hist.axvline(vmax, color='k')
+
+        ax_slider_min = fig.add_axes([0.7, 0.2, 0.25, 0.04])
+        ax_slider_max = fig.add_axes([0.7, 0.28, 0.25, 0.04])
+
+        slider_min = Slider(ax=ax_slider_min,
+                            label='min',
+                            valmin=0,
+                            valmax=vmax_max,
+                            valinit=vmin,
+                            valstep=1,
+                            color='steelblue',
+                            alpha=0.5)
+
+        slider_max = Slider(ax=ax_slider_max,
+                            label='max',
+                            valmin=0,
+                            valmax=vmax_max,
+                            valinit=vmax,
+                            valstep=1,
+                            color='steelblue',
+                            alpha=0.5)
+
+        ax_btn_reset = fig.add_axes([0.7, 0.05, 0.07, 0.06])
+        btn_reset = Button(ax_btn_reset, 'Reset')
+
+        ax_btn_auto = fig.add_axes([0.79, 0.05, 0.07, 0.06])
+        btn_auto = Button(ax_btn_auto, 'Auto')
+
+        ax_btn_ok = fig.add_axes([0.88, 0.05, 0.07, 0.06])
+        btn_ok = Button(ax_btn_ok, 'OK')
+
+        def update_min(value):
+            imshow.norm.vmin = value
+            min_line.set_xdata((value, value))
+
+        def update_max(value):
+            imshow.norm.vmax = value
+            max_line.set_xdata((value, value))
+
+        def reset_contrast(event):
+            slider_min.set_val(0)
+            slider_max.set_val(vmax_max)
+
+        def auto_contrast(event):
+            slider_min.set_val(vmin)
+            slider_max.set_val(vmax)
+
+        def validate(event):
+            self.data = {'vmin': slider_min.val, 'vmax': slider_max.val}
+            plt.close(fig)
+
+        slider_min.on_changed(update_min)
+        slider_max.on_changed(update_max)
+
+        btn_reset.on_clicked(reset_contrast)
+        btn_auto.on_clicked(auto_contrast)
+        btn_ok.on_clicked(validate)
+
+        return slider_min, slider_max, btn_reset, btn_auto, btn_ok
+
+    @property
+    def vmin(self):
+        try:
+            return self.data['vmin']
+        except KeyError:
+            return
+
+    @vmin.setter
+    def vmin(self, value):
+        self.data['vmin'] = value
+
+    @property
+    def vmax(self):
+        try:
+            return self.data['vmax']
+        except KeyError:
+            return
+
+    @vmax.setter
+    def vmax(self, value):
+        self.data['vmax'] = value
+
+
+class Colors(DisplayParameter):
+    """Class to store and manage colormaps used for display"""
+
+    parameter_type = 'colors'
+
+    @property
+    def cmap(self):
+        try:
+            return self.data['cmap']
+        except KeyError:
+            return
+
+    @cmap.setter
+    def cmap(self, value):
+        self.data['cmap'] = value
+
+
 # ============================= Basic transforms =============================
 
 
@@ -79,7 +230,7 @@ class Rotation(TransformParameter):
 
     parameter_type = 'rotation'
 
-    def define(self, num=0, vertical=False):
+    def define(self, num=0, vertical=False, **kwargs):
         """Interactively define rotation angle by drawing a line.
 
         Parameters
@@ -91,15 +242,16 @@ class Rotation(TransformParameter):
         - direction: can be horizontal (default, vertical=False) or vertical;
           the drawn line will be brought to this direction after rotation.
 
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
         Output
         ------
         None, but stores in self.data the rotation angle with key "angle"
         """
-        img = self.img_series.read(num=num, transform=False)
-        kwargs = self._get_imshow_kwargs(img)
-
         fig, ax = plt.subplots()
-        ax.imshow(img, **kwargs)
+        *_, = self.img_series.imshow(ax, num=num, transform=False, **kwargs)
 
         direction_name = 'vertical' if vertical else 'horizontal'
         ax.set_title(f'Draw {direction_name} line')
@@ -120,10 +272,14 @@ class Rotation(TransformParameter):
         Parameters
         ----------
         - num: id number of image on which to show the zones (default first one).
-        - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default for 2D images, see ImgSeries.show())
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
-        ax = self.img_series.show(num=num, **kwargs)
+        _, ax = plt.subplots()
+        *_, = self.img_series.imshow(ax, num=num, **kwargs)
+
         try:
             ax.set_title(f"Rotation: {self.data['angle']:.1f}° (img #{num})")
         except KeyError:
@@ -151,7 +307,7 @@ class Crop(TransformParameter):
 
     parameter_type = 'crop'
 
-    def define(self, num=0, draggable=False):
+    def define(self, num=0, draggable=False, **kwargs):
         """Interactively define ROI
 
         Parameters
@@ -163,6 +319,10 @@ class Crop(TransformParameter):
         - draggable: use draggable rectangle from drapo to define crop zones
           instead of clicking to define opposite rectangle corners.
 
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
         Output
         ------
         None, but stores in self.data the (x, y, width, height) as a value in
@@ -171,7 +331,8 @@ class Crop(TransformParameter):
         self.img_series.crop.reset()
 
         img = self.img_series.read(num=num)    # rotation is applied here
-        kwargs = self._get_imshow_kwargs(img)
+        default_kwargs = self.img_series._get_imshow_kwargs(img)
+        kwargs = {**default_kwargs, **kwargs}
 
         _, cropzone = imgbasics.imcrop(img, draggable=draggable, **kwargs)
         self.data = {'zone': cropzone}
@@ -182,15 +343,17 @@ class Crop(TransformParameter):
         Parameters
         ----------
         - num: id number of image on which to show the zones (default first one).
-        - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default for 2D images, see ImgSeries.show())
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         img = self.img_series.read(num=num, transform=False)
+        default_kwargs = self.img_series._get_imshow_kwargs(img)
+        kwargs = {**default_kwargs, **kwargs}
 
         if not self.img_series.rotation.is_empty:
             img = self.img_series._rotate(img)
-
-        kwargs = self._get_imshow_kwargs(img)
 
         _, ax = plt.subplots()
         ax.imshow(img, **kwargs)
@@ -224,7 +387,7 @@ class Zones(AnalysisParameter):
 
     parameter_type = 'zones'
 
-    def define(self, n=1, num=0, draggable=False):
+    def define(self, n=1, num=0, draggable=False, **kwargs):
         """Interactively define n zones image.
 
         Parameters
@@ -238,6 +401,10 @@ class Zones(AnalysisParameter):
         - draggable: use draggable rectangle from drapo to define crop zones
           instead of clicking to define opposite rectangle corners.
 
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
         Output
         ------
         None, but stores in self.data a dict with every cropzone used during
@@ -245,11 +412,8 @@ class Zones(AnalysisParameter):
         Keys: 'zone 1', 'zone 2', etc.
         Values: tuples (x, y, width, height)
         """
-        img = self.img_series.read(num=num)
-        kwargs = self._get_imshow_kwargs(img)
-
         fig, ax = plt.subplots()
-        ax.imshow(img, **kwargs)
+        img, _ = self.img_series._imshow(ax, num=num, **kwargs)
         ax.set_title('All zones defined so far')
 
         zones = {}
@@ -277,14 +441,17 @@ class Zones(AnalysisParameter):
         Parameters
         ----------
         - num: id number of image on which to show the zones (default first one).
-        - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default for 2D images, see ImgSeries.show())
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
-        ax = self.img_series.show(num, **kwargs)
+        _, ax = plt.subplots()
+        *_, = self.img_series._imshow(ax, num=num, **kwargs)
         ax.set_title(f'Analysis Zones (img #{num})')
 
         for zone in self.data.values():
-            _cropzone_draw(ax, zone, c='r')
+            _cropzone_draw(ax, zone)
 
         return ax
 
@@ -294,28 +461,32 @@ class Contours(AnalysisParameter):
 
     parameter_type = 'contours'
 
-    def define(self, level, n=1, num=0):
+    def define(self, level, n=1, num=0, **kwargs):
         """Interactively define n contours on an image at level level.
 
         Parameters
         ----------
         - level: grey level at which to define threshold to detect contours
+
         - n: number of contours
+
         - num: image identifier (num=0 corresponds to first image in first folder)
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
 
         Output
         ------
         None, but stores in self.data a dictionary with keys:
         'position', 'level', 'image'
         """
-        img = self.img_series.read(num=num)
-        kwargs = self._get_imshow_kwargs(img)
+        fig, ax = plt.subplots()
+        img, _ = self.img_series._imshow(ax, num=num, **kwargs)
         contours = self.img_series._find_contours(img, level)
 
-        # Display the cropped image and plot all contours found --------------
+        # Plot all contours found --------------------------------------------
 
-        fig, ax = plt.subplots()
-        ax.imshow(img, **kwargs)
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -356,8 +527,9 @@ class Contours(AnalysisParameter):
 
         Parameters
         ----------
-        - **kwargs: matplotlib keyword arguments for ax.imshow()
-        (note: cmap is grey by default for images with 1 color channel)
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
         """
         num = self.data['image']
         level = self.data['level']
@@ -368,10 +540,7 @@ class Contours(AnalysisParameter):
         contours = self.img_series._find_contours(img, level)
 
         _, ax = plt.subplots()
-
-        if 'cmap' not in kwargs and img.ndim < 3:
-            kwargs['cmap'] = 'gray'
-        ax.imshow(img, **kwargs)
+        *_, = self.img_series._imshow(ax, num=num, **kwargs)
 
         # Find contours closest to reference positions and plot them
         for contour in contours:
