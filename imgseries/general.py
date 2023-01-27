@@ -20,7 +20,7 @@ from .plot import ImagePlot
 class ImgSeriesPlot(ImagePlot):
     """See ImagePlot for details."""
 
-    def create_plot(self):
+    def create_figure(self):
         self.fig, self.ax = plt.subplots()
 
     def get_data(self, num):
@@ -64,6 +64,8 @@ class ImgSeries(filo.Series):
 
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
+
+    # Plotting class for single objects
 
     # Plotting class used for displaying, inspecting and playing images
     Plot = ImgSeriesPlot
@@ -227,10 +229,10 @@ class ImgSeries(filo.Series):
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        splot = self.Plot(self, transform=transform, **kwargs)
-        splot.create_plot()
-        splot.plot(num=num)
-        return splot.ax
+        viewer = self.Plot(self, transform=transform, **kwargs)
+        viewer.create_figure()
+        viewer.plot(num=num)
+        return viewer.ax
 
     def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
         """Interactively inspect image stack.
@@ -249,8 +251,8 @@ class ImgSeries(filo.Series):
           (note: cmap is grey by default for 2D images)
         """
         nums = self._set_substack(start, end, skip)
-        splot = self.Plot(self, transform=transform, **kwargs)
-        return splot.inspect(nums=nums)
+        viewer = self.Plot(self, transform=transform, **kwargs)
+        return viewer.inspect(nums=nums)
 
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
         """Interactively inspect image stack.
@@ -271,8 +273,8 @@ class ImgSeries(filo.Series):
           (note: cmap is grey by default for 2D images)
         """
         nums = self._set_substack(start, end, skip)
-        splot = self.Plot(self, transform=transform, **kwargs)
-        return splot.animate(nums=nums, blit=blit)
+        viewer = self.Plot(self, transform=transform, **kwargs)
+        return viewer.animate(nums=nums, blit=blit)
 
     def load_transform(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.
@@ -323,7 +325,7 @@ class ImgSeries(filo.Series):
         display_data = self._from_json(fname)
 
         self.contrast.data = display_data['contrast']
-        self.crop.data = display_data['colors']
+        self.colors.data = display_data['colors']
 
     def save_display(self, filename=None):
         """Save  display parameters (contrast, colormapn etc.) into json file.

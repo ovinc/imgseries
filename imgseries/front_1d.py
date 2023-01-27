@@ -99,7 +99,7 @@ class Front1D(ImgSeries, Analysis):
 
 class Front1DPlot(ImagePlot):
 
-    def create_plot(self):
+    def create_figure(self):
         self.fig, (self.ax_img, self.ax_analysis) = plt.subplots(2, 1)
 
     def first_plot(self, data):

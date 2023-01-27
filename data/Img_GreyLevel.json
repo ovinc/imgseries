@@ -6,21 +6,21 @@
     ],
     "zones": {
         "zone 1": [
-            13,
-            16,
-            146,
-            126
+            18,
+            15,
+            152,
+            121
         ],
         "zone 2": [
-            448,
-            12,
-            144,
-            145
+            444,
+            19,
+            129,
+            127
         ],
         "zone 3": [
-            21,
-            464,
-            575,
+            44,
+            454,
+            504,
             65
         ]
     },
@@ -35,14 +35,14 @@
             536
         ]
     },
-    "time (utc)": "2023-01-25 15:30:14",
+    "time (utc)": "2023-01-27 07:01:38",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.17.2"
         },
         "imgseries": {
-            "hash": "fdd37822407146639b21d459efa39b26a87ed623",
+            "hash": "0092eaca6c4eabb1336d5aa15017e487c0a6439a",
             "status": "dirty"
         },
         "imgbasics": {

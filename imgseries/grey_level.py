@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from imgbasics.cropping import _cropzone_draw
 
 # Local imports
 from .config import _crop
@@ -18,8 +19,8 @@ from .plot import ImagePlot
 
 class GreyLevelResultsPlot(ImagePlot):
 
-    def create_plot(self):
-        self.fig, (self.ax, self.ax_curves) = plt.subplots(2, 1)
+    def create_figure(self):
+        self.fig = plt.figure(figsize=(5, 7))
 
     def get_data(self, num):
         return self.img_series.regenerate_data(num)
@@ -33,6 +34,9 @@ class GreyLevelResultsPlot(ImagePlot):
         num = data['num']
         glevels = data['glevels']
 
+        self.ax = self.fig.add_axes([0.05, 0.33, 0.9, 0.65])
+        self.ax_curves = self.fig.add_axes([0.05, 0.09, 0.9, 0.25])
+
         # image
         self.ax.set_title(f'img #{num}')
         self.imshow = self.img_series._imshow(img, ax=self.ax, **self.kwargs)
@@ -43,15 +47,21 @@ class GreyLevelResultsPlot(ImagePlot):
         self.pts = []
 
         for zone_name, glevel in zip(self.img_series.zones.data, glevels):
+
             full_data = self.img_series.data[zone_name]
+
             curve, = self.ax_curves.plot(full_data, label=zone_name)
             color = curve.get_color()
             pt, = self.ax_curves.plot(num, glevel, 'o', c=color)
+
+            zone = self.img_series.zones.data[zone_name]
+            _cropzone_draw(self.ax, zone, c=color)
+
             self.curves.append(curve)
             self.pts.append(pt)
 
         self.ax_curves.legend()
-        self.fig.tight_layout()
+        self.ax_curves.grid()
 
         self.updated_artists = self.pts + [self.imshow]
 
@@ -173,7 +183,10 @@ class GreyLevel(ImgSeries, Analysis):
         """
         data = {'num': num}
         data['image'] = self.read(num=num)
-        data['glevels'] = list(self.data.filter(like='zone').loc[num])
+        try:
+            data['glevels'] = list(self.data.filter(like='zone').loc[num])
+        except AttributeError:  # if self.data not defined (analysis not made)
+            pass
         return data
 
     def regenerate(self, filename=None):

@@ -60,6 +60,17 @@ images.files[10].file  # actual file object (pathlib.Path)
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
+# Interactive views of images ------------------------------------------------
+images.animate()       # see image series as a movie (start, end, skip options)
+images.inspect()       # browse through image series with a slider (same options)
+
+# Define display options -----------------------------------------------------
+# (see details in notebook)
+images.contrast.define()
+images.colors.define()
+images.save_display()  # save rotation and crop parameters in a json file
+images.load_display()  # load rotation and crop parameters from json file
+
 # Define global transform applied on all images (rotation + crop) ------------
 # (see details in notebook)
 images.rotation.define()
@@ -104,12 +115,16 @@ gl.rotation.define()
 gl.crop.define()
 # or gl.load_transform()
 
-# Prepare and run analysis
+# Prepare and run analysis ---------------------------------------------------
 gl.zones.define()  # interactively select zones on image
 gl.zones.load()    # alternative to define() where zones are loaded from saved metadata
 gl.run()   # run actual analysis (parallel computation available)
 gl.data    # pandas dataframe containing the results --> plot() etc. methods available
 gl.save()  # save results to csv file
+
+# Interactive views of results -----------------------------------------------
+gl.animate()       # see results as a movie (start, end, skip options)
+gl.inspect()       # browse through results with a slider (same options)
 
 # Load analysis results afterwards (need save() to have been called) ---------
 gl = GreyLevel(savepath='analysis')  # No need to specify paths here
@@ -117,6 +132,9 @@ gl.load()        # load analysis results (including time) as pandas DataFrame
 gl.zones.load()  # load info (dict) of location of zones analyzed on images
 gl.zones.data    # accessible after zones.load() has been called
 gl.zones.show()  # show analysis zones on image (numbering starts at 0)
+
+# To recreate state after analysis by loading data / metadata etc.: ----------
+gl.regenerate()
 
 # NOTE: method below only available for image series, not for stacks
 gl.load_info()   # if necessary to look back at num / file correspondence
@@ -145,12 +163,16 @@ ct.rotation.define()
 ct.crop.define()
 # or ct.load_transform()
 
-# Prepare and run analysis
+# Prepare and run analysis ---------------------------------------------------
 ct.contours.define()  # interactively select contours to follow on image
 ct.contours.load()    # alternative to define() where contours are loaded from saved metadata
 ct.run()   # run actual analysis (no parallel computation available)
 ct.data    # pandas dataframe containing the results --> plot() etc. methods available
 ct.save()  # save results to csv file
+
+# Interactive views of results -----------------------------------------------
+ct.animate()       # see results as a movie (start, end, skip options)
+ct.inspect()       # browse through results with a slider (same options)
 
 # Load analysis results afterwards (need save() to have been called) ---------
 ct = ContourTracking(savepath='analysis')  # No need to specify paths here
@@ -158,6 +180,9 @@ ct.load()        # load analysis results (including time) as pandas DataFrame
 ct.contours.load()  # load info (dict) of contour tracking parameters
 ct.contours.data    # accessible after contours.load() has been called
 ct.contours.show()  # Show contours on reference image used to select them
+
+# To recreate state after analysis by loading data / metadata etc.: ----------
+ct.regenerate()
 
 # NOTE: method below only available for image series, not for stacks
 ct.load_info()   # if necessary to look back at num / file correspondence

@@ -1,0 +1,9 @@
+{
+    "contrast": {
+        "vmin": 45,
+        "vmax": 128
+    },
+    "colors": {
+        "cmap": "inferno"
+    }
+}

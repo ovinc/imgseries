@@ -19,7 +19,7 @@ from .plot import ImagePlot
 
 class ContourTrackingPlot(ImagePlot):
 
-    def create_plot(self):
+    def create_figure(self):
         self.fig, self.ax = plt.subplots()
 
     def first_plot(self, data):

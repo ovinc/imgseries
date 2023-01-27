@@ -38,7 +38,7 @@ class ImagePlot:
 
         return self.updated_artists
 
-    def create_plot(self):
+    def create_figure(self):
         """Define in subclass, has to define at least self.fig"""
         pass
 
@@ -64,7 +64,7 @@ class ImagePlot:
         - nums: frames to consider for the animation (iterable)
         - blit: if True, use blitting for fast rendering
         """
-        self.create_plot()
+        self.create_figure()
         self.plot_init_done = False
 
         animation = FuncAnimation(fig=self.fig,
@@ -85,13 +85,13 @@ class ImagePlot:
         num_max = max(nums)
         num_step = (num_max - num_min) // (len(nums) - 1)
 
-        self.create_plot()
+        self.create_figure()
         self.plot_init_done = False
 
         self.plot(num=num_min)
 
         self.fig.subplots_adjust(bottom=0.1)
-        ax_slider = self.fig.add_axes([0.1, 0.01, 0.8, 0.04])
+        ax_slider = self.fig.add_axes([0.1, 0.01, 0.8, 0.03])
 
         slider = Slider(ax=ax_slider,
                         label='#',
