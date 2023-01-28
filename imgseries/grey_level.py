@@ -8,24 +8,20 @@ from imgbasics.cropping import _cropzone_draw
 
 # Local imports
 from .config import _crop
-from .general import ImgSeries
 from .analysis import Analysis
 from .image_parameters import Zones
-from .plot import ImagePlot
+from .viewers import AnalysisViewer
 
 
 # ======================= Plotting / Animation classes =======================
 
 
-class GreyLevelResultsPlot(ImagePlot):
+class GreyLevelViewer(AnalysisViewer):
 
-    def create_figure(self):
+    def _create_figure(self):
         self.fig = plt.figure(figsize=(5, 7))
 
-    def get_data(self, num):
-        return self.img_series.regenerate_data(num)
-
-    def first_plot(self, data):
+    def _first_plot(self, data):
         """What to do the first time data arrives on the plot.
 
         self.updated_artists must be defined here.
@@ -39,22 +35,24 @@ class GreyLevelResultsPlot(ImagePlot):
 
         # image
         self.ax.set_title(f'img #{num}')
-        self.imshow = self.img_series._imshow(img, ax=self.ax, **self.kwargs)
+        self.imshow = self.analysis.img_series._imshow(img,
+                                                       ax=self.ax,
+                                                       **self.kwargs)
         self.ax.axis('off')
 
         # curves
         self.curves = []
         self.pts = []
 
-        for zone_name, glevel in zip(self.img_series.zones.data, glevels):
+        for zone_name, glevel in zip(self.analysis.zones.data, glevels):
 
-            full_data = self.img_series.data[zone_name]
+            full_data = self.analysis.data[zone_name]
 
             curve, = self.ax_curves.plot(full_data, label=zone_name)
             color = curve.get_color()
             pt, = self.ax_curves.plot(num, glevel, 'o', c=color)
 
-            zone = self.img_series.zones.data[zone_name]
+            zone = self.analysis.zones.data[zone_name]
             _cropzone_draw(self.ax, zone, c=color)
 
             self.curves.append(curve)
@@ -65,7 +63,7 @@ class GreyLevelResultsPlot(ImagePlot):
 
         self.updated_artists = self.pts + [self.imshow]
 
-    def update_plot(self, data):
+    def _update_plot(self, data):
         """What to do upon iterations of the plot after the first time."""
         img = data['image']
         num = data['num']
@@ -81,47 +79,30 @@ class GreyLevelResultsPlot(ImagePlot):
 # =========================== Main ANALYSIS class ============================
 
 
-class GreyLevel(ImgSeries, Analysis):
+class GreyLevel(Analysis):
     """Class to perform analysis of average grey level on image series."""
 
-    name = 'Images Series (GreyLevel)'  # used for __repr__
+    measurement_type = 'glevel'
 
-    # Type of graph used for live view of analysis
-    LivePlot = None
-
-    # Type of graph used for a-posteriori visualization of analysis
-    # with animate() and inspect()
-    Plot = GreyLevelResultsPlot
-
-    def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
+    def __init__(self, img_series=None, savepath=None):
         """Analysis of avg gray level on selected zone in series of images.
 
         Parameters
         ----------
-        - paths: str, path object, or iterable of str/paths if data is stored
-          in multiple folders.
+        - img_series: image series from the ImgSeries class or subclasses
 
-        - extension: extension of image files (e.g. '.png')
-
-        - savepath: path in which to save analysis files.
-
-        If file series is in a stack rather than in a series of images:
-        - stack: path to the stack (.tiff) file
-          (parameters paths & extension will be ignored)
+        - savepath: folder in which to save analysis data & metadata
+                    (if not specified, the img_series savepath is used)
         """
-        ImgSeries.__init__(self,
-                           paths=paths,
-                           savepath=savepath,
-                           extension=extension,
-                           stack=stack)
-
-        Analysis.__init__(self, measurement_type='glevel')
+        super().__init__(img_series=img_series,
+                         Viewer=GreyLevelViewer,
+                         savepath=savepath)
 
         # empty zones object, needs to be filled with zones.define() or
         # zones.load() prior to starting analysis with self.run()
         self.zones = Zones(self)
 
-    def analyze(self, num, live=False):
+    def _analyze(self, num, live=False):
         """Basic analysis function, to be threaded or multiprocessed.
 
         Parameters
@@ -131,24 +112,24 @@ class GreyLevel(ImgSeries, Analysis):
 
         Output
         ------
-        - data, handled by self.store_data()
+        - data, handled by self._store_data()
         """
         glevels = []
-        img = self.read(num)
+        img = self.img_series.read(num)
         for cropzone in self.zones.data.values():
             img_crop = _crop(img, cropzone)
             glevel = np.mean(img_crop)
             glevels.append(glevel)
         return glevels
 
-    def initialize(self):
+    def _initialize(self):
         """Check everything OK before starting analysis & initialize params."""
         if self.zones.is_empty:
             msg = "Analysis zones not defined yet. Use self.zones.define(),  "\
                   "or self.zones.load() if zones have been previously saved."
             raise AttributeError(msg)
 
-    def add_metadata(self):
+    def _add_metadata(self):
         """Add useful analysis parameters etc. to the self.metadata dict.
 
         (later saved in the metadata json file)
@@ -156,18 +137,18 @@ class GreyLevel(ImgSeries, Analysis):
         """
         self.metadata['zones'] = self.zones.data
 
-    def prepare_data_storage(self):
+    def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data."""
         self.glevel_data = []
 
-    def store_data(self, data):
+    def _store_data(self, data):
         """How to store data generated by analysis on a single image.
 
         Define in subclasses."""
         self.glevel_data.append(data)
 
-    def generate_pandas_data(self):
-        """How to convert data generated by store_data() into a pandas table."""
+    def _generate_pandas_data(self):
+        """How to convert data generated by _store_data() into a pandas table."""
         zone_names = self.zones.data.keys()  # 'zone 1', 'zone 2', etc.
         data_table = pd.DataFrame(self.glevel_data,
                                   index=self.nums,
@@ -175,14 +156,14 @@ class GreyLevel(ImgSeries, Analysis):
         data_table.index.name = 'num'
         return data_table
 
-    def regenerate_data(self, num):
+    def _regenerate_data(self, num):
         """How to go back to raw dict of data from self.data.
 
         Useful for plotting / animating results again after analysis, among
         other things.
         """
         data = {'num': num}
-        data['image'] = self.read(num=num)
+        data['image'] = self.img_series.read(num=num)
         try:
             data['glevels'] = list(self.data.filter(like='zone').loc[num])
         except AttributeError:  # if self.data not defined (analysis not made)

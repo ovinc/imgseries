@@ -1,5 +1,9 @@
 """Configuration of image analysis module."""
 
+# Standard library
+import json
+
+# Non standard
 import skimage
 from imgbasics.transform import rotate
 
@@ -67,3 +71,27 @@ def _max_possible_pixel_value(img):
         return 2**16 - 1
     else:
         return None
+
+# ================================= File I/O =================================
+
+def _from_json(path, filename):
+    """"Load json file as a dict.
+
+    path: pathlib object (folder containing the file)
+    filename: name of the file without extension
+    """
+    file = path / (filename + '.json')
+    with open(file, 'r', encoding='utf8') as f:
+        data = json.load(f)
+    return data
+
+def _to_json(data, path, filename):
+    """"Save data (dict) to json file.
+
+    data: dictionary of data
+    path: pathlib object (folder containing the file)
+    filename: name of the file without extension
+    """
+    file = path / (filename + '.json')
+    with open(file, 'w', encoding='utf8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)

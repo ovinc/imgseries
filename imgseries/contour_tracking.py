@@ -8,21 +8,22 @@ import matplotlib.pyplot as plt
 import imgbasics
 
 # Local imports
+from .config import _from_json, _to_json
 from .general import ImgSeries
 from .analysis import Analysis
 from .image_parameters import Contours
-from .plot import ImagePlot
+from .viewers import AnalysisViewer
 
 
 # ======================= Plotting / Animation classes =======================
 
 
-class ContourTrackingPlot(ImagePlot):
+class ContourTrackingViewer(AnalysisViewer):
 
-    def create_figure(self):
+    def _create_figure(self):
         self.fig, self.ax = plt.subplots()
 
-    def first_plot(self, data):
+    def _first_plot(self, data):
         """What to do the first time data arrives on the plot.
 
         self.updated_artists must be defined here.
@@ -30,8 +31,8 @@ class ContourTrackingPlot(ImagePlot):
         img = data['image']
         num = data['num']
 
-        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
-        self.imshow = self.img_series._imshow(img, ax=self.ax, **self.kwargs)
+        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
+        self.imshow = self.analysis.img_series._imshow(img, ax=self.ax, **self.kwargs)
 
         self.ax.axis('off')
         self.fig.tight_layout()
@@ -49,12 +50,12 @@ class ContourTrackingPlot(ImagePlot):
 
         self.updated_artists = self.contour_lines + self.centroid_pts + [self.imshow]
 
-    def update_plot(self, data):
+    def _update_plot(self, data):
         """What to do upon iterations of the plot after the first time."""
         img = data['image']
         num = data['num']
 
-        self.ax.set_title(f'img #{num}, grey level {self.img_series.level}')
+        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
 
         self.imshow.set_array(img)
 
@@ -71,56 +72,27 @@ class ContourTrackingPlot(ImagePlot):
                 pt.set_data(None, None)
 
 
-class ContourTrackingLivePlot(ContourTrackingPlot):
-
-    def get_data(self, num):
-        return self.img_series.live_analysis(num)
-
-
-class ContourTrackingResultsPlot(ContourTrackingPlot):
-
-    def get_data(self, num):
-        return self.img_series.regenerate_data(num)
-
-
 # =========================== Main ANALYSIS class ============================
 
 
-class ContourTracking(ImgSeries, Analysis):
+class ContourTracking(Analysis):
     """Class to track contours on image series."""
 
-    name = 'Images Series (ContourTracking)'
+    measurement_type = 'ctrack'
 
-    # Type of graph used for live view of analysis
-    LivePlot = ContourTrackingLivePlot
+    def __init__(self, img_series=None, savepath=None):
+        """Analysis of avg gray level on selected zone in series of images.
 
-    # Type of graph used for a-posteriori visualization of analysis
-    # with animate() and inspect()
-    Plot = ContourTrackingResultsPlot
-
-    def __init__(self, paths='.', extension='.png', savepath='.', stack=None):
-        """Init Contour Tracking analysis object.
-
-        PARAMETERS
+        Parameters
         ----------
-        - paths: str, path object, or iterable of str/paths if data is stored
-          in multiple folders.
+        - img_series: image series from the ImgSeries class or subclasses
 
-        - extension: extension of image files (e.g. '.png')
-
-        - savepath: path in which to save analysis files.
-
-        If file series is in a stack rather than in a series of images:
-        - stack: path to the stack (.tiff) file
-          (parameters paths & extension will be ignored)
+        - savepath: folder in which to save analysis data & metadata
+                    (if not specified, the img_series savepath is used)
         """
-        ImgSeries.__init__(self,
-                           paths=paths,
-                           savepath=savepath,
-                           extension=extension,
-                           stack=stack)
-
-        Analysis.__init__(self, measurement_type='ctrack')
+        super().__init__(img_series=img_series,
+                         Viewer=ContourTrackingViewer,
+                         savepath=savepath)
 
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
@@ -142,7 +114,7 @@ class ContourTracking(ImgSeries, Analysis):
                 xc, yc, *_ = contour_analysis
                 self.reference_positions[i] = (xc, yc)
 
-    def analyze(self, num, live=False):
+    def _analyze(self, num, live=False):
         """Find contours at level in file i closest to the reference positions.
 
         Parameters
@@ -155,7 +127,7 @@ class ContourTracking(ImgSeries, Analysis):
         [(x1, y1, p1, a1), (y2, y2, p2, a1), ..., (xn, yn, pn, an)] where n is the
         number of contours followed and (x, y), p, a is position, perimeter, area
         """
-        img = self.read(num)
+        img = self.img_series.read(num)
         contours = self._find_contours(img, self.level)
 
         data = {'analysis': []}     # Stores analysis data (centroid etc.)
@@ -196,7 +168,7 @@ class ContourTracking(ImgSeries, Analysis):
 
         return data
 
-    def initialize(self):
+    def _initialize(self):
         """Check everything OK before starting analysis & initialize params."""
 
         if self.contours.is_empty:
@@ -206,7 +178,7 @@ class ContourTracking(ImgSeries, Analysis):
 
         self.level = self.contours.data['level']
 
-    def add_metadata(self):
+    def _add_metadata(self):
         """Add useful analysis parameters etc. to the self.metadata dict.
 
         (later saved in the metadata json file)
@@ -214,7 +186,7 @@ class ContourTracking(ImgSeries, Analysis):
         """
         self.metadata['contours'] = self.contours.data
 
-    def prepare_data_storage(self):
+    def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data."""
         self.reference_positions = list(self.contours.data['position'].values())
         n = len(self.reference_positions)
@@ -231,7 +203,7 @@ class ContourTracking(ImgSeries, Analysis):
         self.analysis_data = pd.DataFrame(index=self.nums, columns=cols)
         self.analysis_data.index.name = 'num'
 
-    def store_data(self, data):
+    def _store_data(self, data):
         """How to store data generated by analysis on a single image."""
 
         num = data['num']
@@ -248,18 +220,19 @@ class ContourTracking(ImgSeries, Analysis):
         line = sum(data['analysis'], start=())  # "Flatten" list of tuples
         self.analysis_data.loc[num] = line
 
-    def generate_pandas_data(self):
-        """How to convert data generated by store_data() into a pandas table."""
+    def _generate_pandas_data(self):
+        """How to convert data generated by _store_data() into a pandas table."""
         return self.analysis_data
+        print("done")
 
-    def regenerate_data(self, num):
+    def _regenerate_data(self, num):
         """How to go back to raw dict of data from self.data.
 
         Useful for plotting / animating results again after analysis, among
         other things.
         """
         data = {'num': num}
-        data['image'] = self.read(num=num)
+        data['image'] = self.img_series.read(num=num)
         data['analysis'] = []
         data['contours'] = []
 
@@ -287,7 +260,7 @@ class ContourTracking(ImgSeries, Analysis):
 
         name = self._set_filename(filename)
         data_filename = name + '_Data'
-        self._to_json(self.contour_data, data_filename)
+        _to_json(self.contour_data, self.savepath, data_filename)
 
     def regenerate(self, filename=None):
         """Save data and metadata into tsv/json files."""
@@ -298,7 +271,7 @@ class ContourTracking(ImgSeries, Analysis):
         # Load complete contour data
         name = self._set_filename(filename)
         data_filename = name + '_RawContourData'
-        self.contour_data = self._from_json(data_filename)
+        self.contour_data = _from_json(self.savepath, data_filename)
 
         # regenerate internal contours object
         self.contours.load(filename=filename)

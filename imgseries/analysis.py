@@ -3,6 +3,7 @@
 # Standard library imports
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
 # Nonstandard
 import pandas as pd
@@ -10,37 +11,47 @@ import gittools
 from tqdm import tqdm
 
 # local imports
-from .config import filenames, csv_separator, checked_modules
+from .config import filenames, csv_separator, checked_modules, _from_json
+from .viewers import ViewerTools
 
 
-class Analysis:
-    """Tools for analysis subclasses. Used as multiple inheritance."""
+class Analysis(ViewerTools):
+    """Base class for analysis subclasses. Used as multiple inheritance."""
 
-    def __init__(self, measurement_type=None):
-        """Parameters:
+    measurement_type = None  # define in subclasses (e.g. 'glevel', 'ctrack', etc.)
 
-        - measurement_type: specify 'glevel', 'ctrack',
+    def __init__(self, img_series=None, Viewer=None, savepath=None):
+        """Initialize Analysis object
 
-        NOTE: subclasses must define a
+        Parameters
+        ----------
 
-        self.LivePlot object, and a self.Plot object, which indicate
-        which plotting classes has to be used for live and a-posteriori
-        visualizations.
-        (ONLY if live view is needed).
+        - img_series: image series from the ImgSeries class or subclasses
+
+        - Viewer: which viewer is used to display and inspect analysis data
+                  (is used by ViewerTools)
+
+        - savepath: folder in which to save analysis data & metadata
+                    (if not specified, the img_series savepath is used)
         """
-        self.measurement_type = measurement_type  # for data loading/saving
+        self.img_series = img_series
+        self.savepath = Path(savepath) if savepath else img_series.savepath
+
         self.data = None      # Data that will be saved in analysis file
 
-        if self.is_stack:
+        if self.img_series.is_stack:
             # Below, pre-populate parameters to be saved as metadata.
             # Other metadata will be added to this dict before saving
             # into metadata file
-            stack_path = os.path.relpath(self.stack_path, self.savepath)
+            stack_path = os.path.relpath(self.img_series.stack_path,
+                                         self.savepath)
             self.metadata = {'stack': stack_path}
         else:
-            folders = [os.path.relpath(f, self.savepath) for f in self.folders]
+            folders = [os.path.relpath(f, self.savepath) for f in self.img_series.folders]
             self.metadata = {'path': str(self.savepath.resolve()),
                              'folders': folders}
+
+        ViewerTools.__init__(self, Viewer=Viewer)
 
     def run(self,
             start=0, end=None, skip=1,
@@ -77,12 +88,12 @@ class Analysis:
         block). This is because apparently multiprocessing imports the main
         program initially, which causes recursive problems.
         """
-        self.nums = self._set_substack(start, end, skip)
+        self.nums = self.img_series._set_substack(start, end, skip)
         self.nimg = len(self.nums)
 
-        self.initialize()
-        self.add_metadata()
-        self.prepare_data_storage()
+        self._initialize()
+        self._add_metadata()
+        self._prepare_data_storage()
 
         if parallel:  # ================================= Multiprocessing mode
 
@@ -91,7 +102,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self.analyze, num, live=False)
+                    future = executor.submit(self._analyze, num, live=False)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -102,65 +113,65 @@ class Analysis:
                 # Get results ------------------------------------------------
                 for num, future in futures.items():
                     data = future.result()
-                    self.store_data(data)
+                    self._store_data(data)
 
         else:  # ============================================= Sequential mode
 
             if not live:
                 for num in tqdm(self.nums):
-                    data = self.analyze(num, live=False)
-                    self.store_data(data)
+                    data = self._analyze(num, live=False)
+                    self._store_data(data)
             else:
-                # plot uses self.live_analysis to calculate and store data
-                live_plot = self.LivePlot(self)
+                # plot uses self.__analyze_live to calculate and store data
+                live_plot = self.Viewer(self, live=True)
                 # without self.animation, the animation is garbage collected
                 self.animation = live_plot.animate(nums=self.nums, blit=blit)
 
         # Finalize and format data -------------------------------------------
 
-        self.format_data()
+        self._format_data()
 
-    def live_analysis(self, num):
-        data = self.analyze(num, live=True)
-        self.store_data(data)
+    def _analyze_live(self, num):
+        data = self._analyze(num, live=True)
+        self._store_data(data)
         return data
 
-    def format_data(self):
+    def _format_data(self):
         """Add file info (name, time, etc.) to analysis results if possible.
 
         (self.info is defined only if ImgSeries inherits from filo.Series,
         which is not the case if img data is in a stack).
         """
-        data_table = self.generate_pandas_data()
+        data_table = self._generate_pandas_data()
 
-        if self.is_stack:
+        if self.img_series.is_stack:
             self.data = data_table
         else:
-            self.data = pd.concat([self.info, data_table],
+            self.data = pd.concat([self.img_series.info, data_table],
                                   axis=1,
                                   join='inner')
 
-    def initialize(self):
+    def _initialize(self):
         """Check everything OK before starting analysis & initialize params.
 
         Define in subclasses."""
         pass
 
-    def add_metadata(self):
+    def _add_metadata(self):
         """Add useful analysis parameters etc. to the self.metadata dict.
 
         (later saved in the metadata json file)
         Define in subclasses."""
         pass
 
-    def prepare_data_storage(self):
+    def _prepare_data_storage(self):
         """How to prepare structure(s) that will hold the analyzed data.
 
         Define in subclasses."""
         pass
 
-    def analyze(self, num, live=False):
-        """Analysis process on single image. Returns data handled by store_data.
+    def _analyze(self, num, live=False):
+        """Analysis process on single image. Returns data handled by _store_data.
 
         Parameters
         ----------
@@ -170,24 +181,28 @@ class Analysis:
 
         Output
         ------
-        - data, handled by self.store_data()
+        - data, handled by self._store_data()
 
         Define in subclasses."""
 
-    def store_data(self, data):
+    def _store_data(self, data):
         """How to store data generated by analysis on a single image.
 
         Define in subclasses."""
         pass
 
-    def generate_pandas_data(self):
-        """How to convert data generated by store_data() into a pandas table.
+    def _generate_pandas_data(self):
+        """How to convert data generated by _store_data() into a pandas table.
 
         Define in subclasses."""
         pass
 
     def _set_filename(self, filename):
         return filenames[self.measurement_type] if filename is None else filename
+
+    def _set_substack(self, *args, **kwargs):
+        """Needed to be able to use ViewerTools correctly."""
+        return self.img_series._set_substack(*args, **kwargs)
 
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.
@@ -211,13 +226,16 @@ class Analysis:
 
         # save analysis metadata ---------------------------------------------
 
-        self.metadata['rotation'] = self.rotation.data
-        self.metadata['crop'] = self.crop.data
+        self.metadata['rotation'] = self.img_series.rotation.data
+        self.metadata['crop'] = self.img_series.crop.data
 
-        gittools.save_metadata(file=metadata_file, info=self.metadata,
+        gittools.save_metadata(file=metadata_file,
+                               info=self.metadata,
                                module=checked_modules,
-                               dirty_warning=True, notag_warning=True,
-                               nogit_ok=True, nogit_warning=True)
+                               dirty_warning=True,
+                               notag_warning=True,
+                               nogit_ok=True,
+                               nogit_warning=True)
 
     def load(self, filename=None):
         """Load analysis data from tsv file and return it as pandas DataFrame.
@@ -241,7 +259,7 @@ class Analysis:
         filename='Test' will load from Test.json.
         """
         name = self._set_filename(filename)
-        return self._from_json(name)
+        return _from_json(self.savepath, name)
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.
@@ -254,5 +272,5 @@ class Analysis:
         self.metadata = self.load_metadata(filename=filename)
 
         # re-apply transforms (rotation, crop etc.)
-        self.rotation.data = self.metadata['rotation']
-        self.crop.data = self.metadata['crop']
+        self.img_series.rotation.data = self.metadata['rotation']
+        self.img_series.crop.data = self.metadata['crop']

@@ -1,7 +1,6 @@
 """Class ImgSeries for image series manipulation"""
 
 # Standard library imports
-import json
 from pathlib import Path
 
 # Nonstandard
@@ -10,53 +9,13 @@ from skimage import io
 import filo
 
 # local imports
-from .config import filenames
+from .config import filenames, _to_json, _from_json
 from .config import _read, _rgb_to_grey, _rotate, _crop
 from .image_parameters import Rotation, Crop, Contrast, Colors
-from .plot import ImagePlot
+from .viewers import ImgSeriesViewer, ViewerTools
 
 
-
-class ImgSeriesPlot(ImagePlot):
-    """See ImagePlot for details."""
-
-    def create_figure(self):
-        self.fig, self.ax = plt.subplots()
-
-    def get_data(self, num):
-        img = self.img_series.read(num, transform=self.transform)
-        return {'num': num, 'image': img}
-
-    def first_plot(self, data):
-
-        self.imshow = self.img_series._imshow(data['image'],
-                                              ax=self.ax,
-                                              **self.kwargs)
-
-        self._display_info(data)
-        self.ax.axis('off')
-
-        self.updated_artists = [self.imshow]
-
-    def update_plot(self, data):
-        self.imshow.set_array(data['image'])
-        self._display_info(data)
-
-    def _display_info(self, data):
-
-        num = data['num']
-
-        if self.img_series.is_stack:
-            title = 'Image'
-        else:
-            title = self.img_series.files[num].name
-
-        raw_info = ' [RAW]' if not self.transform else ''
-
-        self.ax.set_title(f'{title} (#{num}){raw_info}')
-
-
-class ImgSeries(filo.Series):
+class ImgSeries(filo.Series, ViewerTools):
     """Class to manage series of images, possibly in several folders."""
 
     # Only for __repr__ (str representation of class object, see filo.Series)
@@ -64,11 +23,6 @@ class ImgSeries(filo.Series):
 
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
-
-    # Plotting class for single objects
-
-    # Plotting class used for displaying, inspecting and playing images
-    Plot = ImgSeriesPlot
 
     def __init__(self,
                  paths='.',
@@ -84,7 +38,7 @@ class ImgSeries(filo.Series):
 
         - extension: extension of files to consider (e.g. '.png')
 
-        - savepath: folder in which to save parameter / analysis data.
+        - savepath: folder in which to save parameters (transform, display etc.)
 
         If file series is in a stack rather than in a series of images:
         - stack: path to the stack (.tiff) file
@@ -109,19 +63,15 @@ class ImgSeries(filo.Series):
         else:
             # Inherit useful methods and attributes for file series
             # (including self.savepath)
-            super().__init__(paths=paths,
-                             extension=extension,
-                             savepath=savepath)
+            filo.Series.__init__(self,
+                                 paths=paths,
+                                 extension=extension,
+                                 savepath=savepath)
 
-        # Get type of images (1 color channel or more)
-        # try except is if image series does not link to physical images
-        # e.g. when loading analysis results when images not present
-        try:
-            img = self.read()
-        except IndexError:
-            pass
-        else:
-            self.ndim = img.ndim
+        ViewerTools.__init__(self, Viewer=ImgSeriesViewer)
+
+        img = self.read()
+        self.ndim = img.ndim
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
@@ -130,19 +80,6 @@ class ImgSeries(filo.Series):
     def _crop(self, img):
         """Crop image according to pre-defined crop parameters"""
         return _crop(img, self.crop.data['zone'])
-
-    def _from_json(self, filename):
-        """"Load json file"""
-        file = self.savepath / (filename + '.json')
-        with open(file, 'r', encoding='utf8') as f:
-            data = json.load(f)
-        return data
-
-    def _to_json(self, data, filename):
-        """"Save data (dict) to json file"""
-        file = self.savepath / (filename + '.json')
-        with open(file, 'w', encoding='utf8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
 
     def _set_substack(self, start, end, skip):
         """Generate subset of image numbers to be displayed/analyzed."""
@@ -215,67 +152,6 @@ class ImgSeries(filo.Series):
 
         return img
 
-    def show(self, num=0, transform=True, **kwargs):
-        """Show image in a matplotlib window.
-
-        Parameters
-        ----------
-        - num: image identifier in the file series
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, load raw image.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        viewer = self.Plot(self, transform=transform, **kwargs)
-        viewer.create_figure()
-        viewer.plot(num=num)
-        return viewer.ax
-
-    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
-        """Interactively inspect image stack.
-
-        Parameters:
-
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        nums = self._set_substack(start, end, skip)
-        viewer = self.Plot(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=nums)
-
-    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
-        """Interactively inspect image stack.
-
-        Parameters:
-
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
-
-        - blit: if True, use blitting for faster animation.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        nums = self._set_substack(start, end, skip)
-        viewer = self.Plot(self, transform=transform, **kwargs)
-        return viewer.animate(nums=nums, blit=blit)
-
     def load_transform(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.
 
@@ -290,7 +166,7 @@ class ImgSeries(filo.Series):
         self.crop.reset()
 
         fname = filenames['transform'] if filename is None else filename
-        transform_data = self._from_json(fname)
+        transform_data = _from_json(self.savepath, fname)
 
         self.rotation.data = transform_data['rotation']
         self.crop.data = transform_data['crop']
@@ -306,7 +182,7 @@ class ImgSeries(filo.Series):
         fname = filenames['transform'] if filename is None else filename
         transform_data = {'rotation': self.rotation.data,
                           'crop': self.crop.data}
-        self._to_json(transform_data, fname)
+        _to_json(transform_data, self.savepath, fname)
 
     def load_display(self, filename=None):
         """Load display parameters (contrast, colormapn etc.) from json file.
@@ -322,7 +198,7 @@ class ImgSeries(filo.Series):
         self.colors.reset()
 
         fname = filenames['display'] if filename is None else filename
-        display_data = self._from_json(fname)
+        display_data = _from_json(self.savepath, fname)
 
         self.contrast.data = display_data['contrast']
         self.colors.data = display_data['colors']
@@ -338,4 +214,4 @@ class ImgSeries(filo.Series):
         fname = filenames['display'] if filename is None else filename
         display_data = {'contrast': self.contrast.data,
                         'colors': self.colors.data}
-        self._to_json(display_data, fname)
+        _to_json(display_data, self.savepath, fname)

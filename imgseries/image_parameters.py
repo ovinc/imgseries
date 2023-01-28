@@ -27,7 +27,7 @@ class ImageParameter:
 
         Parameters
         ----------
-        - img_series: object of an image series class (e.g. GreyLevel)
+        - img_series: object of an image series class (e.g. ImgSeries)
         """
         self.img_series = img_series  # ImgSeries object on which to define zones
         self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}
@@ -80,9 +80,19 @@ class TransformParameter(ImageParameter):
 class AnalysisParameter(ImageParameter):
     """Base class for parameters used in analysis (contours, zones, etc.)"""
 
+    def __init__(self, analysis):
+        """Init parameter object.
+
+        Parameters
+        ----------
+        - analysis: object of an analysis class (e.g. GreyLevel)
+        """
+        self.analysis = analysis  # ImgSeries object on which to define zones
+        self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}
+
     def _load(self, filename=None):
         """Load parameter data from .json file."""
-        return self.img_series.load_metadata(filename=filename)
+        return self.analysis.load_metadata(filename=filename)
 
 
 # =============== Display parameters (do not impact analysis) ================
@@ -498,8 +508,8 @@ class Zones(AnalysisParameter):
         """
         fig, ax = plt.subplots()
 
-        img = self.img_series.read(num=num)
-        self.img_series._imshow(img, ax=ax, **kwargs)
+        img = self.analysis.img_series.read(num=num)
+        self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
         ax.set_title('All zones defined so far')
 
@@ -533,10 +543,10 @@ class Zones(AnalysisParameter):
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        img = self.img_series.read(num=num)
+        img = self.analysis.img_series.read(num=num)
 
         fig, ax = plt.subplots()
-        self.img_series._imshow(img, ax=ax, **kwargs)
+        self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
         ax.set_title(f'Analysis Zones (img #{num})')
 
@@ -578,12 +588,12 @@ class Contours(AnalysisParameter):
         """
         fig, ax = plt.subplots()
 
-        img = self.img_series.read(num=num)
-        contours = self.img_series._find_contours(img, level)
+        img = self.analysis.img_series.read(num=num)
+        contours = self.analysis._find_contours(img, level)
 
         # Plot all contours found --------------------------------------------
 
-        self.img_series._imshow(img, ax=ax, **kwargs)
+        self.analysis.img_series._imshow(img, ax=ax, **kwargs)
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
@@ -633,11 +643,11 @@ class Contours(AnalysisParameter):
         positions = self.data['position']
 
         # Load image, crop it, and calculate contours
-        img = self.img_series.read(num)
-        contours = self.img_series._find_contours(img, level)
+        img = self.analysis.img_series.read(num)
+        contours = self.analysis._find_contours(img, level)
 
         _, ax = plt.subplots()
-        self.img_series._imshow(img, ax=ax, **kwargs)
+        self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
         # Find contours closest to reference positions and plot them
         for contour in contours:
