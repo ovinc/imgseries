@@ -20,7 +20,7 @@ class Analysis(ViewerTools):
 
     measurement_type = None  # define in subclasses (e.g. 'glevel', 'ctrack', etc.)
 
-    def __init__(self, img_series=None, Viewer=None, savepath=None):
+    def __init__(self, img_series, Viewer, Results, savepath=None):
         """Initialize Analysis object
 
         Parameters
@@ -28,28 +28,31 @@ class Analysis(ViewerTools):
 
         - img_series: image series from the ImgSeries class or subclasses
 
-        - Viewer: which viewer is used to display and inspect analysis data
-                  (is used by ViewerTools)
+        - Viewer: Viewer class/subclasses that is used to display and inspect
+                  analysis data (is used by ViewerTools)
+
+        - Results: Results class/subclasses that is used to store, save and
+                   load analysis data and metadata.
 
         - savepath: folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
         """
         self.img_series = img_series
-        self.savepath = Path(savepath) if savepath else img_series.savepath
+        self.Viewer = Viewer
 
-        self.data = None      # Data that will be saved in analysis file
+        savepath = Path(savepath) if savepath else img_series.savepath
+        self.results = Results(savepath=savepath)
 
         if self.img_series.is_stack:
             # Below, pre-populate parameters to be saved as metadata.
             # Other metadata will be added to this dict before saving
             # into metadata file
-            stack_path = os.path.relpath(self.img_series.stack_path,
-                                         self.savepath)
-            self.metadata = {'stack': stack_path}
+            stack_path = os.path.relpath(self.img_series.stack_path, savepath)
+            self.results.metadata['stack'] = stack_path
         else:
-            folders = [os.path.relpath(f, self.savepath) for f in self.img_series.folders]
-            self.metadata = {'path': str(self.savepath.resolve()),
-                             'folders': folders}
+            folders = [os.path.relpath(f, savepath) for f in self.img_series.folders]
+            self.results.metadata['path'] = str(savepath.resolve()),
+            self.results.metadata['folders'] = folders
 
         ViewerTools.__init__(self, Viewer=Viewer)
 
@@ -93,6 +96,7 @@ class Analysis(ViewerTools):
 
         self._initialize()
         self._add_metadata()
+        self._add_transform_to_metadata()
         self._prepare_data_storage()
 
         if parallel:  # ================================= Multiprocessing mode
@@ -139,17 +143,17 @@ class Analysis(ViewerTools):
     def _format_data(self):
         """Add file info (name, time, etc.) to analysis results if possible.
 
-        (self.info is defined only if ImgSeries inherits from filo.Series,
+        (img_series.info is defined only if ImgSeries inherits from filo.Series,
         which is not the case if img data is in a stack).
         """
         data_table = self._generate_pandas_data()
 
         if self.img_series.is_stack:
-            self.data = data_table
+            self.results.data = data_table
         else:
-            self.data = pd.concat([self.img_series.info, data_table],
-                                  axis=1,
-                                  join='inner')
+            self.results.data = pd.concat([self.img_series.info, data_table],
+                                           axis=1,
+                                           join='inner')
 
     def _initialize(self):
         """Check everything OK before starting analysis & initialize params.
@@ -163,6 +167,11 @@ class Analysis(ViewerTools):
         (later saved in the metadata json file)
         Define in subclasses."""
         pass
+
+    def _add_transform_to_metadata(self):
+        """Add information about image transforms (rotation, crop etc.) to metadata."""
+        self.results.metadata['rotation'] = self.img_series.rotation.data
+        self.results.metadata['crop'] = self.img_series.crop.data
 
     def _prepare_data_storage(self):
         """How to prepare structure(s) that will hold the analyzed data.
@@ -197,12 +206,35 @@ class Analysis(ViewerTools):
         Define in subclasses."""
         pass
 
-    def _set_filename(self, filename):
-        return filenames[self.measurement_type] if filename is None else filename
-
     def _set_substack(self, *args, **kwargs):
         """Needed to be able to use ViewerTools correctly."""
         return self.img_series._set_substack(*args, **kwargs)
+
+    def regenerate(self, filename=None):
+        """Load saved data, metadata and regenerate objects from them.
+
+        Is used to reset the system in a state similar to the end of the
+        analysis that was made before saving the results.
+        """
+        # load data from files
+        self.results.load(filename=filename)
+
+        # re-apply transforms (rotation, crop etc.)
+        self.img_series.rotation.data = self.results.metadata['rotation']
+        self.img_series.crop.data = self.results.metadata['crop']
+
+
+class AnalysisResults:
+    """Base class for classes that stores and loads analysis results."""
+
+    measurement_type = None  # define in subclasses (e.g. 'glevel' or 'ctrack')
+
+    def __init__(self, savepath='.'):
+        self.reset()
+        self.savepath = Path(savepath)
+
+    def _set_filename(self, filename):
+        return filenames[self.measurement_type] if filename is None else filename
 
     def save(self, filename=None):
         """Save analysis data and metadata into .tsv / .json files.
@@ -226,9 +258,6 @@ class Analysis(ViewerTools):
 
         # save analysis metadata ---------------------------------------------
 
-        self.metadata['rotation'] = self.img_series.rotation.data
-        self.metadata['crop'] = self.img_series.crop.data
-
         gittools.save_metadata(file=metadata_file,
                                info=self.metadata,
                                module=checked_modules,
@@ -238,6 +267,21 @@ class Analysis(ViewerTools):
                                nogit_warning=True)
 
     def load(self, filename=None):
+        """Load analysis data and metadata and stores it in self.data/metadata.
+        Parameters
+        ----------
+        filename:
+
+            - If filename is not specified, use default filenames.
+
+            - If filename is specified, it must be an str without the extension
+              e.g. filename='Test' will create Test.tsv and Test.json files,
+              containing tab-separated data file and metadata file, respectively.
+        """
+        self.data = self._load_data(filename=filename)
+        self.metadata = self._load_metadata(filename=filename)
+
+    def _load_data(self, filename=None):
         """Load analysis data from tsv file and return it as pandas DataFrame.
 
         If filename is not specified, use default filenames.
@@ -250,7 +294,7 @@ class Analysis(ViewerTools):
         data = pd.read_csv(analysis_file, index_col='num', sep=csv_separator)
         return data
 
-    def load_metadata(self, filename=None):
+    def _load_metadata(self, filename=None):
         """Return analysis metadata from json file as a dictionary.
 
         If filename is not specified, use default filenames.
@@ -261,16 +305,7 @@ class Analysis(ViewerTools):
         name = self._set_filename(filename)
         return _from_json(self.savepath, name)
 
-    def regenerate(self, filename=None):
-        """Load saved data, metadata and regenerate objects from them.
-
-        Is used to reset the system in a state similar to the end of the
-        analysis that was made before saving the results.
-        """
-        # load data from files
-        self.data = self.load(filename=filename)
-        self.metadata = self.load_metadata(filename=filename)
-
-        # re-apply transforms (rotation, crop etc.)
-        self.img_series.rotation.data = self.metadata['rotation']
-        self.img_series.crop.data = self.metadata['crop']
+    def reset(self):
+        """Erase data and metadata from the results."""
+        self.data = None
+        self.metadata = {}

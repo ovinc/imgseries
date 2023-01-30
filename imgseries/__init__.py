@@ -1,8 +1,8 @@
 """Image analysis tools for image series."""
 
 from .general import ImgSeries
-from .grey_level import GreyLevel
-from .contour_tracking import ContourTracking
+from .grey_level import GreyLevel, GreyLevelResults
+from .contour_tracking import ContourTracking, ContourTrackingResults
 from .front_1d import Front1D
 
 from importlib_metadata import version

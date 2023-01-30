@@ -9,7 +9,9 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import ImgSeries, GreyLevel, ContourTracking
+from imgseries import ImgSeries
+from imgseries import GreyLevel, GreyLevelResults
+from imgseries import ContourTracking, ContourTrackingResults
 
 
 # # =============================== Misc. config ===============================
@@ -82,68 +84,66 @@ def test_img_time_update():
 # =============== Test avg gray level analysis on image series ===============
 
 
-gl = GreyLevel(paths=folders, savepath=basefolder)
+gl = GreyLevel(ImgSeries(paths=folders, savepath=basefolder))
 gl.zones.load('Img_GreyLevel_Saved')
 
 def test_glevel_analysis_basic():
     gl.run()
-    assert len(gl.data) == 50
+    assert len(gl.results.data) == 50
 
 
 def test_glevel_analysis_range():
     gl.run(start=10, end=655, skip=3)
-    assert gl.data.shape == (14, 6)
+    assert gl.results.data.shape == (14, 6)
 
-
-glr = GreyLevel(savepath=basefolder)
 
 def test_glevel_results_load():
-    data = glr.load('Img_GreyLevel_Saved')
-    assert round(data.at[4, 'zone 3']) == 89
+    glresults = GreyLevelResults(savepath=basefolder)
+    glresults.load('Img_GreyLevel_Saved')
+    assert round(glresults.data.at[4, 'zone 3']) == 89
 
 
 # =============== Test avg gray level analysis on image stacks ===============
 
 
-glstack = GreyLevel(stack=stack, savepath=stackfolder)
+glstack = GreyLevel(ImgSeries(stack=stack, savepath=stackfolder))
 glstack.zones.load('Img_GreyLevel_Saved')
 
 def test_glevelstack_analysis_basic():
     glstack.run()
-    assert glstack.stack.shape == (200, 100, 112)
-    assert len(glstack.data) == 200
+    assert glstack.img_series.stack.shape == (200, 100, 112)
+    assert len(glstack.results.data) == 200
 
 
 # ================== Test contour tracking on image series ===================
 
 
-ct = ContourTracking(folders, savepath=basefolder)
+ct = ContourTracking(ImgSeries(folders, savepath=basefolder))
 ct.contours.load('Img_ContourTracking_Saved')
 
 def test_contour_tracking_basic():
     ct.run()
-    assert len(ct.data) == 50
+    assert len(ct.results.data) == 50
 
 
 def test_contour_tracking_range():
     ct.run(start=10, skip=3)
-    assert ct.data.shape == (14, 15)
+    assert ct.results.data.shape == (14, 15)
 
-
-ctr = ContourTracking(savepath=basefolder)
 
 def test_contour_tracking_load():
-    data = ctr.load('Img_ContourTracking_Saved')
-    assert round(data.at[4, 'x3']) == 321
+    ctresults = ContourTrackingResults(savepath=basefolder)
+    ctresults.load('Img_ContourTracking_Saved')
+    assert round(ctresults.data.at[4, 'x3']) == 321
 
 
 # ================== Test contour tracking on image stacks ===================
 
 
-ctstack = ContourTracking(stack=stack, savepath=stackfolder)
+ctstack = ContourTracking(ImgSeries(stack=stack, savepath=stackfolder))
 ctstack.contours.load('Img_ContourTracking_Saved')
 
 def test_contourstack_tracking_basic():
     ctstack.run()
-    assert ctstack.stack.shape == (200, 100, 112)
-    assert len(ctstack.data) == 200
+    assert ctstack.img_series.stack.shape == (200, 100, 112)
+    assert len(ctstack.results.data) == 200

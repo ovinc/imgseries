@@ -92,7 +92,7 @@ class AnalysisParameter(ImageParameter):
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
-        return self.analysis.load_metadata(filename=filename)
+        return self.analysis.results._load_metadata(filename=filename)
 
 
 # =============== Display parameters (do not impact analysis) ================
@@ -511,22 +511,26 @@ class Zones(AnalysisParameter):
         img = self.analysis.img_series.read(num=num)
         self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
-        ax.set_title('All zones defined so far')
-
         zones = {}
 
-        for k in range(1, n + 1):
+        for k in range(n):
 
-            msg = f'Select zone {k} / {n}'
+            msg = f'Select zone {k + 1} / {n}'
+
+            # line not drawn, just used to set default color and legend
+            line, = ax.plot(1, 1, linestyle=None, label=f'zone {k + 1}')
+            clr = line.get_color()
 
             _, cropzone = imgbasics.imcrop(img,
+                                           color=clr,
                                            message=msg,
                                            draggable=draggable,
+                                           ax=ax,
+                                           closefig=False,
                                            **kwargs)
 
-            name = f'zone {k}'
+            name = f'zone {k + 1}'
             zones[name] = cropzone
-            _cropzone_draw(ax, cropzone, c='b')
 
         plt.close(fig)
 
@@ -551,6 +555,7 @@ class Zones(AnalysisParameter):
         ax.set_title(f'Analysis Zones (img #{num})')
 
         for k, zone in enumerate(self.data.values()):
+            # line not drawn, just used to set default color and legend
             line, = ax.plot(1, 1, linestyle=None, label=f'zone {k + 1}')
             clr = line.get_color()
             _cropzone_draw(ax, zone, c=clr)

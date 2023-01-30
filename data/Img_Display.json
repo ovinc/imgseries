@@ -1,7 +1,7 @@
 {
     "contrast": {
-        "vmin": 40,
-        "vmax": 125
+        "vmin": 50,
+        "vmax": 150
     },
     "colors": {
         "cmap": "gray"

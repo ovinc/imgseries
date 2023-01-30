@@ -201,10 +201,10 @@ See doctrings and Jupyter Notebooks for examples and method options.
 - numpy
 - importlib-metadata
 - tqdm (waitbars)
-- imgbasics (basic image processing)
-- filo (file series management)
-- gittools (get git commit info)
-- drapo (interactive tools for matplotlib figures)
+- filo (file series management) >= 1.1
+- gittools (get git commit info) >= 0.5
+- imgbasics (basic image processing) >= 0.3.0
+- drapo (interactive tools for matplotlib figures) >= 1.2.0
 
 
 ## Python version

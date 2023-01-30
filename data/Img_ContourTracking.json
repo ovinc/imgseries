@@ -33,20 +33,21 @@
             572
         ]
     },
-    "time (utc)": "2023-01-28 17:57:22",
+    "time (utc)": "2023-01-30 18:47:39",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.17.2"
         },
         "imgseries": {
-            "hash": "b0a2feb45338e8e7b44b2ee5084baff27516db6b",
-            "status": "dirty"
+            "hash": "e30097a0afdf2d7d20fd8f060a1e5a5d107b0bd3",
+            "status": "dirty",
+            "tag": "v0.4.0"
         },
         "imgbasics": {
-            "hash": "95ab3694d6b2b6525bbd25ebe9dc0319eaeeeab8",
+            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
             "status": "clean",
-            "tag": "v0.2.1"
+            "tag": "v0.3.0"
         },
         "filo": {
             "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",

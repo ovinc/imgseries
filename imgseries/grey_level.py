@@ -8,7 +8,7 @@ from imgbasics.cropping import _cropzone_draw
 
 # Local imports
 from .config import _crop
-from .analysis import Analysis
+from .analysis import Analysis, AnalysisResults
 from .image_parameters import Zones
 from .viewers import AnalysisViewer
 
@@ -46,7 +46,7 @@ class GreyLevelViewer(AnalysisViewer):
 
         for zone_name, glevel in zip(self.analysis.zones.data, glevels):
 
-            full_data = self.analysis.data[zone_name]
+            full_data = self.analysis.results.data[zone_name]
 
             curve, = self.ax_curves.plot(full_data, label=zone_name)
             color = curve.get_color()
@@ -76,6 +76,10 @@ class GreyLevelViewer(AnalysisViewer):
             pt.set_data((num, glevel))
 
 
+class GreyLevelResults(AnalysisResults):
+    measurement_type = 'glevel'
+
+
 # =========================== Main ANALYSIS class ============================
 
 
@@ -84,7 +88,7 @@ class GreyLevel(Analysis):
 
     measurement_type = 'glevel'
 
-    def __init__(self, img_series=None, savepath=None):
+    def __init__(self, img_series=None, savepath=None, Viewer=None, Results=None):
         """Analysis of avg gray level on selected zone in series of images.
 
         Parameters
@@ -93,9 +97,21 @@ class GreyLevel(Analysis):
 
         - savepath: folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
+
+        - Viewer: Viewer class/subclasses that is used to display and inspect
+                  analysis data (is used by ViewerTools)
+                  (if not specified, use default Viewer for GreyLevel analysis)
+
+        - Results: Results class/subclasses that is used to store, save and
+                   load analysis data and metadata.
+                   (if not specified, use default Results class)
         """
+        Viewer = GreyLevelViewer if Viewer is None else Viewer
+        Results = GreyLevelResults if Results is None else Results
+
         super().__init__(img_series=img_series,
-                         Viewer=GreyLevelViewer,
+                         Viewer=Viewer,
+                         Results=Results,
                          savepath=savepath)
 
         # empty zones object, needs to be filled with zones.define() or
@@ -135,7 +151,7 @@ class GreyLevel(Analysis):
         (later saved in the metadata json file)
         Define in subclasses
         """
-        self.metadata['zones'] = self.zones.data
+        self.results.metadata['zones'] = self.zones.data
 
     def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data."""
@@ -165,7 +181,7 @@ class GreyLevel(Analysis):
         data = {'num': num}
         data['image'] = self.img_series.read(num=num)
         try:
-            data['glevels'] = list(self.data.filter(like='zone').loc[num])
+            data['glevels'] = list(self.results.data.filter(like='zone').loc[num])
         except AttributeError:  # if self.data not defined (analysis not made)
             pass
         return data

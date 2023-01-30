@@ -144,10 +144,13 @@ class ImgSeries(filo.Series, ViewerTools):
         else:
             img = self.stack[num]
 
-        if transform and not self.rotation.is_empty:
+        if not transform:
+            return img
+
+        if not self.rotation.is_empty:
             img = self._rotate(img)
 
-        if transform and not self.crop.is_empty:
+        if not self.crop.is_empty:
             img = self._crop(img)
 
         return img
