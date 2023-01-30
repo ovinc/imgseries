@@ -26,14 +26,10 @@ pip install .
 Quick start
 ===========
 
-Below is some information to use the functions available in **imgseries**. Please also consult docstrings and the example Jupyter notebooks *Examples_ImgSeries.ipynb*, *Examples_GreyLevel.ipynb* and *Examples_ContourTracking.ipynb* for more details and examples.
+Below is some information to use the functions available in **imgseries**. Please also consult docstrings and the example Jupyter notebooks *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *GreyLevel.ipynb* and *ContourTracking.ipynb* for more details and examples.
 
 
-The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. All classes below are children of `filo.Series`:
-
-- `ImgSeries` (directly inherits from `filo.Series`)
-- `GreyLevel` (inherits from `ImgSeries`)
-- `ContourTracking` (inherits from `ImgSeries`)
+The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.Series`.
 
 *Warning*
 
@@ -43,7 +39,7 @@ If running on a Windows machine and using the parallel option in some of the ana
 `ImgSeries`: general image series manipulation
 ----------------------------------------------
 
-See also the notebook with examples and details: *Examples_ImgSeries.ipynb*
+See also the notebook with examples and details: *ImgSeries.ipynb*
 
 ```python
 from imgseries import ImgSeries
@@ -56,11 +52,11 @@ images = ImgSeries(paths=['img1', 'img2'])  # implicitly, savepath is current di
 
 # Access individual images in the series -------------------------------------
 images.files[10]       # filo.File object of image number num=10
-images.files[10].file  # actual file object (pathlib.Path)
+images.files[10].file  # actual pathlib.Path file object
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
-# Interactive views of images ------------------------------------------------
+# Interactive views of image sequence ----------------------------------------
 images.animate()       # see image series as a movie (start, end, skip options)
 images.inspect()       # browse through image series with a slider (same options)
 
@@ -97,98 +93,70 @@ images = ImgSeries(stack='ImgStack.tif')
 `GreyLevel`: average grey level analysis in image series
 --------------------------------------------------------
 
-See also the notebook with examples and details: *Examples_GreyLevel.ipynb*
+Follow the average grey level (brightness) of one or more selected zones on the image sequence.
+The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *GreyLevel.ipynb*
 
 ```python
-from imgseries import GreyLevel
+from imgseries import GreyLevel, GreyLevelResults
 
-# Run analysis ---------------------------------------------------------------
-
-# If working with image series:
-gl = GreyLevel(paths=['img1', 'img2'], savepath='analysis')
-
-# If working with a tiff stack:
-gl = GreyLevel(stack='ImgStack.tif', savepath='analysis')
-
-# Define global transform if necessary (see above in ImgSeries)
-gl.rotation.define()
-gl.crop.define()
-# or gl.load_transform()
+# Create analysis object -----------------------------------------------------
+gl = GreyLevel(images)
 
 # Prepare and run analysis ---------------------------------------------------
 gl.zones.define()  # interactively select zones on image
 gl.zones.load()    # alternative to define() where zones are loaded from saved metadata
-gl.run()   # run actual analysis (parallel computation available)
-gl.data    # pandas dataframe containing the results --> plot() etc. methods available
-gl.save()  # save results to csv file
 
-# Interactive views of results -----------------------------------------------
-gl.animate()       # see results as a movie (start, end, skip options)
-gl.inspect()       # browse through results with a slider (same options)
-
-# Load analysis results afterwards (need save() to have been called) ---------
-gl = GreyLevel(savepath='analysis')  # No need to specify paths here
-gl.load()        # load analysis results (including time) as pandas DataFrame
-gl.zones.load()  # load info (dict) of location of zones analyzed on images
-gl.zones.data    # accessible after zones.load() has been called
-gl.zones.show()  # show analysis zones on image (numbering starts at 0)
-
-# To recreate state after analysis by loading data / metadata etc.: ----------
+# other alternative to load image series and analysis parameters from saved files
 gl.regenerate()
 
-# NOTE: method below only available for image series, not for stacks
-gl.load_info()   # if necessary to look back at num / file correspondence
-```
+gl.run()    # run actual analysis (parallel computation available);
+gl.results  # is an object containing data and metadata of the analysis
+gl.save()
 
-See doctrings and Jupyter Notebooks for examples and method options.
+# Interactive views of results -----------------------------------------------
+gl.show()      # show result of analysis on a given image (default: first one)
+gl.animate()   # see results as a movie (start, end, skip options)
+gl.inspect()   # browse through results with a slider (same options)
+
+# Load analysis results afterwards (need save() to have been called) ---------
+results = GreyLevelResults()
+results.load()   # load analysis results (data + metadata)
+results.data, results.metadata  # useful attributes
+```
 
 
 `ContourTracking`: object tracking using contours in image series
 -----------------------------------------------------------------
 
-See also the notebook with examples and details: *Examples_ContourTracking.ipynb*
+Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *ContourTracking.ipynb*
 
 ```python
-from imgseries import ContourTracking
+from imgseries import ContourTracking, ContourTrackingResults
 
-# Run analysis ---------------------------------------------------------------
-
-ct = ContourTracking(paths=['img1', 'img2'], savepath='analysis')
-
-# If working with a tiff stack:
-ct = ContourTracking(stack='ImgStack.tif', savepath='analysis')
-
-# Define global transform if necessary (see above in ImgSeries)
-ct.rotation.define()
-ct.crop.define()
-# or ct.load_transform()
+# Create analysis object
+ct = ContourTracking(images)
 
 # Prepare and run analysis ---------------------------------------------------
 ct.contours.define()  # interactively select contours to follow on image
 ct.contours.load()    # alternative to define() where contours are loaded from saved metadata
-ct.run()   # run actual analysis (no parallel computation available)
-ct.data    # pandas dataframe containing the results --> plot() etc. methods available
-ct.save()  # save results to csv file
 
-# Interactive views of results -----------------------------------------------
-ct.animate()       # see results as a movie (start, end, skip options)
-ct.inspect()       # browse through results with a slider (same options)
-
-# Load analysis results afterwards (need save() to have been called) ---------
-ct = ContourTracking(savepath='analysis')  # No need to specify paths here
-ct.load()        # load analysis results (including time) as pandas DataFrame
-ct.contours.load()  # load info (dict) of contour tracking parameters
-ct.contours.data    # accessible after contours.load() has been called
-ct.contours.show()  # Show contours on reference image used to select them
-
-# To recreate state after analysis by loading data / metadata etc.: ----------
+# other alternative to load image series and analysis parameters from saved files
 ct.regenerate()
 
-# NOTE: method below only available for image series, not for stacks
-ct.load_info()   # if necessary to look back at num / file correspondence
-```
+ct.run()      # run actual analysis (no parallel computation available)
+ct.results    # is an object containing data and metadata of the analysis
+ct.save()     # save results (data + metadata) to files (csv, json)
 
-See doctrings and Jupyter Notebooks for examples and method options.
+# Interactive views of results -----------------------------------------------
+ct.show()      # show result of analysis on a given image (default: first one)
+ct.animate()   # see results as a movie (start, end, skip options)
+ct.inspect()   # browse through results with a slider (same options)
+
+# Load analysis results afterwards (need save() to have been called) ---------
+results = ContourTrackingResults()
+results.load()   # load analysis results (data + metadata)
+results.data, results.raw_contour_data, results.metadata  # useful attributes
+```
 
 
 # Requirements / dependencies
