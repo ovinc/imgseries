@@ -77,7 +77,10 @@ def _filter(img, filter_type='gaussian', size=1):
     vmax = _max_possible_pixel_value(img)
     if filter_type == 'gaussian':
         img_filtered = skimage.filters.gaussian(img, sigma=size)
-    return (img_filtered * vmax).astype(img.dtype)
+    if vmax is not None:
+        return (img_filtered * vmax).astype(img.dtype)
+    else:
+        return img_filtered
 
 # ================================= File I/O =================================
 

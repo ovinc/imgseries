@@ -1,47 +1,62 @@
 {
-    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imov\\data",
+    "path": [
+        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data"
+    ],
     "folders": [
         "img1",
         "img2"
     ],
     "contours": {
-        "crop": [
-            97,
-            76,
-            416,
-            416
-        ],
         "position": {
             "contour 1": [
-                142.25149189326527,
-                246.32679870176295
+                305.91452158362085,
+                351.1931210635891
             ],
             "contour 2": [
-                281.70167554451166,
-                267.1521264411241
+                378.74597959309295,
+                343.20376242774427
             ],
             "contour 3": [
-                322.1296794412957,
-                229.30162441663862
+                419.08526016738057,
+                305.34614777952004
             ]
         },
-        "level": 170,
+        "level": 175,
         "image": 0
     },
-    "time (utc)": "2020-12-10 13:43:04",
+    "rotation": {},
+    "crop": {},
+    "filter": {
+        "type": "gaussian",
+        "size": 1.7000000000000002
+    },
+    "subtraction": {},
+    "time (utc)": "2023-01-31 19:08:53",
     "code version": {
-        "imov": {
-            "hash": "be3ead2345f899dd43efe360346ab09a96ea2d48",
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.19.3"
+        },
+        "imgseries": {
+            "hash": "84ed9ca9c4d502fe33ca74082e43baf7bce632d5",
             "status": "dirty"
         },
-        "filo": {
-            "hash": "bfd758d345be319116e12933ca66e9acb2c052e4",
+        "imgbasics": {
+            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
             "status": "clean",
-            "tag": "v1.1.0"
+            "tag": "v0.3.0"
         },
-        "plov": {
-            "hash": "1f37588eb5aadf802274faa74bc4abb77ddd8004",
-            "status": "clean"
+        "filo": {
+            "status": "not a git repository",
+            "tag": "v1.1.5"
+        },
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.6.3"
+        },
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.24.1"
         }
     }
 }

@@ -86,6 +86,7 @@ class Analysis(ViewerTools):
         self.results.metadata['rotation'] = self.img_series.rotation.data
         self.results.metadata['crop'] = self.img_series.crop.data
         self.results.metadata['filter'] = self.img_series.filter.data
+        self.results.metadata['subtraction'] = self.img_series.subtraction.data
 
     def _analyze_live(self, num):
         data = self._analyze(num, live=True)
@@ -187,10 +188,12 @@ class Analysis(ViewerTools):
         self.img_series.rotation.reset()
         self.img_series.crop.reset()
         self.img_series.filter.reset()
+        self.img_series.subtraction.reset()
 
         self.img_series.rotation.data = self.results.metadata['rotation']
         self.img_series.crop.data = self.results.metadata['crop']
         self.img_series.filter.data = self.results.metadata['filter']
+        self.img_series.subtraction.data = self.results.metadata['subtraction']
 
     # =================== Methods to define in subclasses ====================
 

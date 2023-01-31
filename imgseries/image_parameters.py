@@ -81,9 +81,11 @@ class TransformParameter(ImageParameter):
     def reset(self):
         """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
         self.data = {}
+        self._clear_cache()
 
-        # If images are stored in a cache, clear it so that the new transform
-        # parameter can be taken into account upon read()
+    def _clear_cache(self):
+        """If images are stored in a cache, clear it so that the new transform
+        parameter can be taken into account upon read()"""
         if self.img_series.cache:
             self.img_series.read.cache_clear()
 
@@ -405,11 +407,7 @@ class Rotation(TransformParameter):
     @angle.setter
     def angle(self, value):
         self.data['angle'] = value
-
-        # If images are stored in a cache, clear it so that the new transform
-        # parameter can be taken into account upon read()
-        if self.img_series.cache:
-            self.img_series.read.cache_clear()
+        self._clear_cache()
 
 
 class Crop(TransformParameter):
@@ -489,11 +487,7 @@ class Crop(TransformParameter):
     @zone.setter
     def zone(self, value):
         self.data['zone'] = value
-
-        # If images are stored in a cache, clear it so that the new transform
-        # parameter can be taken into account upon read()
-        if self.img_series.cache:
-            self.img_series.read.cache_clear()
+        self._clear_cache()
 
 
 class Filter(TransformParameter):
@@ -560,12 +554,16 @@ class Filter(TransformParameter):
 
     @size.setter
     def size(self, value):
+
         self.data['size'] = value
 
-        # If images are stored in a cache, clear it so that the new transform
-        # parameter can be taken into account upon read()
-        if self.img_series.cache:
-            self.img_series.read.cache_clear()
+        # Put default filter type if type is not set yet.
+        try:
+            self.data['type']
+        except KeyError:
+            self.data['type'] = 'gaussian'
+
+        self._clear_cache()
 
     @property
     def type(self):
@@ -577,12 +575,55 @@ class Filter(TransformParameter):
     @type.setter
     def type(self, value):
         self.data['type'] = value
+        self._clear_cache()
 
-        # If images are stored in a cache, clear it so that the new transform
-        # parameter can be taken into account upon read()
-        if self.img_series.cache:
-            self.img_series.read.cache_clear()
 
+class Subtraction(TransformParameter):
+    """Class to store and manage image subtraction.
+
+    self.reference is an iterable of the images to use for subtraction
+    (e.g. self.reference = (0, 1, 2) will use an average of the first images
+    as the image to subtract to the current one)
+
+    self.relative adds a division of the reference image to the subtraction
+    i.e. I_final = (I - I_ref) / I_ref.
+    """
+
+    parameter_type = 'subtraction'
+
+    def _create_reference(self, ref_imgs):
+        """Average all images taken as reference"""
+        imgs = []
+        for num in ref_imgs:
+            imgs.append(self.img_series.read(num=num))
+        img_stack = np.stack(imgs)
+        self.reference_image = img_stack.mean(axis=0)
+
+    @property
+    def reference(self):
+        try:
+            return self.data['reference']
+        except KeyError:
+            return
+
+    @reference.setter
+    def reference(self, value):
+        self.reset()
+        self._create_reference(ref_imgs=value)
+        self.data['reference'] = tuple(value)
+        self._clear_cache()
+
+    @property
+    def relative(self):
+        try:
+            return self.data['relative']
+        except KeyError:
+            return
+
+    @relative.setter
+    def relative(self, value):
+        self.data['relative'] = value
+        self._clear_cache()
 
 
 # ================== Parameters for specific analysis types ==================

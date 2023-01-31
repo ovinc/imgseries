@@ -77,6 +77,8 @@ images.load_display()  # load rotation and crop parameters from json file
 images.rotation.define()
 images.crop.define()
 images.filter.define()
+images.subtraction.reference = range(5)  # use 5 first images to subtract to images
+images.subtraction.relative = True       # (I - Iref) / I_ref instead of I - Iref
 
 images.save_transform()  # save rotation and crop parameters in a json file
 images.load_transform()  # load rotation and crop parameters from json file
