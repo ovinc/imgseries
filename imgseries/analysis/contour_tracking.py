@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import imgbasics
 
 # Local imports
-from .config import _from_json, _to_json
-from .analysis import Analysis, AnalysisResults
-from .image_parameters import Contours
-from .viewers import AnalysisViewer
+from .general import Analysis, AnalysisResults
+from ..config import _from_json, _to_json
+from ..image_parameters import Contours
+from ..viewers import AnalysisViewer
 
 
 # ======================= Plotting / Animation classes =======================

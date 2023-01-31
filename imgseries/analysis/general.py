@@ -11,8 +11,8 @@ import gittools
 from tqdm import tqdm
 
 # local imports
-from .config import filenames, csv_separator, checked_modules, _from_json
-from .viewers import ViewerTools
+from ..config import filenames, csv_separator, checked_modules, _from_json
+from ..viewers import ViewerTools
 
 
 class Analysis(ViewerTools):

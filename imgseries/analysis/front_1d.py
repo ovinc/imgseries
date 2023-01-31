@@ -5,9 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local imports
-from .general import ImgSeries
-from .analysis import Analysis
-from .viewers import AnalysisViewer
+from .general import Analysis
+from ..viewers import AnalysisViewer
 
 
 class Front1DViewer(AnalysisViewer):

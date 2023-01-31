@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 from imgbasics.cropping import _cropzone_draw
 
 # Local imports
-from .config import _crop
-from .analysis import Analysis, AnalysisResults
-from .image_parameters import Zones
-from .viewers import AnalysisViewer
+from .general import Analysis, AnalysisResults
+from ..config import _crop
+from ..image_parameters import Zones
+from ..viewers import AnalysisViewer
 
 
 # ======================= Plotting / Animation classes =======================
