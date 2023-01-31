@@ -35,16 +35,15 @@
             536
         ]
     },
-    "time (utc)": "2023-01-30 18:04:02",
+    "time (utc)": "2023-01-31 15:15:11",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "e30097a0afdf2d7d20fd8f060a1e5a5d107b0bd3",
-            "status": "dirty",
-            "tag": "v0.4.0"
+            "hash": "52094561a1dce8bd38153baeed9244fb4e489677",
+            "status": "dirty"
         },
         "imgbasics": {
             "hash": "3f468b4021be56679a448bea57a229fc34c6721d",

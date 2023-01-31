@@ -193,7 +193,7 @@ class AnalysisViewer(ImageViewer):
         if self.live:
             return self.analysis._analyze_live(num)
         else:
-            return self.analysis._regenerate_data(num)
+            return self.analysis.formatter._regenerate_data(num)
 
 
 class ViewerTools:
