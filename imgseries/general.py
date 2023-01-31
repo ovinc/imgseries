@@ -11,8 +11,8 @@ import filo
 
 # local imports
 from .config import filenames, _to_json, _from_json
-from .config import _read, _rgb_to_grey, _rotate, _crop
-from .image_parameters import Rotation, Crop, Contrast, Colors
+from .config import _read, _rgb_to_grey, _rotate, _crop, _filter
+from .image_parameters import Rotation, Crop, Filter, Contrast, Colors
 from .viewers import ImgSeriesViewer, ViewerTools
 
 
@@ -50,6 +50,7 @@ class ImgSeries(filo.Series, ViewerTools):
         # Image transforms that are applied to all images of the series.
         self.rotation = Rotation(self)
         self.crop = Crop(self)
+        self.filter = Filter(self)
 
         # Display options (do not impact analysis)
         self.contrast = Contrast(self)
@@ -78,11 +79,19 @@ class ImgSeries(filo.Series, ViewerTools):
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
-        return _rotate(img, angle=self.rotation.data['angle'])
+        return _rotate(img,
+                       angle=self.rotation.data['angle'])
 
     def _crop(self, img):
         """Crop image according to pre-defined crop parameters"""
-        return _crop(img, self.crop.data['zone'])
+        return _crop(img,
+                     self.crop.data['zone'])
+
+    def _filter(self, img):
+        """Crop image according to pre-defined crop parameters"""
+        return _filter(img,
+                       filter_type=self.filter.data['type'],
+                       size=self.filter.data['size'])
 
     def _set_substack(self, start, end, skip):
         """Generate subset of image numbers to be displayed/analyzed."""
@@ -143,6 +152,9 @@ class ImgSeries(filo.Series, ViewerTools):
         if not self.crop.is_empty:
             img = self._crop(img)
 
+        if not self.filter.is_empty:
+            img = self._filter(img)
+
         return img
 
     def read(self, num=0, transform=True):
@@ -174,12 +186,14 @@ class ImgSeries(filo.Series, ViewerTools):
         """
         self.rotation.reset()
         self.crop.reset()
+        self.filter.reset()
 
         fname = filenames['transform'] if filename is None else filename
         transform_data = _from_json(self.savepath, fname)
 
         self.rotation.data = transform_data['rotation']
         self.crop.data = transform_data['crop']
+        self.filter.data = transform_data['filter']
 
     def save_transform(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.
@@ -191,7 +205,8 @@ class ImgSeries(filo.Series, ViewerTools):
         """
         fname = filenames['transform'] if filename is None else filename
         transform_data = {'rotation': self.rotation.data,
-                          'crop': self.crop.data}
+                          'crop': self.crop.data,
+                          'filter': self.filter.data}
         _to_json(transform_data, self.savepath, fname)
 
     def load_display(self, filename=None):

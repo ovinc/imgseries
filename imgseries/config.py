@@ -42,17 +42,12 @@ def _rgb_to_grey(img):
     """How to convert an RGB image to grayscale"""
     return skimage.color.rgb2gray(img)
 
-# =========== Define how to transform images (crop, rotate, etc.) ============
-
-def _rotate(img, angle):
-    """Rotate an image by a given angle"""
-    return rotate(img, angle=angle, resize=True, order=3)
-
-def _crop(img, zone):
-    """Crop an image to zone (X0, Y0, Width, Height)"""
-    return imgbasics.imcrop(img, zone)
-
 # =========================== Pixel and bit depths ===========================
+
+
+pixel_depths = {'uint8': 2**8 - 1,
+                'uint16': 2**16 - 1}
+
 
 def _max_possible_pixel_value(img):
     """Return max pixel value depending on img type, for use in plt.imshow.
@@ -65,12 +60,24 @@ def _max_possible_pixel_value(img):
     ------
     vmax: max pixel value (int or float or None)
     """
-    if img.dtype == 'uint8':
-        return 2**8 - 1
-    elif img.dtype == 'uint16':
-        return 2**16 - 1
-    else:
-        return None
+    return pixel_depths.get(img.dtype.name, None)
+
+# =========== Define how to transform images (crop, rotate, etc.) ============
+
+def _rotate(img, angle):
+    """Rotate an image by a given angle"""
+    return rotate(img, angle=angle, resize=True, order=3)
+
+def _crop(img, zone):
+    """Crop an image to zone (X0, Y0, Width, Height)"""
+    return imgbasics.imcrop(img, zone)
+
+def _filter(img, filter_type='gaussian', size=1):
+    """Crop an image to zone (X0, Y0, Width, Height)"""
+    vmax = _max_possible_pixel_value(img)
+    if filter_type == 'gaussian':
+        img_filtered = skimage.filters.gaussian(img, sigma=size)
+    return (img_filtered * vmax).astype(img.dtype)
 
 # ================================= File I/O =================================
 

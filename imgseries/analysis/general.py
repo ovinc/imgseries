@@ -85,6 +85,7 @@ class Analysis(ViewerTools):
         """Add information about image transforms (rotation, crop etc.) to metadata."""
         self.results.metadata['rotation'] = self.img_series.rotation.data
         self.results.metadata['crop'] = self.img_series.crop.data
+        self.results.metadata['filter'] = self.img_series.filter.data
 
     def _analyze_live(self, num):
         data = self._analyze(num, live=True)
@@ -183,8 +184,13 @@ class Analysis(ViewerTools):
         self.results.load(filename=filename)
 
         # re-apply transforms (rotation, crop etc.)
+        self.img_series.rotation.reset()
+        self.img_series.crop.reset()
+        self.img_series.filter.reset()
+
         self.img_series.rotation.data = self.results.metadata['rotation']
         self.img_series.crop.data = self.results.metadata['crop']
+        self.img_series.filter.data = self.results.metadata['filter']
 
     # =================== Methods to define in subclasses ====================
 

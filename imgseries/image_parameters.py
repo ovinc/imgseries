@@ -2,6 +2,7 @@
 
 # Standard library
 from math import pi
+from functools import lru_cache
 
 # Non-standard modules
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from imgbasics.cropping import _cropzone_draw
 from drapo import linput
 
 # Local imports
-from .config import _max_possible_pixel_value
+from .config import _max_possible_pixel_value, _filter
 
 
 # =============================== Base classes ===============================
@@ -495,6 +496,95 @@ class Crop(TransformParameter):
             self.img_series.read.cache_clear()
 
 
+class Filter(TransformParameter):
+    """Class to store and manage filters (gaussian smoothing, etc.)"""
+
+    parameter_type = 'filter'
+
+    def define(self, num=0, max_size=10, **kwargs):
+        """Interactively define filter.
+
+        Parameters
+        ----------
+        - num: image ('num' id) to display. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
+        Output
+        ------
+        None, but stores in self.data a dict with info about the filter.
+        """
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(bottom=0.1)
+        ax_slider = fig.add_axes([0.1, 0.01, 0.8, 0.03])
+
+        img = self.img_series.read(num=num)
+        imshow = self.img_series._imshow(img, ax=ax, **kwargs)
+
+        @lru_cache(maxsize=516)
+        def filter_image(size):
+            return _filter(img, filter_type='gaussian', size=size)
+
+        def update_image(size):
+            self.size = size
+            img = filter_image(size)
+            imshow.set_array(img)
+
+        self.size = 1
+
+        slider = Slider(ax=ax_slider,
+                        label='size',
+                        valmin=0,
+                        valmax=max_size,
+                        valinit=1,
+                        valstep=0.1,
+                        color='steelblue',
+                        alpha=0.5)
+
+        slider.on_changed(update_image)
+
+        self.data = {'type': 'gaussian', 'size': self.size}
+
+        return slider
+
+    @property
+    def size(self):
+        try:
+            return self.data['size']
+        except KeyError:
+            return
+
+    @size.setter
+    def size(self, value):
+        self.data['size'] = value
+
+        # If images are stored in a cache, clear it so that the new transform
+        # parameter can be taken into account upon read()
+        if self.img_series.cache:
+            self.img_series.read.cache_clear()
+
+    @property
+    def type(self):
+        try:
+            return self.data['type']
+        except KeyError:
+            return
+
+    @type.setter
+    def type(self, value):
+        self.data['type'] = value
+
+        # If images are stored in a cache, clear it so that the new transform
+        # parameter can be taken into account upon read()
+        if self.img_series.cache:
+            self.img_series.read.cache_clear()
+
+
+
 # ================== Parameters for specific analysis types ==================
 
 
@@ -593,7 +683,7 @@ class Contours(AnalysisParameter):
 
     parameter_type = 'contours'
 
-    def define(self, level, n=1, num=0, **kwargs):
+    def define(self, n=1, num=0, **kwargs):
         """Interactively define n contours on an image at level level.
 
         Parameters
@@ -613,6 +703,8 @@ class Contours(AnalysisParameter):
         None, but stores in self.data a dictionary with keys:
         'position', 'level', 'image'
         """
+        level = self.analysis.threshold.value
+
         fig, ax = plt.subplots()
 
         img = self.analysis.img_series.read(num=num)
@@ -692,3 +784,86 @@ class Contours(AnalysisParameter):
         plt.show()
 
         return ax
+
+
+class Threshold(AnalysisParameter):
+    """Class to store and manage grey level thresholds (e.g. to define contours.)"""
+
+    parameter_type = 'threshold'
+
+    def define(self, num=0, **kwargs):
+        """Interactively define threshold
+
+        Parameters
+        ----------
+        - num: image ('num' id) to display. Note that this number can be
+               different from the name written in the image filename, because
+               num always starts at 0 in the first folder.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+
+        Output
+        ------
+        None, but stores in self.data a dict with threshold value
+        (key 'value') and accessible by self.value
+        """
+        self.reset()
+
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(bottom=0.1)
+        ax_slider = fig.add_axes([0.1, 0.01, 0.8, 0.03])
+
+        img = self.analysis.img_series.read(num=num)
+        self.analysis.img_series._imshow(img, ax=ax, **kwargs)
+
+        @lru_cache(maxsize=516)
+        def calculate_contours(level):
+            return self.analysis._find_contours(img, level)
+
+        self.lines = []
+
+        def draw_contours(level):
+            contours = calculate_contours(level)
+            for contour in contours:
+                x, y = imgbasics.contour_coords(contour, source='scikit')
+                line, = ax.plot(x, y, linewidth=2, c='r')
+                self.lines.append(line)
+
+        level_max = _max_possible_pixel_value(img)
+        level_start = level_max // 2
+        draw_contours(level_start)
+
+        slider = Slider(ax=ax_slider,
+                        label='level',
+                        valmin=0,
+                        valmax=level_max,
+                        valinit=level_start,
+                        valstep=1,
+                        color='steelblue',
+                        alpha=0.5)
+
+        self.data = {'value': level_start}
+
+        def update_level(level):
+            self.data['value'] = level
+            for line in self.lines:
+                line.remove()
+            self.lines = []
+            draw_contours(level=level)
+
+        slider.on_changed(update_level)
+
+        return slider
+
+    @property
+    def value(self):
+        try:
+            return self.data['value']
+        except KeyError:
+            return
+
+    @value.setter
+    def value(self, val):
+        self.data['value'] = val

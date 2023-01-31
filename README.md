@@ -76,6 +76,8 @@ images.load_display()  # load rotation and crop parameters from json file
 # (see details in notebook)
 images.rotation.define()
 images.crop.define()
+images.filter.define()
+
 images.save_transform()  # save rotation and crop parameters in a json file
 images.load_transform()  # load rotation and crop parameters from json file
 
@@ -151,8 +153,9 @@ from imgseries import ContourTracking, ContourTrackingResults
 ct = ContourTracking(images)
 
 # Prepare and run analysis ---------------------------------------------------
-ct.contours.define()  # interactively select contours to follow on image
-ct.contours.load()    # alternative to define() where contours are loaded from saved metadata
+ct.threshold.define()  # interactively select threshold level
+ct.contours.define()   # interactively select contours at the above level
+ct.contours.load()     # alternative to define() where contours are loaded from saved metadata
 
 # other alternative to load image series and analysis parameters from saved files
 ct.regenerate()

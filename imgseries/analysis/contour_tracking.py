@@ -10,7 +10,7 @@ import imgbasics
 # Local imports
 from .general import Analysis, PandasFormatter, PandasTsvResults
 from ..config import _from_json, _to_json
-from ..image_parameters import Contours
+from ..image_parameters import Contours, Threshold
 from ..viewers import AnalysisViewer
 
 
@@ -30,7 +30,7 @@ class ContourTrackingViewer(AnalysisViewer):
         img = data['image']
         num = data['num']
 
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
+        self.ax.set_title(f'img #{num}, grey level {self.analysis.threshold.value}')
         self.imshow = self.analysis.img_series._imshow(img, ax=self.ax, **self.kwargs)
 
         self.ax.axis('off')
@@ -62,7 +62,7 @@ class ContourTrackingViewer(AnalysisViewer):
         img = data['image']
         num = data['num']
 
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.level}')
+        self.ax.set_title(f'img #{num}, grey level {self.analysis.threshold.value}')
 
         self.imshow.set_array(img)
 
@@ -247,6 +247,7 @@ class ContourTracking(Analysis):
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
         self.contours = Contours(self)
+        self.threshold = Threshold(self)
 
     def _find_contours(self, img, level):
         """Define how contours are found on an image."""
@@ -278,7 +279,7 @@ class ContourTracking(Analysis):
         number of contours followed and (x, y), p, a is position, perimeter, area
         """
         img = self.img_series.read(num)
-        contours = self._find_contours(img, self.level)
+        contours = self._find_contours(img, self.threshold.value)
 
         data = {'contour properties': []}     # Stores analysis data (centroid etc.)
         data['raw contours'] = []       # Stores full (x, y) contour data
@@ -326,7 +327,6 @@ class ContourTracking(Analysis):
                   "or self.contours.load() if contours have been previously saved."
             raise AttributeError(msg)
 
-        self.level = self.contours.data['level']
         self.reference_positions = list(self.contours.data['position'].values())
 
     def _add_metadata(self):
@@ -347,4 +347,4 @@ class ContourTracking(Analysis):
         self.contours.load(filename=filename)
 
         # regenerate level at which contours are plotted
-        self.level = self.contours.data['level']
+        self.threshold.value = self.contours.data['level']
