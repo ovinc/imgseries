@@ -2,6 +2,7 @@
 
 # Standard library imports
 from pathlib import Path
+from functools import lru_cache
 
 # Nonstandard
 import matplotlib.pyplot as plt
@@ -23,6 +24,8 @@ class ImgSeries(filo.Series, ViewerTools):
 
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = filenames['files'] + '.tsv'
+
+    cache = False   # cache images during read() or not (changed in ImgSeriesCached)
 
     def __init__(self,
                  paths='.',
@@ -132,6 +135,16 @@ class ImgSeries(filo.Series, ViewerTools):
         """"Convert RGB to grayscale"""
         return _rgb_to_grey(img)
 
+    def _apply_transform(self, img):
+        """Apply stored transforms on the image (crop, rotation, etc.)"""
+        if not self.rotation.is_empty:
+            img = self._rotate(img)
+
+        if not self.crop.is_empty:
+            img = self._crop(img)
+
+        return img
+
     def read(self, num=0, transform=True):
         """Load image data (image identifier num across folders).
 
@@ -144,16 +157,10 @@ class ImgSeries(filo.Series, ViewerTools):
         else:
             img = self.stack[num]
 
-        if not transform:
+        if transform:
+            return self._apply_transform(img)
+        else:
             return img
-
-        if not self.rotation.is_empty:
-            img = self._rotate(img)
-
-        if not self.crop.is_empty:
-            img = self._crop(img)
-
-        return img
 
     def load_transform(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.
@@ -218,3 +225,17 @@ class ImgSeries(filo.Series, ViewerTools):
         display_data = {'contrast': self.contrast.data,
                         'colors': self.colors.data}
         _to_json(display_data, self.savepath, fname)
+
+
+def series(*args, cache=False, cache_size=516, **kwargs):
+    """Generator of ImgSeries object with a caching option."""
+    if not cache:
+        return ImgSeries(*args, **kwargs)
+
+    else:
+        class ImgSeriesCached(ImgSeries):
+            cache = True
+            @lru_cache(maxsize=cache_size)
+            def read(self, num=0, transform=True):
+                return super().read(num, transform=transform)
+        return ImgSeriesCached(*args, **kwargs)

@@ -42,13 +42,18 @@ If running on a Windows machine and using the parallel option in some of the ana
 See also the notebook with examples and details: *ImgSeries.ipynb*
 
 ```python
-from imgseries import ImgSeries
+from imgseries import ImgSeries, series
 
 # ----------------------------------------------------------------------------
 # ======= WORKING WITH IMAGE SERIES (distinct, individual image files) =======
 # ----------------------------------------------------------------------------
 
+# EITHER:
 images = ImgSeries(paths=['img1', 'img2'])  # implicitly, savepath is current directory
+# OR:
+images = series(paths=['img1', 'img2'])
+# (the series() function is a bit more powerful than the ImgSeries class, as it
+# allows the user to select caching options for speed improvements, see below)
 
 # Access individual images in the series -------------------------------------
 images.files[10]       # filo.File object of image number num=10
@@ -88,6 +93,15 @@ images = ImgSeries(stack='ImgStack.tif')
 
 # All methods/attributes above available, except those associated with timestamps
 ```
+
+### Caching images for speed improvement
+
+```python
+images = series(paths=['img1', 'img2'], cache=True)
+images.inspect()  # inspection should be significantly faster
+```
+See *ImgSeries_Caching.ipynb* for examples, details and options (cache size etc.).
+By default, caching is disabled because it can lead to significant memory usage for large files.
 
 
 `GreyLevel`: average grey level analysis in image series

@@ -43,6 +43,7 @@ class ImageParameter:
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
+        self.reset()  # useful when using caching
         all_data = self._load(filename=filename)
         self.data = all_data[self.parameter_type]
 
@@ -75,6 +76,15 @@ class TransformParameter(ImageParameter):
     def _load(self, filename=None):
         """Load parameter data from .json file."""
         return self.img_series.load_transform(filename=filename)
+
+    def reset(self):
+        """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
+        self.data = {}
+
+        # If images are stored in a cache, clear it so that the new transform
+        # parameter can be taken into account upon read()
+        if self.img_series.cache:
+            self.img_series.read.cache_clear()
 
 
 class AnalysisParameter(ImageParameter):
@@ -344,6 +354,8 @@ class Rotation(TransformParameter):
         ------
         None, but stores in self.data the rotation angle with key "angle"
         """
+        self.img_series.rotation.reset()
+
         fig, ax = plt.subplots()
         img = self.img_series.read(num=num, transform=False)
         self.img_series._imshow(img, ax=ax, **kwargs)
@@ -392,6 +404,11 @@ class Rotation(TransformParameter):
     @angle.setter
     def angle(self, value):
         self.data['angle'] = value
+
+        # If images are stored in a cache, clear it so that the new transform
+        # parameter can be taken into account upon read()
+        if self.img_series.cache:
+            self.img_series.read.cache_clear()
 
 
 class Crop(TransformParameter):
@@ -471,6 +488,11 @@ class Crop(TransformParameter):
     @zone.setter
     def zone(self, value):
         self.data['zone'] = value
+
+        # If images are stored in a cache, clear it so that the new transform
+        # parameter can be taken into account upon read()
+        if self.img_series.cache:
+            self.img_series.read.cache_clear()
 
 
 # ================== Parameters for specific analysis types ==================
