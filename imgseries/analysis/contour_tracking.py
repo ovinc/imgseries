@@ -343,8 +343,10 @@ class ContourTracking(Analysis):
         # Load data
         super().regenerate(filename=filename)
 
-        # regenerate internal contours object
+        # regenerate internal threshold / contours object
         self.contours.load(filename=filename)
 
-        # regenerate level at which contours are plotted
-        self.threshold.value = self.contours.data['level']
+        # at the moment, this is already done by contours.load(), but I'm
+        # putting this there to be sure in case contours are modified to not
+        # include threshold level information
+        self.threshold.load(filename=filename)

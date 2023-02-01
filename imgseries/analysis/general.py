@@ -11,7 +11,7 @@ import gittools
 from tqdm import tqdm
 
 # local imports
-from ..config import filenames, csv_separator, checked_modules, _from_json
+from ..config import CONFIG, _from_json
 from ..viewers import ViewerTools
 
 
@@ -83,10 +83,9 @@ class Analysis(ViewerTools):
 
     def _add_transform_to_metadata(self):
         """Add information about image transforms (rotation, crop etc.) to metadata."""
-        self.results.metadata['rotation'] = self.img_series.rotation.data
-        self.results.metadata['crop'] = self.img_series.crop.data
-        self.results.metadata['filter'] = self.img_series.filter.data
-        self.results.metadata['subtraction'] = self.img_series.subtraction.data
+        for transform_name in CONFIG['image transforms']:
+            transform_data = getattr(self.img_series, transform_name).data
+            self.results.metadata[transform_name] = transform_data
 
     def _analyze_live(self, num):
         data = self._analyze(num, live=True)
@@ -185,15 +184,15 @@ class Analysis(ViewerTools):
         self.results.load(filename=filename)
 
         # re-apply transforms (rotation, crop etc.)
-        self.img_series.rotation.reset()
-        self.img_series.crop.reset()
-        self.img_series.filter.reset()
-        self.img_series.subtraction.reset()
 
-        self.img_series.rotation.data = self.results.metadata['rotation']
-        self.img_series.crop.data = self.results.metadata['crop']
-        self.img_series.filter.data = self.results.metadata['filter']
-        self.img_series.subtraction.data = self.results.metadata['subtraction']
+        for transform_name in CONFIG['image transforms']:
+
+            # e.g. self.img_series.crop.reset()
+            getattr(self.img_series, transform_name).reset()
+
+            # e.g. self.img_series.crop.data = self.results.metadata['crop']
+            data = self.results.metadata.get(transform_name, {})
+            setattr(getattr(self.img_series, transform_name), 'data', data)
 
     # =================== Methods to define in subclasses ====================
 
@@ -299,7 +298,7 @@ class Results:
         self.savepath = Path(savepath)
 
     def _set_filename(self, filename):
-        return filenames[self.measurement_type] if filename is None else filename
+        return CONFIG['filenames'][self.measurement_type] if filename is None else filename
 
     def reset(self):
         """Erase data and metadata from the results."""
@@ -344,13 +343,13 @@ class PandasTsvResults(Results):
         metadata_file = self.savepath / (name + '.json')
 
         # save analysis data -------------------------------------------------
-        self.data.to_csv(analysis_file, sep=csv_separator)
+        self.data.to_csv(analysis_file, sep=CONFIG['csv separator'])
 
         # save analysis metadata ---------------------------------------------
 
         gittools.save_metadata(file=metadata_file,
                                info=self.metadata,
-                               module=checked_modules,
+                               module=CONFIG['checked modules'],
                                dirty_warning=True,
                                notag_warning=True,
                                nogit_ok=True,
@@ -381,7 +380,7 @@ class PandasTsvResults(Results):
         """
         name = self._set_filename(filename)
         analysis_file = self.savepath / (name + '.tsv')
-        data = pd.read_csv(analysis_file, index_col='num', sep=csv_separator)
+        data = pd.read_csv(analysis_file, index_col='num', sep=CONFIG['csv separator'])
         return data
 
     def _load_metadata(self, filename=None):

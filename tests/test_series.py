@@ -134,7 +134,7 @@ def test_contour_tracking_range():
 def test_contour_tracking_load():
     ctresults = ContourTrackingResults(savepath=basefolder)
     ctresults.load('Img_ContourTracking_Saved')
-    assert round(ctresults.data.at[4, 'x3']) == 321
+    assert round(ctresults.data.at[4, 'x3']) == 418
 
 
 # ================== Test contour tracking on image stacks ===================

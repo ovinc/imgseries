@@ -1,10 +1,10 @@
 {
     "path": [
-        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data"
+        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data\\for-tests-do-not-modify"
     ],
     "folders": [
-        "img1",
-        "img2"
+        "..\\img1",
+        "..\\img2"
     ],
     "contours": {
         "position": {
@@ -26,19 +26,16 @@
     },
     "rotation": {},
     "crop": {},
-    "filter": {
-        "type": "gaussian",
-        "size": 1.7000000000000002
-    },
+    "filter": {},
     "subtraction": {},
-    "time (utc)": "2023-01-31 19:08:53",
+    "time (utc)": "2023-02-01 12:38:35",
     "code version": {
         "skimage": {
             "status": "not a git repository",
-            "tag": "v0.19.3"
+            "tag": "v0.17.2"
         },
         "imgseries": {
-            "hash": "84ed9ca9c4d502fe33ca74082e43baf7bce632d5",
+            "hash": "6411987beeddd0bbddfe82f3395bffbccffe2d5f",
             "status": "dirty"
         },
         "imgbasics": {
@@ -47,16 +44,17 @@
             "tag": "v0.3.0"
         },
         "filo": {
-            "status": "not a git repository",
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
             "tag": "v1.1.5"
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.6.3"
+            "tag": "v3.3.2"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.24.1"
+            "tag": "v1.19.2"
         }
     }
 }

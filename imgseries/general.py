@@ -10,7 +10,8 @@ from skimage import io
 import filo
 
 # local imports
-from .config import filenames, _to_json, _from_json
+from .config import CONFIG
+from .config import _to_json, _from_json
 from .config import _read, _rgb_to_grey, _rotate, _crop, _filter
 from .image_parameters import Rotation, Crop, Filter, Subtraction
 from .image_parameters import Contrast, Colors
@@ -24,7 +25,7 @@ class ImgSeries(filo.Series, ViewerTools):
     name = 'Image Series'
 
     # Default filename to save file info with save_info (see filo.Series)
-    info_filename = filenames['files'] + '.tsv'
+    info_filename = CONFIG['filenames']['files'] + '.tsv'
 
     cache = False   # cache images during read() or not (changed in ImgSeriesCached)
 
@@ -54,6 +55,12 @@ class ImgSeries(filo.Series, ViewerTools):
         self.filter = Filter(self)
         self.subtraction = Subtraction(self)
 
+        # Link image transform names to actual functions that apply them
+        self.transforms = {'rotation': self._rotate,
+                           'crop': self._crop,
+                           'filter': self._filter,
+                           'subtraction': self._subtract}
+
         # Display options (do not impact analysis)
         self.contrast = Contrast(self)
         self.colors = Colors(self)
@@ -78,6 +85,7 @@ class ImgSeries(filo.Series, ViewerTools):
 
         img = self.read()
         self.ndim = img.ndim
+
 
     def _rotate(self, img):
         """Rotate image according to pre-defined rotation parameters"""
@@ -156,18 +164,14 @@ class ImgSeries(filo.Series, ViewerTools):
 
     def _apply_transform(self, img):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
-        if not self.rotation.is_empty:
-            img = self._rotate(img)
 
-        if not self.crop.is_empty:
-            img = self._crop(img)
+        for transform_name in CONFIG['image transforms']:
 
-        if not self.subtraction.is_empty:
-            img = self._subtract(img)
+            transform_object = getattr(self, transform_name)      # e.g. self.rotation
+            transform_function = self.transforms[transform_name]  # e.g. self._rotate
 
-        if not self.filter.is_empty:
-            img = self._filter(img)
-
+            if not transform_object.is_empty:
+                img = transform_function(img)
 
         return img
 
@@ -203,13 +207,13 @@ class ImgSeries(filo.Series, ViewerTools):
         self.filter.reset()
         self.subtraction.reset()
 
-        fname = filenames['transform'] if filename is None else filename
+        fname = CONFIG['filenames']['transform'] if filename is None else filename
         transform_data = _from_json(self.savepath, fname)
 
-        self.rotation.data = transform_data['rotation']
-        self.crop.data = transform_data['crop']
-        self.filter.data = transform_data['filter']
-        self.subtraction.data = transform_data['subtraction']
+        for transform_name in CONFIG['image transforms']:
+            data = transform_data.get(transform_name, {})
+            # e.g. self.rotation.data = data
+            setattr(getattr(self, transform_name), 'data', data)
 
     def save_transform(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.
@@ -219,12 +223,11 @@ class ImgSeries(filo.Series, ViewerTools):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        fname = filenames['transform'] if filename is None else filename
-        transform_data = {'rotation': self.rotation.data,
-                          'crop': self.crop.data,
-                          'filter': self.filter.data,
-                          'subtraction': self.subtraction.data
-                          }
+        fname = CONFIG['filenames']['transform'] if filename is None else filename
+
+        transform_data = {transform_name: getattr(self, transform_name).data
+                          for transform_name in CONFIG['image transforms']}
+
         _to_json(transform_data, self.savepath, fname)
 
     def load_display(self, filename=None):
@@ -240,7 +243,7 @@ class ImgSeries(filo.Series, ViewerTools):
         self.contrast.reset()
         self.colors.reset()
 
-        fname = filenames['display'] if filename is None else filename
+        fname = CONFIG['filenames']['display'] if filename is None else filename
         display_data = _from_json(self.savepath, fname)
 
         self.contrast.data = display_data['contrast']
@@ -254,7 +257,7 @@ class ImgSeries(filo.Series, ViewerTools):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        fname = filenames['display'] if filename is None else filename
+        fname = CONFIG['filenames']['display'] if filename is None else filename
         display_data = {'contrast': self.contrast.data,
                         'colors': self.colors.data}
         _to_json(display_data, self.savepath, fname)

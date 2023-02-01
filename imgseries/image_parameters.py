@@ -826,6 +826,14 @@ class Contours(AnalysisParameter):
 
         return ax
 
+    def load(self, filename=None):
+        """Redefined here because threshold data is contained in contours data'
+        """
+        self.reset()  # useful when using caching
+        all_data = self._load(filename=filename)
+        self.data = all_data[self.parameter_type]
+        self.analysis.threshold.value = self.data['level']
+
 
 class Threshold(AnalysisParameter):
     """Class to store and manage grey level thresholds (e.g. to define contours.)"""
@@ -897,6 +905,17 @@ class Threshold(AnalysisParameter):
         slider.on_changed(update_level)
 
         return slider
+
+    def load(self, filename=None):
+        """Redefined here in because some old analyses have this value stored
+        in 'contours' and not 'threshold'
+        """
+        self.reset()  # useful when using caching
+        all_data = self._load(filename=filename)
+        try:
+            self.data = all_data[self.parameter_type]
+        except KeyError:
+            self.value = all_data['contours']['level']
 
     @property
     def value(self):

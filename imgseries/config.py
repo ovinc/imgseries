@@ -5,6 +5,7 @@ import json
 
 # Non standard
 import skimage
+from skimage import filters
 from imgbasics.transform import rotate
 
 # Additional checked modules to save git/version info
@@ -28,6 +29,13 @@ filenames = {'files': 'Img_Files',  # for file info (timing etc.)
              'glevel': 'Img_GreyLevel',           # program will add .tsv or
              'ctrack': 'Img_ContourTracking',     # .json depending on context
              }
+
+image_transforms = 'rotation', 'crop', 'filter', 'subtraction'
+
+CONFIG = {'csv separator': csv_separator,
+          'filenames': filenames,
+          'image transforms': image_transforms,
+          'checked modules': checked_modules}
 
 
 # ======================== Define how to load images =========================
@@ -76,7 +84,7 @@ def _filter(img, filter_type='gaussian', size=1):
     """Crop an image to zone (X0, Y0, Width, Height)"""
     vmax = _max_possible_pixel_value(img)
     if filter_type == 'gaussian':
-        img_filtered = skimage.filters.gaussian(img, sigma=size)
+        img_filtered = filters.gaussian(img, sigma=size)
     if vmax is not None:
         return (img_filtered * vmax).astype(img.dtype)
     else:
