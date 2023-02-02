@@ -55,17 +55,23 @@ class ImageManager:
         return imgbasics.imcrop(img, zone)
 
     @staticmethod
-    def rgb_to_grey(img):
-        """How to convert an RGB image to grayscale"""
-        return skimage.color.rgb2gray(img)
-
-    @staticmethod
     def subtract(img, img_ref, relative=False):
         """How to subtract a reference image to """
         if not relative:
             return img - img_ref
         else:
             return (img - img_ref) / img_ref
+
+    @classmethod
+    def rgb_to_grey(cls, img):
+        """How to convert an RGB image to grayscale"""
+        _, vmax = cls.max_pixel_range(img)
+        img_grey = skimage.color.rgb2gray(img)
+        if type(vmax) == int:
+            return (img_grey * vmax).astype(img.dtype)
+        else:
+            return img_grey
+        return
 
     @classmethod
     def filter(cls, img, filter_type='gaussian', size=1):

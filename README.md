@@ -74,12 +74,13 @@ images.load_display()  # load rotation and crop parameters from json file
 
 # Define global transform applied on all images (rotation + crop) ------------
 # (see details in notebook)
+images.grayscale.apply = True
 images.rotation.define()
 images.crop.define()
 images.filter.define()
 images.subtraction.reference = range(5)  # use 5 first images to subtract to images
 images.subtraction.relative = True       # (I - Iref) / I_ref instead of I - Iref
-
+images.active_transforms  # see currently applied transforms on images
 images.save_transform()  # save rotation and crop parameters in a json file
 images.load_transform()  # load rotation and crop parameters from json file
 

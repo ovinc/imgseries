@@ -401,10 +401,10 @@ class Rotation(TransformParameter):
         ------
         None, but stores in self.data the rotation angle with key "angle"
         """
-        self.img_series.rotation.reset()
+        self.reset()
 
         fig, ax = plt.subplots()
-        img = self.img_series.read(num=num, transform=False)
+        img = self.img_series.read(num=num, rotation=False, crop=False)
         self.img_series._imshow(img, ax=ax, **kwargs)
 
         direction_name = 'vertical' if vertical else 'horizontal'
@@ -484,9 +484,9 @@ class Crop(TransformParameter):
         None, but stores in self.data the (x, y, width, height) as a value in
         a dict with key "zone".
         """
-        self.img_series.crop.reset()
+        self.reset()
 
-        img = self.img_series.read(num=num)    # rotation is applied here
+        img = self.img_series.read(num=num, crop=False)    # rotation is applied here
         default_kwargs = self.img_series._get_imshow_kwargs()
         kwargs = {**default_kwargs, **kwargs}
 
@@ -504,10 +504,7 @@ class Crop(TransformParameter):
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        img = self.img_series.read(num=num, transform=False)
-
-        if not self.img_series.rotation.is_empty:
-            img = self.img_series._rotate(img)
+        img = self.img_series.read(num=num, crop=False)
 
         _, ax = plt.subplots()
         self.img_series._imshow(img, ax=ax, **kwargs)
@@ -556,7 +553,7 @@ class Filter(TransformParameter):
         ------
         None, but stores in self.data a dict with info about the filter.
         """
-        self.img_series.filter.reset()
+        self.reset()
 
         fig, ax = plt.subplots()
         fig.subplots_adjust(bottom=0.1)

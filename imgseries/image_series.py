@@ -129,7 +129,6 @@ class ImgSeries(filo.Series, ViewerTools):
     def _subtract(self, img):
         """Subtract pre-set reference image to current image."""
         img_ref = self.subtraction.reference_image
-        print(self.subtraction.relative)
         return self.image_manager.subtract(img,
                                            img_ref,
                                            relative=self.subtraction.relative)
@@ -151,6 +150,15 @@ class ImgSeries(filo.Series, ViewerTools):
                 img = transform_function(img)
 
         return img
+
+    @property
+    def active_transforms(self):
+        active_trnsfms = {}
+        for transform_name in CONFIG['image transforms']:
+            transform_object = getattr(self, transform_name)
+            if not transform_object.is_empty:
+                active_trnsfms[transform_name] = transform_object.data
+        return active_trnsfms
 
     # ============================= Misc. tools ==============================
 
