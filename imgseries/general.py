@@ -9,6 +9,7 @@ from skimage import io
 from skimage import filters
 import imgbasics
 from imgbasics.transform import rotate
+import numpy as np
 
 
 
@@ -23,7 +24,7 @@ class ImageManager:
         return io.imread(file)
 
     @classmethod
-    def max_possible_pixel_value(cls, img):
+    def max_pixel_range(cls, img):
         """Return max pixel value depending on img type, for use in plt.imshow.
 
         Input
@@ -32,9 +33,14 @@ class ImageManager:
 
         Output
         ------
-        vmax: max pixel value (int or float or None)
+        vmin, vmax: max pixel value (None if not float or uint8/16)
         """
-        return cls.pixel_depths.get(img.dtype.name, None)
+        dtype_name = img.dtype.name
+
+        if 'float' in dtype_name:
+            return np.nanmin(img), np.nanmax(img)
+
+        return 0, cls.pixel_depths.get(img.dtype.name, None)
 
     # =========== Define how to transform images (crop, rotate, etc.) ============
 
@@ -64,10 +70,10 @@ class ImageManager:
     @classmethod
     def filter(cls, img, filter_type='gaussian', size=1):
         """Crop an image to zone (X0, Y0, Width, Height)"""
-        vmax = cls.max_possible_pixel_value(img)
+        _, vmax = cls.max_pixel_range(img)
         if filter_type == 'gaussian':
             img_filtered = filters.gaussian(img, sigma=size)
-        if vmax is not None:
+        if type(vmax) == int:
             return (img_filtered * vmax).astype(img.dtype)
         else:
             return img_filtered

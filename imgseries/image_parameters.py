@@ -79,13 +79,27 @@ class TransformParameter(ImageParameter):
     def reset(self):
         """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
         self.data = {}
-        self._clear_cache()
+        self._update_parameters()
 
     def _clear_cache(self):
         """If images are stored in a cache, clear it so that the new transform
         parameter can be taken into account upon read()"""
         if self.img_series.cache:
             self.img_series.read.cache_clear()
+
+    def _update_parameters(self):
+        """What to do when a parameter is updated"""
+        self._clear_cache()
+
+        subtraction = self.img_series.subtraction
+        if not subtraction.is_empty:
+            subtraction._update_reference_image()
+
+        grayscale = self.img_series.grayscale
+        if grayscale.is_empty or not grayscale.apply:
+            self.img_series.ndim = self.img_series.initial_ndim
+        else:
+            self.img_series.ndim = 2
 
 
 class AnalysisParameter(ImageParameter):
@@ -140,7 +154,8 @@ class Contrast(DisplayParameter):
 
         img_object, = ax_img.get_images()
         vmin, vmax = img_object.get_clim()
-        vmax_max = self.img_series.image_manager.max_possible_pixel_value(img)
+        vmin_min, vmax_max = self.img_series.image_manager.max_pixel_range(img)
+        v_step = 1 if type(vmax_max) == int else None
 
         img_flat = img.flatten()
         vmin_img = img_flat.min()
@@ -148,7 +163,7 @@ class Contrast(DisplayParameter):
 
         ax_hist = fig.add_axes([0.7, 0.45, 0.25, 0.5])
         ax_hist.hist(img_flat, bins='auto')
-        ax_hist.set_xlim((0, vmax_max))
+        ax_hist.set_xlim((vmin_min, vmax_max))
 
         min_line = ax_hist.axvline(vmin, color='k')
         max_line = ax_hist.axvline(vmax, color='k')
@@ -158,19 +173,19 @@ class Contrast(DisplayParameter):
 
         slider_min = Slider(ax=ax_slider_min,
                             label='min',
-                            valmin=0,
+                            valmin=vmin_min,
                             valmax=vmax_max,
                             valinit=vmin,
-                            valstep=1,
+                            valstep=v_step,
                             color='steelblue',
                             alpha=0.5)
 
         slider_max = Slider(ax=ax_slider_max,
                             label='max',
-                            valmin=0,
+                            valmin=vmin_min,
                             valmax=vmax_max,
                             valinit=vmax,
-                            valstep=1,
+                            valstep=v_step,
                             color='steelblue',
                             alpha=0.5)
 
@@ -192,7 +207,7 @@ class Contrast(DisplayParameter):
             max_line.set_xdata((value, value))
 
         def reset_contrast(event):
-            slider_min.set_val(0)
+            slider_min.set_val(vmin_min)
             slider_max.set_val(vmax_max)
 
         def auto_contrast(event):
@@ -233,6 +248,16 @@ class Contrast(DisplayParameter):
     @vmax.setter
     def vmax(self, value):
         self.data['vmax'] = value
+
+    @property
+    def limits(self):
+        return self.vmin, self.vmax
+
+    @vmax.setter
+    def vmax(self, value):
+        vmin, vmax = value
+        self.vmin = vmin
+        self.vmax = vmax
 
 
 class Colors(DisplayParameter):
@@ -330,6 +355,27 @@ class Colors(DisplayParameter):
 # ============================= Basic transforms =============================
 
 
+class Grayscale(TransformParameter):
+    """Class to store RGB to gray transform.
+
+    grayscale.apply can be True or False
+    """
+
+    parameter_type = 'grayscale'
+
+    @property
+    def apply(self):
+        try:
+            return self.data['apply']
+        except KeyError:
+            return
+
+    @apply.setter
+    def apply(self, value):
+        self.data['apply'] = value
+        self._update_parameters()
+
+
 class Rotation(TransformParameter):
     """Class to store and manage rotation angles on series of images."""
 
@@ -405,7 +451,7 @@ class Rotation(TransformParameter):
     @angle.setter
     def angle(self, value):
         self.data['angle'] = value
-        self._clear_cache()
+        self._update_parameters()
 
 
 class Crop(TransformParameter):
@@ -485,7 +531,7 @@ class Crop(TransformParameter):
     @zone.setter
     def zone(self, value):
         self.data['zone'] = value
-        self._clear_cache()
+        self._update_parameters()
 
 
 class Filter(TransformParameter):
@@ -510,6 +556,8 @@ class Filter(TransformParameter):
         ------
         None, but stores in self.data a dict with info about the filter.
         """
+        self.img_series.filter.reset()
+
         fig, ax = plt.subplots()
         fig.subplots_adjust(bottom=0.1)
         ax_slider = fig.add_axes([0.1, 0.01, 0.8, 0.03])
@@ -547,6 +595,8 @@ class Filter(TransformParameter):
 
     @property
     def size(self):
+        # auto-select filter type if not specified
+        self.type = self.data.get('type', 'gaussian')
         try:
             return self.data['size']
         except KeyError:
@@ -563,7 +613,7 @@ class Filter(TransformParameter):
         except KeyError:
             self.data['type'] = 'gaussian'
 
-        self._clear_cache()
+        self._update_parameters()
 
     @property
     def type(self):
@@ -575,7 +625,7 @@ class Filter(TransformParameter):
     @type.setter
     def type(self, value):
         self.data['type'] = value
-        self._clear_cache()
+        self._update_parameters()
 
 
 class Subtraction(TransformParameter):
@@ -591,13 +641,15 @@ class Subtraction(TransformParameter):
 
     parameter_type = 'subtraction'
 
-    def _create_reference(self, ref_imgs):
-        """Average all images taken as reference"""
+    def _calculate_reference(self, ref_nums):
         imgs = []
-        for num in ref_imgs:
-            imgs.append(self.img_series.read(num=num))
+        for num in ref_nums:
+            imgs.append(self.img_series.read(num=num, subtraction=False))
         img_stack = np.stack(imgs)
-        self.reference_image = img_stack.mean(axis=0)
+        return img_stack.mean(axis=0)
+
+    def _update_reference_image(self):
+        self.reference_image = self._calculate_reference(self.reference)
 
     @property
     def reference(self):
@@ -608,9 +660,8 @@ class Subtraction(TransformParameter):
 
     @reference.setter
     def reference(self, value):
-        self.reset()
-        self._create_reference(ref_imgs=value)
         self.data['reference'] = tuple(value)
+        self.reference_image = self._calculate_reference(ref_nums=value)
         self._clear_cache()
 
     @property
@@ -623,7 +674,7 @@ class Subtraction(TransformParameter):
     @relative.setter
     def relative(self, value):
         self.data['relative'] = value
-        self._clear_cache()
+        self._update_parameters()
 
 
 # ================== Parameters for specific analysis types ==================
@@ -881,16 +932,19 @@ class Threshold(AnalysisParameter):
                 self.lines.append(line)
 
         image_manager = self.analysis.img_series.image_manager
-        level_max = image_manager.max_possible_pixel_value(img)
+
+        level_min, level_max = image_manager.max_pixel_range(img)
+        level_step = 1 if type(level_max) == int else None
+
         level_start = level_max // 2
         draw_contours(level_start)
 
         slider = Slider(ax=ax_slider,
                         label='level',
-                        valmin=0,
+                        valmin=level_min,
                         valmax=level_max,
                         valinit=level_start,
-                        valstep=1,
+                        valstep=level_step,
                         color='steelblue',
                         alpha=0.5)
 

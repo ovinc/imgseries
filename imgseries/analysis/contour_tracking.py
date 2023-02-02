@@ -251,7 +251,7 @@ class ContourTracking(Analysis):
 
     def _find_contours(self, img, level):
         """Define how contours are found on an image."""
-        image = img if img.ndim == 2 else self.rgb_to_grey(img)
+        image = img if img.ndim == 2 else self.img_series.image_manager.rgb_to_grey(img)
         return measure.find_contours(image, level)
 
     def _update_reference_positions(self, data):

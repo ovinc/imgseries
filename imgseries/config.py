@@ -21,7 +21,8 @@ filenames = {'files': 'Img_Files',  # for file info (timing etc.)
              'ctrack': 'Img_ContourTracking',     # .json depending on context
              }
 
-image_transforms = 'rotation', 'crop', 'filter', 'subtraction'
+# Transform names and the order in which they are applied
+image_transforms = 'grayscale', 'rotation', 'crop', 'filter', 'subtraction'
 
 CONFIG = {'csv separator': csv_separator,
           'filenames': filenames,

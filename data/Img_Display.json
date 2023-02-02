@@ -1,9 +1,4 @@
 {
-    "contrast": {
-        "vmin": 50,
-        "vmax": 150
-    },
-    "colors": {
-        "cmap": "gray"
-    }
+    "contrast": {},
+    "colors": {}
 }

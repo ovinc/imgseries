@@ -14,7 +14,7 @@ from skimage import io
 # local imports
 from .config import CONFIG
 from .general import FileManager, ImageManager
-from .image_parameters import Rotation, Crop, Filter, Subtraction
+from .image_parameters import Grayscale, Rotation, Crop, Filter, Subtraction
 from .image_parameters import Contrast, Colors
 from .viewers import ImgSeriesViewer, ViewerTools
 
@@ -62,16 +62,19 @@ class ImgSeries(filo.Series, ViewerTools):
         self.file_manager = file_manager
 
         # Image transforms that are applied to all images of the series.
+        self.grayscale = Grayscale(self)
         self.rotation = Rotation(self)
         self.crop = Crop(self)
         self.filter = Filter(self)
         self.subtraction = Subtraction(self)
 
         # Link image transform names to actual functions that apply them
-        self.transforms = {'rotation': self._rotate,
+        self.transforms = {'grayscale': self._rgb_to_grey,
+                           'rotation': self._rotate,
                            'crop': self._crop,
                            'filter': self._filter,
-                           'subtraction': self._subtract}
+                           'subtraction': self._subtract,
+                           }
 
         # Display options (do not impact analysis)
         self.contrast = Contrast(self)
@@ -96,7 +99,14 @@ class ImgSeries(filo.Series, ViewerTools):
         ViewerTools.__init__(self, Viewer=ImgSeriesViewer)
 
         img = self.read()
-        self.ndim = img.ndim
+        self.initial_ndim = img.ndim
+        self.ndim = self.initial_ndim
+
+    def __repr__(self):
+        if not self.is_stack:
+            return super().__repr__()
+        else:
+            return f"{self.__class__.name}, file '{self.stack_path}', savepath '{self.savepath}'"
 
     # ========================== Global transforms ===========================
 
@@ -119,16 +129,17 @@ class ImgSeries(filo.Series, ViewerTools):
     def _subtract(self, img):
         """Subtract pre-set reference image to current image."""
         img_ref = self.subtraction.reference_image
+        print(self.subtraction.relative)
         return self.image_manager.subtract(img,
                                            img_ref,
                                            relative=self.subtraction.relative)
 
-    def rgb_to_grey(self, img):
+    def _rgb_to_grey(self, img):
         """"Convert RGB to grayscale"""
         return self.image_manager.rgb_to_grey(img)
 
 
-    def _apply_transform(self, img):
+    def _apply_transform(self, img, **kwargs):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
 
         for transform_name in CONFIG['image transforms']:
@@ -136,7 +147,7 @@ class ImgSeries(filo.Series, ViewerTools):
             transform_object = getattr(self, transform_name)      # e.g. self.rotation
             transform_function = self.transforms[transform_name]  # e.g. self._rotate
 
-            if not transform_object.is_empty:
+            if not transform_object.is_empty and kwargs.get(transform_name, True):
                 img = transform_function(img)
 
         return img
@@ -191,12 +202,23 @@ class ImgSeries(filo.Series, ViewerTools):
 
     # ============================ Public methods ============================
 
-    def read(self, num=0, transform=True):
-        """Load image data (image identifier num across folders).
+    def read(self, num=0, transform=True, **kwargs):
+        """Load image data as an array.
 
-        By default, if transforms are defined on the image (rotation, crop)
-        then they are applied here. Put transform=False to only load the raw
-        image in the stack.
+        Parameters
+        ----------
+
+        - num: image identifier (integer)
+
+        - transform: By default, if transforms are defined on the image
+                     (rotation, crop etc.), then they are applied here.
+                     Put transform=False to only load the raw image in the
+                     stack.
+
+        - kwargs: by default if transform=True, all active transforms are
+                  applied. Set any transform name to False to not apply
+                  this particular transform.
+                  e.g. images.read(subtraction=False)
         """
         if not self.is_stack:
             img = self.image_manager.read(self.files[num].file)
@@ -204,7 +226,7 @@ class ImgSeries(filo.Series, ViewerTools):
             img = self.stack[num]
 
         if transform:
-            return self._apply_transform(img)
+            return self._apply_transform(img, **kwargs)
         else:
             return img
 
@@ -218,18 +240,13 @@ class ImgSeries(filo.Series, ViewerTools):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        self.rotation.reset()
-        self.crop.reset()
-        self.filter.reset()
-        self.subtraction.reset()
-
         fname = CONFIG['filenames']['transform'] if filename is None else filename
         transform_data = self.file_manager.from_json(self.savepath, fname)
 
         for transform_name in CONFIG['image transforms']:
-            data = transform_data.get(transform_name, {})
-            # e.g. self.rotation.data = data
-            setattr(getattr(self, transform_name), 'data', data)
+            transform_object = getattr(self, transform_name)
+            transform_object.data = transform_data.get(transform_name, {})
+            transform_object._update_parameters()
 
     def save_transform(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.
@@ -292,7 +309,7 @@ def series(*args, cache=False, cache_size=516, **kwargs):
             cache = True
 
             @lru_cache(maxsize=cache_size)
-            def read(self, num=0, transform=True):
-                return super().read(num, transform=transform)
+            def read(self, num=0, transform=True, **kwargs):
+                return super().read(num, transform=transform, **kwargs)
 
         return ImgSeriesCached(*args, **kwargs)
