@@ -10,7 +10,10 @@
             590
         ]
     },
-    "filter": {},
+    "filter": {
+        "type": "gaussian",
+        "size": 10
+    },
     "subtraction": {
         "reference": [
             0,

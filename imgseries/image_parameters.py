@@ -12,11 +12,9 @@ import imgbasics
 from imgbasics.cropping import _cropzone_draw
 from drapo import linput
 
-# Local imports
-from .config import _max_possible_pixel_value, _filter
-
 
 # =============================== Base classes ===============================
+
 
 class ImageParameter:
     """Base class to define common methods for different parameters."""
@@ -142,7 +140,7 @@ class Contrast(DisplayParameter):
 
         img_object, = ax_img.get_images()
         vmin, vmax = img_object.get_clim()
-        vmax_max = _max_possible_pixel_value(img)
+        vmax_max = self.img_series.image_manager.max_possible_pixel_value(img)
 
         img_flat = img.flatten()
         vmin_img = img_flat.min()
@@ -521,7 +519,9 @@ class Filter(TransformParameter):
 
         @lru_cache(maxsize=516)
         def filter_image(size):
-            return _filter(img, filter_type='gaussian', size=size)
+            return self.img_series.image_manager.filter(img,
+                                                        filter_type='gaussian',
+                                                        size=size)
 
         def update_image(size):
             self.size = size
@@ -880,7 +880,8 @@ class Threshold(AnalysisParameter):
                 line, = ax.plot(x, y, linewidth=2, c='r')
                 self.lines.append(line)
 
-        level_max = _max_possible_pixel_value(img)
+        image_manager = self.analysis.img_series.image_manager
+        level_max = image_manager.max_possible_pixel_value(img)
         level_start = level_max // 2
         draw_contours(level_start)
 

@@ -8,7 +8,6 @@ from imgbasics.cropping import _cropzone_draw
 
 # Local imports
 from .general import Analysis, PandasTsvResults, PandasFormatter
-from ..config import _crop
 from ..image_parameters import Zones
 from ..viewers import AnalysisViewer
 
@@ -184,7 +183,7 @@ class GreyLevel(Analysis):
         glevels = []
         img = self.img_series.read(num)
         for cropzone in self.zones.data.values():
-            img_crop = _crop(img, cropzone)
+            img_crop = self.img_series.image_manager.crop(img, cropzone)
             glevel = np.mean(img_crop)
             glevels.append(glevel)
         return glevels

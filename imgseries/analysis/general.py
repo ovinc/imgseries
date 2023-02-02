@@ -11,7 +11,8 @@ import gittools
 from tqdm import tqdm
 
 # local imports
-from ..config import CONFIG, _from_json
+from ..config import CONFIG
+from ..general import FileManager
 from ..viewers import ViewerTools
 
 
@@ -392,4 +393,4 @@ class PandasTsvResults(Results):
         filename='Test' will load from Test.json.
         """
         name = self._set_filename(filename)
-        return _from_json(self.savepath, name)
+        return FileManager.from_json(self.savepath, name)
