@@ -82,6 +82,11 @@ images.load_display()  # load rotation and crop parameters from json file
 # Define global transform applied on all images (rotation + crop) ------------
 # (see details in notebook)
 
+# Note: the transforms to be considered and the order with which they are
+# applied on the images can be modified by passing the argument
+# transforms= in ImgSeries. For example:
+# images = series(transforms=('rotation', 'crop', 'filter'))
+
 # Interactive:
 images.rotation.define()
 images.crop.define()

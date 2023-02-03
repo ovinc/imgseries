@@ -1,32 +1,16 @@
 {
+    "grayscale": {},
     "rotation": {
-        "angle": 109.69862137458028
+        "angle": -70
     },
     "crop": {
         "zone": [
-            145,
-            138,
-            421,
-            455
+            150,
+            150,
+            500,
+            590
         ]
     },
-    "filter": {
-        "type": "gaussian",
-        "size": 1.8
-    },
-    "subtraction": {
-        "reference": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-        ],
-        "relative": true
-    }
+    "filter": {},
+    "subtraction": {}
 }

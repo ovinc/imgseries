@@ -3,6 +3,7 @@
 # Standard library imports
 from pathlib import Path
 from functools import lru_cache
+from collections import OrderedDict
 
 # Nonstandard
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from skimage import io
 from .config import CONFIG
 from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer, ViewerTools
-from .parameters.transform import Grayscale, Rotation, Crop, Filter, Subtraction
+from .parameters.transform import Transforms
 from .parameters.display import Display
 
 
@@ -29,13 +30,24 @@ class ImgSeries(filo.Series, ViewerTools):
 
     cache = False   # cache images during read() or not (changed in ImgSeriesCached)
 
+    # Correspondence between transform names and the methods that actually
+    # perform them within the class
+    _transforms_funcs = {'grayscale': '_rgb_to_grey',
+                         'rotation': '_rotate',
+                         'crop': '_crop',
+                         'filter': '_filter',
+                         'subtraction': '_subtract',
+                         }
+
     def __init__(self,
                  paths='.',
                  extension='.png',
                  savepath='.',
                  stack=None,
+                 transforms=CONFIG['image transforms'],
                  image_manager=ImageManager,
-                 file_manager=FileManager):
+                 file_manager=FileManager,
+                 ):
         """Init image series object.
 
         Parameters
@@ -51,6 +63,10 @@ class ImgSeries(filo.Series, ViewerTools):
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
 
+        - transforms: iterable of names of transforms to consider (their order
+                      indicates the order in which they are applied), e.g.
+                      transforms=('rotation', 'crop', 'filter')
+
         - image_manager: class (or object) that defines how to read and
                          transform images
 
@@ -60,20 +76,19 @@ class ImgSeries(filo.Series, ViewerTools):
         self.image_manager = image_manager
         self.file_manager = file_manager
 
-        # Image transforms that are applied to all images of the series.
-        self.grayscale = Grayscale(self)
-        self.rotation = Rotation(self)
-        self.crop = Crop(self)
-        self.filter = Filter(self)
-        self.subtraction = Subtraction(self)
+        # Create image transform objects and associated methods and
+        # link image transform names to actual functions that apply them
+        self.transforms = OrderedDict()
+        for transform_name in transforms:
 
-        # Link image transform names to actual functions that apply them
-        self.transforms = {'grayscale': self._rgb_to_grey,
-                           'rotation': self._rotate,
-                           'crop': self._crop,
-                           'filter': self._filter,
-                           'subtraction': self._subtract,
-                           }
+            # e.g. self.rotation = Rotation(self)
+            transform_obj = Transforms[transform_name](self)
+            setattr(self, transform_name, transform_obj)
+
+            # e.g. self.transforms['grayscale'] = self._rgb_to_gray
+            transform_func_name = self._transforms_funcs[transform_name]
+            transform_func = getattr(self, transform_func_name)
+            self.transforms[transform_name] = transform_func
 
         # Display options (do not impact analysis)
         self.display = Display(self)
@@ -135,24 +150,18 @@ class ImgSeries(filo.Series, ViewerTools):
         """"Convert RGB to grayscale"""
         return self.image_manager.rgb_to_grey(img)
 
-
     def _apply_transform(self, img, **kwargs):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
-
-        for transform_name in CONFIG['image transforms']:
-
+        for transform_name, transform_function in self.transforms.items():
             transform_object = getattr(self, transform_name)      # e.g. self.rotation
-            transform_function = self.transforms[transform_name]  # e.g. self._rotate
-
             if not transform_object.is_empty and kwargs.get(transform_name, True):
                 img = transform_function(img)
-
         return img
 
     @property
     def active_transforms(self):
         active_trnsfms = {}
-        for transform_name in CONFIG['image transforms']:
+        for transform_name in self.transforms:
             transform_object = getattr(self, transform_name)
             if not transform_object.is_empty:
                 active_trnsfms[transform_name] = transform_object.data

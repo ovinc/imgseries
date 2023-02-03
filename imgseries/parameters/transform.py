@@ -336,3 +336,11 @@ class Subtraction(TransformParameter):
     def relative(self, value):
         self.data['relative'] = value
         self._update_parameters()
+
+
+Transforms = {'grayscale': Grayscale,
+              'rotation': Rotation,
+              'crop': Crop,
+              'filter': Filter,
+              'subtraction': Subtraction,
+              }
