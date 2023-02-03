@@ -13,12 +13,17 @@ from matplotlib.widgets import Slider, Button
 from .parameters_base import DisplayParameter
 
 
-class Contrast(DisplayParameter):
-    """Class to store and manage contrast / brightness change."""
+class Display(DisplayParameter):
+    """Gathers all parameters for displaying images.
 
-    parameter_type = 'contrast'
+    For the moment, interactive options are limited to setting
+    - contrast (vmin, vmax)
+    - colormap (cmap)
+    """
 
-    def define(self, num=0, **kwargs):
+    parameter_type = 'display'
+
+    def _define_contrast(self, num=0, **kwargs):
         """Interactively define brightness / contrast
 
         Parameters
@@ -30,11 +35,6 @@ class Contrast(DisplayParameter):
         - kwargs: any keyword-argument to pass to imshow() (overrides default
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
-
-        Output
-        ------
-        None, but stores in self.data the (x, y, width, height) as a value in
-        a dict with key "zone".
         """
         fig = plt.figure(figsize=(12, 5))
         ax_img = fig.add_axes([0.05, 0.05, 0.5, 0.9])
@@ -117,45 +117,7 @@ class Contrast(DisplayParameter):
 
         return slider_min, slider_max, btn_reset, btn_auto, btn_ok
 
-    @property
-    def vmin(self):
-        try:
-            return self.data['vmin']
-        except KeyError:
-            return
-
-    @vmin.setter
-    def vmin(self, value):
-        self.data['vmin'] = value
-
-    @property
-    def vmax(self):
-        try:
-            return self.data['vmax']
-        except KeyError:
-            return
-
-    @vmax.setter
-    def vmax(self, value):
-        self.data['vmax'] = value
-
-    @property
-    def limits(self):
-        return self.vmin, self.vmax
-
-    @vmax.setter
-    def vmax(self, value):
-        vmin, vmax = value
-        self.vmin = vmin
-        self.vmax = vmax
-
-
-class Colors(DisplayParameter):
-    """Class to store and manage colormaps used for display"""
-
-    parameter_type = 'colors'
-
-    def define(self, num=0, **kwargs):
+    def _define_colormap(self, num=0, **kwargs):
         """Interactively define colormap
 
         Parameters
@@ -167,11 +129,6 @@ class Colors(DisplayParameter):
         - kwargs: any keyword-argument to pass to imshow() (overrides default
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
-
-        Output
-        ------
-        None, but stores in self.data the (x, y, width, height) as a value in
-        a dict with key "zone".
         """
         fig = plt.figure(figsize=(8, 5))
         ax_img = fig.add_axes([0.05, 0.05, 0.7, 0.9])
@@ -229,6 +186,58 @@ class Colors(DisplayParameter):
             y += h + pad
 
         return btns
+
+    def define(self, param, num=0, **kwargs):
+        """Interactively define display parameters.
+
+        Parameters
+        ----------
+        - param: 'contrast' (vmin, vmax) or 'colormap' (cmap)
+
+        - num: image ('num' id) on which to define contrast. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        if param == 'contrast':
+            return self._define_contrast(num=num, **kwargs)
+        elif param == 'colormap':
+            return self._define_colormap(num=num, **kwargs)
+        else:
+            raise ValueError(f'Unknown parameter: {param}')
+
+    @property
+    def vmin(self):
+        try:
+            return self.data['vmin']
+        except KeyError:
+            return
+
+    @vmin.setter
+    def vmin(self, value):
+        self.data['vmin'] = value
+
+    @property
+    def vmax(self):
+        try:
+            return self.data['vmax']
+        except KeyError:
+            return
+
+    @vmax.setter
+    def vmax(self, value):
+        self.data['vmax'] = value
+
+    @property
+    def vlims(self):
+        return self.vmin, self.vmax
+
+    @vlims.setter
+    def vlims(self, value):
+        self.vmin, self.vmax = value
 
     @property
     def cmap(self):

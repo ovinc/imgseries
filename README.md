@@ -56,30 +56,46 @@ images = series(paths=['img1', 'img2'])
 # allows the user to select caching options for speed improvements, see below)
 
 # Access individual images in the series -------------------------------------
+
 images.files[10]       # filo.File object of image number num=10
 images.files[10].file  # actual pathlib.Path file object
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
 # Interactive views of image sequence ----------------------------------------
+
 images.animate()       # see image series as a movie (start, end, skip options)
 images.inspect()       # browse through image series with a slider (same options)
 
-# Define display options -----------------------------------------------------
+# Define display options (only for grayscale imagee --------------------------
 # (see details in notebook)
-images.contrast.define()
-images.colors.define()
+images.display.define('contrast')  # set vmin, vmax in imshow interactively
+images.display.define('colormap')  # set cmap in imshow() interactively
+
+# Manually: (equivalent: images.display.limits = 0, 255)
+images.display.vmin, images.display.vmax = 0, 255
+images.display.cmap = 'viridis'
+
 images.save_display()  # save rotation and crop parameters in a json file
 images.load_display()  # load rotation and crop parameters from json file
 
 # Define global transform applied on all images (rotation + crop) ------------
 # (see details in notebook)
-images.grayscale.apply = True
+
+# Interactive:
 images.rotation.define()
 images.crop.define()
 images.filter.define()
-images.subtraction.reference = range(5)  # use 5 first images to subtract to images
+
+# Manual:
+images.grayscale.apply = True
+images.rotation.angle = -70
+images.crop.zone = (2, 25, 400, 600)
+images.filter.size = 10
+images.subtraction.reference = range(5)  # avg first 5 images for subtraction
 images.subtraction.relative = True       # (I - Iref) / I_ref instead of I - Iref
+
+# Other transform parameters / methods:
 images.active_transforms  # see currently applied transforms on images
 images.save_transform()  # save rotation and crop parameters in a json file
 images.load_transform()  # load rotation and crop parameters from json file

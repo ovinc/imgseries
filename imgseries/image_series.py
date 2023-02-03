@@ -15,7 +15,7 @@ from .config import CONFIG
 from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer, ViewerTools
 from .parameters.transform import Grayscale, Rotation, Crop, Filter, Subtraction
-from .parameters.display import Contrast, Colors
+from .parameters.display import Display
 
 
 class ImgSeries(filo.Series, ViewerTools):
@@ -76,8 +76,7 @@ class ImgSeries(filo.Series, ViewerTools):
                            }
 
         # Display options (do not impact analysis)
-        self.contrast = Contrast(self)
-        self.colors = Colors(self)
+        self.display = Display(self)
 
         # Done here because self.stack will be an array, and bool(array)
         # generates warnings / errors
@@ -174,17 +173,9 @@ class ImgSeries(filo.Series, ViewerTools):
 
     def _get_imshow_kwargs(self):
         """Define kwargs to pass to imshow (to have grey by default for 2D)."""
-
-        if not self.contrast.is_empty:
-            kwargs = {**self.contrast.data}
-        else:
-            kwargs = {}
-
-        if not self.colors.is_empty:
-            kwargs = {**kwargs, **self.colors.data}
-        elif self.ndim < 3:
-            kwargs = {**kwargs, 'cmap': 'gray'}
-
+        kwargs = self.display.data
+        if self.ndim < 3:
+            kwargs['cmap'] = kwargs.get('cmap', 'gray')
         return kwargs
 
     def _imshow(self, img, ax=None, **kwargs):
@@ -280,14 +271,8 @@ class ImgSeries(filo.Series, ViewerTools):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.json.
         """
-        self.contrast.reset()
-        self.colors.reset()
-
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        display_data = self.file_manager.from_json(self.savepath, fname)
-
-        self.contrast.data = display_data['contrast']
-        self.colors.data = display_data['colors']
+        self.display.data = self.file_manager.from_json(self.savepath, fname)
 
     def save_display(self, filename=None):
         """Save  display parameters (contrast, colormapn etc.) into json file.
@@ -298,9 +283,7 @@ class ImgSeries(filo.Series, ViewerTools):
         filename='Test' will load from Test.json.
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        display_data = {'contrast': self.contrast.data,
-                        'colors': self.colors.data}
-        self.file_manager.to_json(display_data, self.savepath, fname)
+        self.file_manager.to_json(self.display.data, self.savepath, fname)
 
 
 def series(*args, cache=False, cache_size=516, **kwargs):

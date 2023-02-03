@@ -48,7 +48,7 @@ class DisplayParameter(Parameter):
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
-        pass
+        return self.img_series.load_display(filename=filename)
 
 
 class TransformParameter(Parameter):
