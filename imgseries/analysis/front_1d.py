@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local imports
-from .general import Analysis, PandasTsvResults, PandasFormatter
+from .analysis_base import Analysis, PandasTsvResults, PandasFormatter
 from ..viewers import AnalysisViewer
 
 

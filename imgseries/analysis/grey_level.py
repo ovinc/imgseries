@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from imgbasics.cropping import _cropzone_draw
 
 # Local imports
-from .general import Analysis, PandasTsvResults, PandasFormatter
-from ..image_parameters import Zones
+from .analysis_base import Analysis, PandasTsvResults, PandasFormatter
+from ..parameters.analysis import Zones
 from ..viewers import AnalysisViewer
 
 

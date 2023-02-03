@@ -1,6 +1,6 @@
 """Image analysis tools for image series."""
 
-from .general import ImageManager, FileManager
+from .managers import ImageManager, FileManager
 from .image_series import ImgSeries, series
 from .analysis import GreyLevel, ContourTracking
 from .analysis import GreyLevelResults, ContourTrackingResults

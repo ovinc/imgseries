@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 # local imports
 from ..config import CONFIG
-from ..general import FileManager
+from ..managers import FileManager
 from ..viewers import ViewerTools
 
 

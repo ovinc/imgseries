@@ -12,7 +12,6 @@ from imgbasics.transform import rotate
 import numpy as np
 
 
-
 class ImageManager:
 
     pixel_depths = {'uint8': 2**8 - 1,

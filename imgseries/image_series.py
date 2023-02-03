@@ -4,7 +4,6 @@
 from pathlib import Path
 from functools import lru_cache
 
-
 # Nonstandard
 import matplotlib.pyplot as plt
 import filo
@@ -13,10 +12,10 @@ from skimage import io
 
 # local imports
 from .config import CONFIG
-from .general import FileManager, ImageManager
-from .image_parameters import Grayscale, Rotation, Crop, Filter, Subtraction
-from .image_parameters import Contrast, Colors
+from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer, ViewerTools
+from .parameters.transform import Grayscale, Rotation, Crop, Filter, Subtraction
+from .parameters.display import Contrast, Colors
 
 
 class ImgSeries(filo.Series, ViewerTools):

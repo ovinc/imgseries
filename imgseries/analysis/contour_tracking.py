@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 import imgbasics
 
 # Local imports
-from .general import Analysis, PandasFormatter, PandasTsvResults
-from ..general import FileManager
-from ..image_parameters import Contours, Threshold
+from .analysis_base import Analysis, PandasFormatter, PandasTsvResults
+from ..managers import FileManager
+from ..parameters.analysis import Contours, Threshold
 from ..viewers import AnalysisViewer
 
 
