@@ -10,6 +10,7 @@ from functools import lru_cache
 
 # Non-standard modules
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 import numpy as np
 import imgbasics
 from imgbasics.cropping import _cropzone_draw
