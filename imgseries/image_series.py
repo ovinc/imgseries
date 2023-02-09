@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import filo
 from skimage import io
 
-
 # local imports
 from .config import CONFIG
 from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer, ViewerTools
+from .profile import ProfileViewer
 from .parameters.transform import Transforms
 from .parameters.display import Display
 
@@ -236,6 +236,11 @@ class ImgSeries(filo.Series, ViewerTools):
             return self._apply_transform(img, **kwargs)
         else:
             return img
+
+    def profile(self, num=0, npts=100, radius=2, **kwargs):
+        """Interactively get intensity profile by drawing a line on image."""
+        viewer = ProfileViewer(npts=npts, radius=radius, **kwargs)
+        return viewer.show(num=num)
 
     def load_transform(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.

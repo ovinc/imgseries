@@ -13,8 +13,13 @@ class ImageViewer:
         """Init Image Viewer"""
         self.plot_init_done = False
 
-    def _create_figure(self):
-        """Define in subclass, has to define at least self.fig"""
+    def _create_figure(self, num=0):
+        """Define in subclass, has to define at least self.fig., and self.axs
+        if self.axs is not defined in self._first_plot()
+
+        num is optional, it's in case the figure creation must do something
+        related to a specific frame before calling the first _get_data()
+        """
         pass
 
     def _get_data(self, num):
@@ -29,6 +34,7 @@ class ImageViewer:
         """What to do the first time data arrives on the _plot.
 
         self.updated_artists must be defined here.
+        self.axs must be defined here, except if done in self._create_figure()
 
         Input: data
         """
@@ -53,11 +59,11 @@ class ImageViewer:
 
         return self.updated_artists
 
-    def show(self, num):
+    def show(self, num=0):
         """Show a single, non-animated image (num: image number)."""
-        self._create_figure()
+        self._create_figure(num=num)
         self._plot(num=num)
-        return self.ax
+        return self.axs
 
     def animate(self, nums, blit=False):
         """Animate an image _plot with a FuncAnimation
@@ -66,7 +72,8 @@ class ImageViewer:
         - nums: frames to consider for the animation (iterable)
         - blit: if True, use blitting for fast rendering
         """
-        self._create_figure()
+        num_min = min(nums)
+        self._create_figure(num=num_min)
         self.plot_init_done = False
 
         animation = FuncAnimation(fig=self.fig,
@@ -88,7 +95,7 @@ class ImageViewer:
         num_max = max(nums)
         num_step = (num_max - num_min) // (len(nums) - 1)
 
-        self._create_figure()
+        self._create_figure(num=num_min)
         self.plot_init_done = False
 
         self._plot(num=num_min)
@@ -132,8 +139,9 @@ class ImgSeriesViewer(ImageViewer):
         self.kwargs = kwargs
         super().__init__()
 
-    def _create_figure(self):
+    def _create_figure(self, num=0):
         self.fig, self.ax = plt.subplots()
+        self.axs = self.ax,
 
     def _get_data(self, num):
         img = self.img_series.read(num, transform=self.transform)

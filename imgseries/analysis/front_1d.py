@@ -11,14 +11,12 @@ from ..viewers import AnalysisViewer
 
 class Front1DViewer(AnalysisViewer):
 
-    def _create_figure(self):
+    def _create_figure(self, num=0):
         self.fig, (self.ax_img, self.ax_analysis) = plt.subplots(2, 1)
+        self.axs = self.ax_img, self.ax_analysis
 
     def _first_plot(self, data):
-        """What to do the first time data arrives on the plot.
-
-        self.updated_artists must be defined here.
-        """
+        """What to do the first time data arrives on the plot."""
         img = data['image']
         num = data['num']
         ana = data['analysis']
