@@ -18,6 +18,7 @@ from drapo import linput
 
 # Local imports
 from .parameters_base import TransformParameter
+from ..viewers import ThresholdSetterViewer
 
 
 class Grayscale(TransformParameter):
@@ -37,6 +38,10 @@ class Grayscale(TransformParameter):
 
     @apply.setter
     def apply(self, value):
+        if value:
+            self.img_series.ndim = 2
+        else:
+            self.img_series.ndim = self.img_series.initial_ndim
         self.data['apply'] = value
         self._update_parameters()
 
@@ -339,9 +344,56 @@ class Subtraction(TransformParameter):
         self._update_parameters()
 
 
+class Threshold(TransformParameter):
+    """Class to store and manage image thresholding."""
+
+    parameter_type = 'threshold'
+
+    def define(self, num=0, **kwargs):
+        """Interactively define threshold
+
+        Parameters
+        ----------
+        - num: image ('num' id) on which to define threshold. Note that
+          this number can be different from the name written in the image
+          filename, because num always starts at 0 in the first folder.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        setter = ThresholdSetterViewer(self.img_series, num=num, **kwargs)
+        return setter.run()
+
+    @property
+    def vmin(self):
+        try:
+            return self.data['vmin']
+        except KeyError:
+            return
+
+    @vmin.setter
+    def vmin(self, value):
+        self.data['vmin'] = value
+        self._update_parameters()
+
+    @property
+    def vmax(self):
+        try:
+            return self.data['vmax']
+        except KeyError:
+            return
+
+    @vmax.setter
+    def vmax(self, value):
+        self.data['vmax'] = value
+        self._update_parameters()
+
+
 Transforms = {'grayscale': Grayscale,
               'rotation': Rotation,
               'crop': Crop,
               'filter': Filter,
               'subtraction': Subtraction,
+              'threshold': Threshold
               }

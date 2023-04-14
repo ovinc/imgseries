@@ -37,7 +37,11 @@ class ImageManager:
         dtype_name = img.dtype.name
 
         if 'float' in dtype_name:
-            return np.nanmin(img), np.nanmax(img)
+            img_finite = img[np.isfinite(img)]  # remove nan and inf
+            return img_finite.min(), img_finite.max()
+
+        elif 'bool' in dtype_name:
+            return 0, 1
 
         return 0, cls.pixel_depths.get(img.dtype.name, None)
 
@@ -70,7 +74,6 @@ class ImageManager:
             return (img_grey * vmax).astype(img.dtype)
         else:
             return img_grey
-        return
 
     @classmethod
     def filter(cls, img, filter_type='gaussian', size=1):
@@ -78,10 +81,25 @@ class ImageManager:
         _, vmax = cls.max_pixel_range(img)
         if filter_type == 'gaussian':
             img_filtered = filters.gaussian(img, sigma=size)
+        else:
+            raise ValueError(f'{filter_type} filter not implemented')
         if type(vmax) == int:
             return (img_filtered * vmax).astype(img.dtype)
         else:
             return img_filtered
+
+    @classmethod
+    def threshold(cls, img, vmin=None, vmax=None):
+        """Threshold image (vmin <= v <= vmax --> 1, else 0).
+
+        Return binary (boolean) image (True / False).
+        """
+        if None in (vmin, vmax):
+            val_min, val_max = cls.max_pixel_range(img)
+            vmin = val_min if vmin is None else vmin
+            vmax = val_max if vmax is None else vmax
+        condition = (img >= vmin) & (img <= vmax)
+        return np.where(condition, True, False)
 
 
 class FileManager:

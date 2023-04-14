@@ -1,5 +1,5 @@
 {
-    "cmap": "gray",
     "vmin": 50,
-    "vmax": 150
+    "vmax": 150,
+    "cmap": "gray"
 }

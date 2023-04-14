@@ -123,6 +123,7 @@ class GreyLevel(Analysis):
     def __init__(self,
                  img_series,
                  savepath=None,
+                 func=np.mean,
                  Viewer=None,
                  Formatter=None,
                  Results=None,
@@ -135,6 +136,10 @@ class GreyLevel(Analysis):
 
         - savepath: folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
+
+        - func: function to be applied on the image pixels in the defined
+                analysis zones (default: np.mean). Other typical functions
+                can be: np.sum, np.max, etc.
 
         - Viewer: Viewer class/subclasses that is used to display and inspect
                   analysis data (is used by ViewerTools)
@@ -159,6 +164,7 @@ class GreyLevel(Analysis):
         # empty zones object, needs to be filled with zones.define() or
         # zones.load() prior to starting analysis with self.run()
         self.zones = Zones(self)
+        self.func = func
 
     def _analyze(self, num, live=False):
         """Basic analysis function, to be threaded or multiprocessed.
@@ -176,7 +182,7 @@ class GreyLevel(Analysis):
         img = self.img_series.read(num)
         for cropzone in self.zones.data.values():
             img_crop = self.img_series.image_manager.crop(img, cropzone)
-            glevel = np.mean(img_crop)
+            glevel = self.func(img_crop)
             glevels.append(glevel)
         return glevels
 

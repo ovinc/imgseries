@@ -57,6 +57,10 @@ class TransformParameter(Parameter):
     These parameters DO impact analysis and are stored in metadata.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.order = self.img_series.transforms.index(self.parameter_type)
+
     def _load(self, filename=None):
         """Load parameter data from .json file."""
         return self.img_series.load_transform(filename=filename)
@@ -77,14 +81,8 @@ class TransformParameter(Parameter):
         self._clear_cache()
 
         subtraction = self.img_series.subtraction
-        if not subtraction.is_empty:
+        if not subtraction.is_empty and self.order <= subtraction.order:
             subtraction._update_reference_image()
-
-        grayscale = self.img_series.grayscale
-        if grayscale.is_empty or not grayscale.apply:
-            self.img_series.ndim = self.img_series.initial_ndim
-        else:
-            self.img_series.ndim = 2
 
 
 class AnalysisParameter(Parameter):

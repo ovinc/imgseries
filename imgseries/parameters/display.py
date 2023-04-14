@@ -7,10 +7,11 @@ the images themselves.
 
 # Non-standard modules
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Button
 
 # Local imports
 from .parameters_base import DisplayParameter
+from ..viewers import ContrastSetterViewer
 
 
 class Display(DisplayParameter):
@@ -36,86 +37,8 @@ class Display(DisplayParameter):
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        fig = plt.figure(figsize=(12, 5))
-        ax_img = fig.add_axes([0.05, 0.05, 0.5, 0.9])
-
-        img = self.img_series.read(num=num)
-        imshow = self.img_series._imshow(img, ax=ax_img, **kwargs)
-
-        img_object, = ax_img.get_images()
-        vmin, vmax = img_object.get_clim()
-        vmin_min, vmax_max = self.img_series.image_manager.max_pixel_range(img)
-        v_step = 1 if type(vmax_max) == int else None
-
-        img_flat = img.flatten()
-        vmin_img = img_flat.min()
-        vmax_img = img_flat.max()
-
-        ax_hist = fig.add_axes([0.7, 0.45, 0.25, 0.5])
-        ax_hist.hist(img_flat, bins='auto')
-        ax_hist.set_xlim((vmin_min, vmax_max))
-
-        min_line = ax_hist.axvline(vmin, color='k')
-        max_line = ax_hist.axvline(vmax, color='k')
-
-        ax_slider_min = fig.add_axes([0.7, 0.2, 0.25, 0.04])
-        ax_slider_max = fig.add_axes([0.7, 0.28, 0.25, 0.04])
-
-        slider_min = Slider(ax=ax_slider_min,
-                            label='min',
-                            valmin=vmin_min,
-                            valmax=vmax_max,
-                            valinit=vmin,
-                            valstep=v_step,
-                            color='steelblue',
-                            alpha=0.5)
-
-        slider_max = Slider(ax=ax_slider_max,
-                            label='max',
-                            valmin=vmin_min,
-                            valmax=vmax_max,
-                            valinit=vmax,
-                            valstep=v_step,
-                            color='steelblue',
-                            alpha=0.5)
-
-        ax_btn_reset = fig.add_axes([0.7, 0.05, 0.07, 0.06])
-        btn_reset = Button(ax_btn_reset, 'Full')
-
-        ax_btn_auto = fig.add_axes([0.79, 0.05, 0.07, 0.06])
-        btn_auto = Button(ax_btn_auto, 'Auto')
-
-        ax_btn_ok = fig.add_axes([0.88, 0.05, 0.07, 0.06])
-        btn_ok = Button(ax_btn_ok, 'OK')
-
-        def update_min(value):
-            imshow.norm.vmin = value
-            min_line.set_xdata((value, value))
-
-        def update_max(value):
-            imshow.norm.vmax = value
-            max_line.set_xdata((value, value))
-
-        def reset_contrast(event):
-            slider_min.set_val(vmin_min)
-            slider_max.set_val(vmax_max)
-
-        def auto_contrast(event):
-            slider_min.set_val(vmin_img)
-            slider_max.set_val(vmax_img)
-
-        def validate(event):
-            self.data = {'vmin': slider_min.val, 'vmax': slider_max.val}
-            plt.close(fig)
-
-        slider_min.on_changed(update_min)
-        slider_max.on_changed(update_max)
-
-        btn_reset.on_clicked(reset_contrast)
-        btn_auto.on_clicked(auto_contrast)
-        btn_ok.on_clicked(validate)
-
-        return slider_min, slider_max, btn_reset, btn_auto, btn_ok
+        setter = ContrastSetterViewer(self.img_series, num=num, **kwargs)
+        return setter.run()
 
     def _define_colormap(self, num=0, **kwargs):
         """Interactively define colormap

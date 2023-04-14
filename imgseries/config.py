@@ -22,7 +22,7 @@ filenames = {'files': 'Img_Files',  # for file info (timing etc.)
              }
 
 # Transform names and the order in which they are applied
-image_transforms = 'grayscale', 'rotation', 'crop', 'filter', 'subtraction'
+image_transforms = 'grayscale', 'rotation', 'crop', 'filter', 'subtraction', 'threshold'
 
 CONFIG = {'csv separator': csv_separator,
           'filenames': filenames,

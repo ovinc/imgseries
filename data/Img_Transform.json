@@ -12,5 +12,6 @@
         ]
     },
     "filter": {},
-    "subtraction": {}
+    "subtraction": {},
+    "threshold": {}
 }

@@ -37,6 +37,7 @@ class ImgSeries(filo.Series, ViewerTools):
                          'crop': '_crop',
                          'filter': '_filter',
                          'subtraction': '_subtract',
+                         'threshold': '_threshold',
                          }
 
     def __init__(self,
@@ -78,17 +79,19 @@ class ImgSeries(filo.Series, ViewerTools):
 
         # Create image transform objects and associated methods and
         # link image transform names to actual functions that apply them
-        self.transforms = OrderedDict()
-        for transform_name in transforms:
+        self.transforms = transforms
+        self.transform_funcs = OrderedDict()
+
+        for transform_name in self.transforms:
 
             # e.g. self.rotation = Rotation(self)
             transform_obj = Transforms[transform_name](self)
             setattr(self, transform_name, transform_obj)
 
-            # e.g. self.transforms['grayscale'] = self._rgb_to_gray
+            # e.g. self.transform_funcs['grayscale'] = self._rgb_to_gray
             transform_func_name = self._transforms_funcs[transform_name]
             transform_func = getattr(self, transform_func_name)
-            self.transforms[transform_name] = transform_func
+            self.transform_funcs[transform_name] = transform_func
 
         # Display options (do not impact analysis)
         self.display = Display(self)
@@ -147,12 +150,17 @@ class ImgSeries(filo.Series, ViewerTools):
                                            relative=self.subtraction.relative)
 
     def _rgb_to_grey(self, img):
-        """"Convert RGB to grayscale"""
+        """Convert RGB to grayscale"""
         return self.image_manager.rgb_to_grey(img)
+
+    def _threshold(self, img):
+        return self.image_manager.threshold(img,
+                                            vmin=self.threshold.vmin,
+                                            vmax=self.threshold.vmax)
 
     def _apply_transform(self, img, **kwargs):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
-        for transform_name, transform_function in self.transforms.items():
+        for transform_name, transform_function in self.transform_funcs.items():
             transform_object = getattr(self, transform_name)      # e.g. self.rotation
             if not transform_object.is_empty and kwargs.get(transform_name, True):
                 img = transform_function(img)
@@ -180,14 +188,19 @@ class ImgSeries(filo.Series, ViewerTools):
             nums = [file.num for file in files]
         return nums
 
-    def _get_imshow_kwargs(self):
+    def _get_imshow_kwargs(self, transform=True):
         """Define kwargs to pass to imshow (to have grey by default for 2D)."""
-        kwargs = self.display.data
+        kwargs = {**self.display.data}
         if self.ndim < 3:
             kwargs['cmap'] = kwargs.get('cmap', 'gray')
+        # Without lines below, display of thresholded images is buggy when
+        # contrast has been defined previously
+        if transform and not self.threshold.is_empty:
+            kwargs['vmin'] = 0
+            kwargs['vmax'] = 1
         return kwargs
 
-    def _imshow(self, img, ax=None, **kwargs):
+    def _imshow(self, img, ax=None, transform=True, **kwargs):
         """Use plt.imshow() with default kwargs and/or additional ones
 
         Parameters
@@ -197,13 +210,15 @@ class ImgSeries(filo.Series, ViewerTools):
         - ax: axes in which to display the image. If not specified, create new
               ones
 
+        - transform: whether to apply transforms or show raw image.
+
         - kwargs: any keyword-argument to pass to imshow() (overrides default
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
         if ax is None:
             _, ax = plt.subplots()
-        default_kwargs = self._get_imshow_kwargs()
+        default_kwargs = self._get_imshow_kwargs(transform=transform)
         kwargs = {**default_kwargs, **kwargs}
         return ax.imshow(img, **kwargs)
 
@@ -232,10 +247,7 @@ class ImgSeries(filo.Series, ViewerTools):
         else:
             img = self.stack[num]
 
-        if transform:
-            return self._apply_transform(img, **kwargs)
-        else:
-            return img
+        return self._apply_transform(img, **kwargs) if transform else img
 
     def profile(self, npts=100, radius=2, **kwargs):
         """Interactively get intensity profile by drawing a line on image."""

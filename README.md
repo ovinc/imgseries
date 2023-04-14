@@ -91,6 +91,7 @@ images.load_display()  # load rotation and crop parameters from json file
 images.rotation.define()
 images.crop.define()
 images.filter.define()
+images.threshold.define()
 
 # Manual:
 images.grayscale.apply = True
@@ -99,6 +100,9 @@ images.crop.zone = (2, 25, 400, 600)
 images.filter.size = 10
 images.subtraction.reference = range(5)  # avg first 5 images for subtraction
 images.subtraction.relative = True       # (I - Iref) / I_ref instead of I - Iref
+images.threshold.vmin = 220  # everything below vmin is False, rest True
+images.threshold.vmax = 240  # everything below vmax is True, rest False
+# Note: threshold.vmin can be combined with threshold.vmax for a bandpass
 
 # Other transform parameters / methods:
 images.active_transforms  # see currently applied transforms on images

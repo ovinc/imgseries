@@ -45,6 +45,12 @@ def test_set_global_transform():
     images.crop.zone = (186, 193, 391, 500)
     img_crop = images.read(n)
 
+    # Expand the tests below:
+    images.filter.size = 8
+    images.subtraction.reference = (1, 2)
+    images.subtraction.relative = True
+    images.threshold.vmin = 0.003
+
     assert img_raw.shape == (550, 608)
     assert img_rot.shape == (776, 746)
     assert img_crop.shape == (500, 391)
@@ -120,6 +126,7 @@ def test_glevelstack_analysis_basic():
 
 ct = ContourTracking(ImgSeries(folders, savepath=basefolder))
 ct.contours.load('Img_ContourTracking_Saved')
+
 
 def test_contour_tracking_basic():
     ct.run()
