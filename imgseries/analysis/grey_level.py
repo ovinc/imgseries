@@ -19,6 +19,13 @@ class GreyLevelViewer(AnalysisViewer):
 
     def _create_figure(self, num=0):
         self.fig = plt.figure(figsize=(5, 7))
+        xmin = 0.05
+        xmax = 0.95
+        w = xmax - xmin
+        self.ax_img = self.fig.add_axes([xmin, 0.33, w, 0.65])
+        self.ax_analysis = self.fig.add_axes([xmin, 0.09, w, 0.25])
+        self.axs = self.ax_img, self.ax_analysis
+        self.ax_img.axis('off')
 
     def _first_plot(self, data):
         """What to do the first time data arrives on the plot."""
@@ -26,17 +33,11 @@ class GreyLevelViewer(AnalysisViewer):
         num = data['num']
         glevels = data['glevels']
 
-        self.ax = self.fig.add_axes([0.05, 0.33, 0.9, 0.65])
-        self.ax_curves = self.fig.add_axes([0.05, 0.09, 0.9, 0.25])
-
         # image
-        self.ax.set_title(f'img #{num}')
+        self.ax_img.set_title(f'img #{num}')
         self.imshow = self.analysis.img_series._imshow(img,
-                                                       ax=self.ax,
+                                                       ax=self.ax_img,
                                                        **self.kwargs)
-        self.axs = self.ax, self.ax_curves
-        self.ax.axis('off')
-
         # curves
         self.curves = []
         self.pts = []
@@ -45,18 +46,18 @@ class GreyLevelViewer(AnalysisViewer):
 
             full_data = self.analysis.results.data[zone_name]
 
-            curve, = self.ax_curves.plot(full_data, label=zone_name)
+            curve, = self.ax_analysis.plot(full_data, label=zone_name)
             color = curve.get_color()
-            pt, = self.ax_curves.plot(num, glevel, 'o', c=color)
+            pt, = self.ax_analysis.plot(num, glevel, 'o', c=color)
 
             zone = self.analysis.zones.data[zone_name]
-            _cropzone_draw(self.ax, zone, c=color)
+            _cropzone_draw(self.ax_img, zone, c=color)
 
             self.curves.append(curve)
             self.pts.append(pt)
 
-        self.ax_curves.legend()
-        self.ax_curves.grid()
+        self.ax_analysis.legend()
+        self.ax_analysis.grid()
 
         self.updated_artists = self.pts + [self.imshow]
 
@@ -66,7 +67,7 @@ class GreyLevelViewer(AnalysisViewer):
         num = data['num']
         glevels = data['glevels']
 
-        self.ax.set_title(f'img #{num}')
+        self.ax_img.set_title(f'img #{num}')
 
         self.imshow.set_array(img)
         for pt, glevel in zip(self.pts, glevels):
@@ -105,7 +106,6 @@ class GreyLevelFormatter_Pandas(PandasFormatter):
 
 class GreyLevelResults_PandasTsv(PandasTsvResults):
     measurement_type = 'glevel'
-
 
 
 # =========================== Main ANALYSIS class ============================
