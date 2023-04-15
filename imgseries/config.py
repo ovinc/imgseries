@@ -19,6 +19,7 @@ filenames = {'files': 'Img_Files',  # for file info (timing etc.)
              'display': 'Img_Display',  # store display options (contrast, cmap etc.)
              'glevel': 'Img_GreyLevel',           # program will add .tsv or
              'ctrack': 'Img_ContourTracking',     # .json depending on context
+             'front1d': 'Img_Front1D',
              }
 
 # Transform names and the order in which they are applied

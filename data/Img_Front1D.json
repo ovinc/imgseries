@@ -1,0 +1,44 @@
+{
+    "path": [
+        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data"
+    ],
+    "folders": [
+        "img1",
+        "img2"
+    ],
+    "grayscale": {},
+    "rotation": {},
+    "crop": {},
+    "filter": {},
+    "subtraction": {},
+    "threshold": {},
+    "time (utc)": "2023-04-15 18:23:28",
+    "code version": {
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.17.2"
+        },
+        "imgseries": {
+            "hash": "59b4c385c2ea5e879bfc5a0f492358c35b3daf2d",
+            "status": "dirty"
+        },
+        "imgbasics": {
+            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
+            "status": "clean",
+            "tag": "v0.3.0"
+        },
+        "filo": {
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
+            "tag": "v1.1.5"
+        },
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.3.2"
+        },
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.19.2"
+        }
+    }
+}
