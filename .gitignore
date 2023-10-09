@@ -5,3 +5,4 @@
 .ipynb_checkpoints/
 build/
 dist/
+*DS_Store*
