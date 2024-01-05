@@ -390,10 +390,5 @@ class Threshold(TransformParameter):
         self._update_parameters()
 
 
-Transforms = {'grayscale': Grayscale,
-              'rotation': Rotation,
-              'crop': Crop,
-              'filter': Filter,
-              'subtraction': Subtraction,
-              'threshold': Threshold
-              }
+all_transforms = Grayscale, Rotation, Crop, Filter, Subtraction, Threshold
+Transforms = {transform.parameter_type: transform for transform in all_transforms}

@@ -59,7 +59,7 @@ class ImageManager:
 
     @staticmethod
     def subtract(img, img_ref, relative=False):
-        """How to subtract a reference image to """
+        """How to subtract a reference image to the image"""
         if not relative:
             return img - img_ref
         else:
@@ -70,7 +70,7 @@ class ImageManager:
         """How to convert an RGB image to grayscale"""
         _, vmax = cls.max_pixel_range(img)
         img_grey = skimage.color.rgb2gray(img)
-        if type(vmax) == int:
+        if type(vmax) is int:
             return (img_grey * vmax).astype(img.dtype)
         else:
             return img_grey
@@ -83,7 +83,7 @@ class ImageManager:
             img_filtered = filters.gaussian(img, sigma=size)
         else:
             raise ValueError(f'{filter_type} filter not implemented')
-        if type(vmax) == int:
+        if type(vmax) is int:
             return (img_filtered * vmax).astype(img.dtype)
         else:
             return img_filtered
