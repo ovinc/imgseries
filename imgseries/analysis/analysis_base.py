@@ -13,10 +13,9 @@ from tqdm import tqdm
 # local imports
 from ..config import CONFIG
 from ..managers import FileManager
-from ..viewers import ViewerTools
 
 
-class Analysis(ViewerTools):
+class Analysis:
     """Base class for analysis subclasses (GreyLevel, ContourTracking, etc.)."""
 
     measurement_type = None  # define in subclasses (e.g. 'glevel', 'ctrack', etc.)
@@ -74,13 +73,7 @@ class Analysis(ViewerTools):
             self.results.metadata['path'] = str(savepath.resolve()),
             self.results.metadata['folders'] = folders
 
-        ViewerTools.__init__(self, Viewer=Viewer)
-
     # ========================= Misc. internal tools =========================
-
-    def _set_substack(self, *args, **kwargs):
-        """Needed to be able to use ViewerTools correctly."""
-        return self.img_series._set_substack(*args, **kwargs)
 
     def _add_transform_to_metadata(self):
         """Add information about image transforms (rotation, crop etc.) to metadata."""
@@ -194,6 +187,71 @@ class Analysis(ViewerTools):
             # e.g. self.img_series.crop.data = self.results.metadata['crop']
             data = self.results.metadata.get(transform_name, {})
             setattr(getattr(self.img_series, transform_name), 'data', data)
+
+    # ==================== Interactive inspection methods ====================
+
+    # Note: Initially, these were in a ViewerTools subclass to avoid code
+    # repetition, but I eventually preferred to repeat code to avoid
+    # multiple inheritance and weird couplings.
+
+    def show(self, num=0, transform=True, **kwargs):
+        """Show image in a matplotlib window.
+
+        Parameters
+        ----------
+        - num: image identifier in the file series
+
+        - transform: if True (default), apply active transforms
+                     if False, load raw image.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.show(num=num)
+
+    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
+        """Interactively inspect image series.
+
+        Parameters:
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - transform: if True (default), apply active transforms
+                     if False, use raw images.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        nums = self.img_series._set_substack(start, end, skip)
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.inspect(nums=nums)
+
+    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
+        """Interactively inspect image stack.
+
+        Parameters:
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - transform: if True (default), apply active transforms
+                     if False, use raw images.
+
+        - blit: if True, use blitting for faster animation.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        nums = self.img_series._set_substack(start, end, skip)
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.animate(nums=nums, blit=blit)
 
     # =================== Methods to define in subclasses ====================
 

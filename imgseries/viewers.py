@@ -174,16 +174,13 @@ class ImgSeriesViewer(ImageViewer):
 class AnalysisViewer(ImageViewer):
     """Matplotlib viewer to display analysis results alongside images."""
 
-    def __init__(self, analysis, live=False, transform=True, **kwargs):
+    def __init__(self, analysis, live=False, **kwargs):
         """Parameters
            ----------
 
         - analysis: analysis object (e.g. GreyLevel(), ContourTracking(), etc.)
 
         - live: if True, get data in real time from analysis being made.
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
 
         - kwargs: any keyword-argument to pass to imshow().
 
@@ -204,73 +201,6 @@ class AnalysisViewer(ImageViewer):
             return self.analysis._analyze_live(num)
         else:
             return self.analysis.formatter._regenerate_data(num)
-
-
-class ViewerTools:
-    """Class that adds viewing tools to ImgSeries or Analysis classes."""
-
-    def __init__(self, Viewer):
-        """Define which viewer is used to display images and data."""
-        self.Viewer = Viewer
-
-    def show(self, num=0, transform=True, **kwargs):
-        """Show image in a matplotlib window.
-
-        Parameters
-        ----------
-        - num: image identifier in the file series
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, load raw image.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.show(num=num)
-
-    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
-        """Interactively inspect image stack.
-
-        Parameters:
-
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        nums = self._set_substack(start, end, skip)
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=nums)
-
-    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
-        """Interactively inspect image stack.
-
-        Parameters:
-
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
-
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
-
-        - blit: if True, use blitting for faster animation.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
-        """
-        nums = self._set_substack(start, end, skip)
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.animate(nums=nums, blit=blit)
 
 
 # ==================== Interactive setting of parameters =====================

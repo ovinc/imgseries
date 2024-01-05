@@ -13,13 +13,13 @@ from skimage import io
 # local imports
 from .config import CONFIG
 from .managers import FileManager, ImageManager
-from .viewers import ImgSeriesViewer, ViewerTools
+from .viewers import ImgSeriesViewer
 from .line_profile import Profile
 from .parameters.transform import Transforms
 from .parameters.display import Display
 
 
-class ImgSeries(filo.Series, ViewerTools):
+class ImgSeries(filo.Series):
     """Class to manage series of images, possibly in several folders."""
 
     # Only for __repr__ (str representation of class object, see filo.Series)
@@ -28,7 +28,8 @@ class ImgSeries(filo.Series, ViewerTools):
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = CONFIG['filenames']['files'] + '.tsv'
 
-    cache = False   # cache images during read() or not (changed in ImgSeriesCached)
+    # cache images during read() or not (if so, see ImgSeriesCached)
+    cache = False
 
     # Correspondence between transform names and the methods that actually
     # perform them within the class
@@ -48,6 +49,7 @@ class ImgSeries(filo.Series, ViewerTools):
         savepath='.',
         stack=None,
         transforms=CONFIG['image transforms'],
+        viewer=ImgSeriesViewer,
         image_manager=ImageManager,
         file_manager=FileManager,
     ):
@@ -69,6 +71,8 @@ class ImgSeries(filo.Series, ViewerTools):
         - transforms: iterable of names of transforms to consider (their order
                       indicates the order in which they are applied), e.g.
                       transforms=('rotation', 'crop', 'filter')
+
+        - viewer: which Viewer class to use for show(), inspect() etc.
 
         - image_manager: class (or object) that defines how to read and
                          transform images
@@ -114,7 +118,7 @@ class ImgSeries(filo.Series, ViewerTools):
                                  extension=extension,
                                  savepath=savepath)
 
-        ViewerTools.__init__(self, Viewer=ImgSeriesViewer)
+        self.Viewer = viewer
 
         img = self.read()
         self.initial_ndim = img.ndim
@@ -312,6 +316,67 @@ class ImgSeries(filo.Series, ViewerTools):
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
         self.file_manager.to_json(self.display.data, self.savepath, fname)
+
+    # ==================== Interactive inspection methods ====================
+
+    def show(self, num=0, transform=True, **kwargs):
+        """Show image in a matplotlib window.
+
+        Parameters
+        ----------
+        - num: image identifier in the file series
+
+        - transform: if True (default), apply active transforms
+                     if False, load raw image.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.show(num=num)
+
+    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
+        """Interactively inspect image series.
+
+        Parameters:
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - transform: if True (default), apply active transforms
+                     if False, use raw images.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        nums = self._set_substack(start, end, skip)
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.inspect(nums=nums)
+
+    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
+        """Interactively inspect image stack.
+
+        Parameters:
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - transform: if True (default), apply active transforms
+                     if False, use raw images.
+
+        - blit: if True, use blitting for faster animation.
+
+        - kwargs: any keyword-argument to pass to imshow() (overrides default
+          and preset display parameters such as contrast, colormap etc.)
+          (note: cmap is grey by default for 2D images)
+        """
+        nums = self._set_substack(start, end, skip)
+        viewer = self.Viewer(self, transform=transform, **kwargs)
+        return viewer.animate(nums=nums, blit=blit)
 
 
 def series(*args, cache=False, cache_size=516, **kwargs):
