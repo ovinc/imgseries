@@ -19,6 +19,7 @@ class InteractiveLine(Line):
             return
         self.viewer._plot(num=self.viewer.num)
 
+
 class Profile(ViewerTools):
 
     def __init__(self, img_series, npts=100, radius=2, **kwargs):

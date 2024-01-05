@@ -32,23 +32,25 @@ class ImgSeries(filo.Series, ViewerTools):
 
     # Correspondence between transform names and the methods that actually
     # perform them within the class
-    _transforms_funcs = {'grayscale': '_rgb_to_grey',
-                         'rotation': '_rotate',
-                         'crop': '_crop',
-                         'filter': '_filter',
-                         'subtraction': '_subtract',
-                         'threshold': '_threshold',
-                         }
+    _transforms_funcs = {
+        'grayscale': '_rgb_to_grey',
+        'rotation': '_rotate',
+        'crop': '_crop',
+        'filter': '_filter',
+        'subtraction': '_subtract',
+        'threshold': '_threshold',
+    }
 
-    def __init__(self,
-                 paths='.',
-                 extension='.png',
-                 savepath='.',
-                 stack=None,
-                 transforms=CONFIG['image transforms'],
-                 image_manager=ImageManager,
-                 file_manager=FileManager,
-                 ):
+    def __init__(
+        self,
+        paths='.',
+        extension='.png',
+        savepath='.',
+        stack=None,
+        transforms=CONFIG['image transforms'],
+        image_manager=ImageManager,
+        file_manager=FileManager,
+    ):
         """Init image series object.
 
         Parameters
