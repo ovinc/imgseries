@@ -156,7 +156,7 @@ gl.regenerate()
 
 gl.run()    # run actual analysis (parallel computation available);
 gl.results  # is an object containing data and metadata of the analysis
-gl.save()
+gl.results.save()
 
 # Interactive views of results -----------------------------------------------
 gl.show()      # show result of analysis on a given image (default: first one)
@@ -191,7 +191,7 @@ ct.regenerate()
 
 ct.run()      # run actual analysis (no parallel computation available)
 ct.results    # is an object containing data and metadata of the analysis
-ct.save()     # save results (data + metadata) to files (csv, json)
+ct.results.save()     # save results (data + metadata) to files (csv, json)
 
 # Interactive views of results -----------------------------------------------
 ct.show()      # show result of analysis on a given image (default: first one)

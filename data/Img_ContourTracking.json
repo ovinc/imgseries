@@ -1,6 +1,6 @@
 {
     "path": [
-        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data"
+        "/Users/olivier.vincent/Python-OV/imgseries/data"
     ],
     "folders": [
         "img1",
@@ -9,41 +9,49 @@
     "contours": {
         "position": {
             "contour 1": [
-                305.91452158362085,
-                351.1931210635891
+                200.3626693010238,
+                274.00471659353667
             ],
             "contour 2": [
-                378.74597959309295,
-                343.20376242774427
+                271.4714224764672,
+                265.95792253954784
             ],
             "contour 3": [
-                419.08526016738057,
-                305.34614777952004
+                310.92487930592114,
+                228.94501177128396
             ]
         },
         "level": 175,
-        "image": 0
+        "image": 10
     },
+    "grayscale": {},
     "rotation": {},
-    "crop": {},
+    "crop": {
+        "zone": [
+            106,
+            76,
+            411,
+            377
+        ]
+    },
     "filter": {
         "type": "gaussian",
-        "size": 1.7000000000000002
+        "size": 1.8
     },
     "subtraction": {},
-    "time (utc)": "2023-01-31 19:08:53",
+    "threshold": {},
+    "time (utc)": "2024-01-06 08:35:04",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "84ed9ca9c4d502fe33ca74082e43baf7bce632d5",
+            "hash": "c823cffad8a55b7aaf387507434ca9fe77505400",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
-            "status": "clean",
+            "status": "not a git repository",
             "tag": "v0.3.0"
         },
         "filo": {
@@ -52,11 +60,11 @@
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.6.3"
+            "tag": "v3.7.0"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.24.1"
+            "tag": "v1.23.5"
         }
     }
 }
