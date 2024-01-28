@@ -181,7 +181,8 @@ class GreyLevel(Analysis):
         glevels = []
         img = self.img_series.read(num)
         for cropzone in self.zones.data.values():
-            img_crop = self.img_series.image_manager.crop(img, cropzone)
+            crop_func = self.img_series.img_processor.img_manager.crop
+            img_crop = crop_func(img, cropzone)
             glevel = self.func(img_crop)
             glevels.append(glevel)
         return glevels

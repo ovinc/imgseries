@@ -35,32 +35,36 @@
             536
         ]
     },
-    "time (utc)": "2023-01-31 15:04:30",
+    "time (utc)": "2024-01-28 19:36:01",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "52094561a1dce8bd38153baeed9244fb4e489677",
+            "hash": "d4a58695989a69999f36e51c4ec4245ea362041b",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
-            "status": "clean",
+            "status": "not a git repository",
             "tag": "v0.3.0"
         },
         "filo": {
-            "status": "not a git repository",
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
             "tag": "v1.1.5"
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.6.3"
+            "tag": "v3.7.0"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.24.1"
+            "tag": "v1.23.5"
         }
-    }
+    },
+    "grayscale": {},
+    "filter": {},
+    "subtraction": {},
+    "threshold": {}
 }

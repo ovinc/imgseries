@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Slider, Button
 
+# Local imports
+from .managers import max_pixel_range
+
 
 class ImageViewer:
     """Base class for plotting of images and additional data for animations."""
@@ -393,7 +396,7 @@ class ContrastSetterViewer(DoubleSliderBase):
     def _process_image(self):
         self.img = self.img_series.read(num=self.num)
         self.img_hist = self.img[np.isfinite(self.img)].flatten()
-        self.max_range = self.img_series.image_manager.max_pixel_range(self.img)
+        self.max_range = max_pixel_range(self.img)
         self.auto_range = self.img_hist.min(), self.img_hist.max()
         self.init_range = self._get_init_range()
 
@@ -434,18 +437,22 @@ class ThresholdSetterViewer(DoubleSliderBase):
     def _update_min(self, value):
         _, vmax = self._get_current_range()
         self.current_range = value, vmax
-        img = self.img_series.image_manager.threshold(self.img_raw,
-                                                      vmin=value,
-                                                      vmax=vmax)
+        img = self.img_series.img_processor.img_manager.threshold(
+            img=self.img_raw,
+            vmin=value,
+            vmax=vmax,
+        )
         self.imshow.set_array(img)
         self.min_line.set_xdata((value, value))
 
     def _update_max(self, value):
         vmin, _ = self._get_current_range()
         self.current_range = vmin, value
-        img = self.img_series.image_manager.threshold(self.img_raw,
-                                                      vmin=vmin,
-                                                      vmax=value)
+        img = self.img_series.img_processor.img_manager.threshold(
+            img=self.img_raw,
+            vmin=vmin,
+            vmax=value,
+        )
         self.imshow.set_array(img)
         self.max_line.set_xdata((value, value))
 
@@ -453,20 +460,23 @@ class ThresholdSetterViewer(DoubleSliderBase):
 
         self.img_raw = self.img_series.read(num=self.num, threshold=False)
         self.img_hist = self.img_raw[np.isfinite(self.img_raw)].flatten()
-        self.max_range = self.img_series.image_manager.max_pixel_range(self.img_raw)
+        self.max_range = max_pixel_range(self.img_raw)
 
         vmin_auto = np.median(self.img_hist)
         _, vmax_auto = self.max_range
         self.auto_range = vmin_auto, vmax_auto
         self.init_range = self._get_init_range()
 
-        self.img = self.img_series.image_manager.threshold(self.img_raw,
-                                                           *self.init_range)
+        self.img = self.img_series.img_processor.img_manager.threshold(
+            self.img_raw,
+            *self.init_range,
+        )
 
     def _create_imshow(self):
-        # Without the vmin/vmax arguments, the thresholded image is not displayed
-        # properly because at this stage the img_series is not thresholded yet
-        # and still has default vmin, vmax from before thresholding.
+        # Without the vmin/vmax arguments, the thresholded image is not
+        # displayed properly because at this stage the img_series is not
+        # thresholded yet and still has default vmin, vmax from before
+        # thresholding.
         return self.img_series._imshow(self.img,
                                        ax=self.axs['image'],
                                        vmin=0, vmax=1)

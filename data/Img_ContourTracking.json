@@ -9,45 +9,45 @@
     "contours": {
         "position": {
             "contour 1": [
-                200.3626693010238,
-                274.00471659353667
+                155.34855196067068,
+                248.8680542590701
             ],
             "contour 2": [
-                271.4714224764672,
-                265.95792253954784
+                220.36855953462214,
+                277.00651519592867
             ],
             "contour 3": [
-                310.92487930592114,
-                228.94501177128396
+                291.47083356083385,
+                268.9632883107061
             ]
         },
-        "level": 175,
+        "level": 181,
         "image": 10
     },
     "grayscale": {},
     "rotation": {},
     "crop": {
         "zone": [
-            106,
-            76,
-            411,
-            377
+            86,
+            73,
+            454,
+            391
         ]
     },
     "filter": {
         "type": "gaussian",
-        "size": 1.8
+        "size": 2.0
     },
     "subtraction": {},
     "threshold": {},
-    "time (utc)": "2024-01-06 08:35:04",
+    "time (utc)": "2024-01-28 19:45:29",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "c823cffad8a55b7aaf387507434ca9fe77505400",
+            "hash": "d4a58695989a69999f36e51c4ec4245ea362041b",
             "status": "dirty"
         },
         "imgbasics": {
@@ -55,7 +55,8 @@
             "tag": "v0.3.0"
         },
         "filo": {
-            "status": "not a git repository",
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
             "tag": "v1.1.5"
         },
         "matplotlib": {

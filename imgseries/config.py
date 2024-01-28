@@ -14,7 +14,7 @@ checked_modules = skimage, imgseries, imgbasics, filo, matplotlib, numpy
 
 csv_separator = '\t'
 
-filenames = {
+FILENAMES = {
     'files': 'Img_Files',          # for file info (timing etc.)
     'transform': 'Img_Transform',  # this is to store rotation angle etc.
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
@@ -24,7 +24,7 @@ filenames = {
 }
 
 # Transform names and the order in which they are applied
-image_transforms = (
+IMAGE_TRANSFORMS = (
     'grayscale',
     'rotation',
     'crop',
@@ -35,7 +35,7 @@ image_transforms = (
 
 CONFIG = {
     'csv separator': csv_separator,
-    'filenames': filenames,
-    'image transforms': image_transforms,
+    'filenames': FILENAMES,
+    'image transforms': IMAGE_TRANSFORMS,
     'checked modules': checked_modules,
 }

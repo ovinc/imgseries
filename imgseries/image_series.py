@@ -3,7 +3,6 @@
 # Standard library imports
 from pathlib import Path
 from functools import lru_cache
-from collections import OrderedDict
 
 # Nonstandard
 import matplotlib.pyplot as plt
@@ -11,12 +10,110 @@ import filo
 from skimage import io
 
 # local imports
-from .config import CONFIG
+from .config import CONFIG, IMAGE_TRANSFORMS
 from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer
 from .line_profile import Profile
 from .parameters.transform import Transforms
 from .parameters.display import Display
+
+
+class ImageProcessor:
+    """Class that connects ImageManager to an image series to act on it."""
+
+    def __init__(self, img_series, img_manager):
+        """Parameters:
+
+        - img_series: ImgSeries object
+        - img_manager: ImageManager object
+                       (can be customized when passed to ImgSeries)
+        """
+        self.img_series = img_series
+        self.img_manager = img_manager
+
+    # -------------------------- Global transforms ---------------------------
+
+    # NOTE: the name of the methods must correspond to the transform names
+    # (parameter_type name in the transform) with underscore in front
+
+    def rotation(self, img):
+        """Rotate image according to pre-defined rotation parameters"""
+        return self.img_manager.rotate(
+            img=img,
+            angle=self.img_series.rotation.data['angle'],
+        )
+
+    def crop(self, img):
+        """Crop image according to pre-defined crop parameters"""
+        return self.img_manager.crop(
+            img=img,
+            zone=self.img_series.crop.data['zone'],
+        )
+
+    def filter(self, img):
+        """Filter / blur image according to pre-defined filter parameters"""
+        return self.img_manager.filter(
+            img=img,
+            filter_type=self.img_series.filter.data['type'],
+            size=self.img_series.filter.data['size'],
+        )
+
+    def subtraction(self, img):
+        """Subtract pre-set reference image to current image."""
+        img_ref = self.img_series.subtraction.reference_image
+        return self.img_manager.subtract(
+            img=img,
+            img_ref=img_ref,
+            relative=self.img_series.subtraction.relative,
+        )
+
+    def grayscale(self, img):
+        """Convert RGB to grayscale"""
+        return self.img_manager.rgb_to_grey(
+            img=img,
+        )
+
+    def threshold(self, img):
+        return self.img_manager.threshold(
+            img=img,
+            vmin=self.img_series.threshold.vmin,
+            vmax=self.img_series.threshold.vmax,
+        )
+
+    # ----------------------- Reading image from file ------------------------
+
+    def apply_transform(self, img, transform_name):
+        """Apply specific transform (str) to image and return new img array"""
+        transform_object = getattr(self.img_series, transform_name)
+        if transform_object.is_empty:
+            return img
+        transform_function = getattr(self, transform_name)
+        return transform_function(img)
+
+    def apply_transforms(self, img, **kwargs):
+        """Apply stored transforms on the image (crop, rotation, etc.)"""
+        for transform_name in self.img_series.transforms:
+            # Do not consider any transform specifically marked as false
+            if kwargs.get(transform_name, True):
+                img = self.apply_transform(
+                    img=img,
+                    transform_name=transform_name,
+                )
+        return img
+
+    def read(self, num, transform, **kwargs):
+        """Read image #num in image series and apply transforms if requested.
+
+        Kwargs can be rotation=True or threshold=False to switch on/off
+        transforms during the processing of the image
+        """
+        if not self.img_series.is_stack:
+            file = self.img_series.files[num].file
+            img = self.img_manager.read(file)
+        else:
+            img = self.img_series.stack[num]
+
+        return self.apply_transforms(img, **kwargs) if transform else img
 
 
 class ImgSeries(filo.Series):
@@ -31,26 +128,15 @@ class ImgSeries(filo.Series):
     # cache images during read() or not (if so, see ImgSeriesCached)
     cache = False
 
-    # Correspondence between transform names and the methods that actually
-    # perform them within the class
-    _transforms_funcs = {
-        'grayscale': '_rgb_to_grey',
-        'rotation': '_rotate',
-        'crop': '_crop',
-        'filter': '_filter',
-        'subtraction': '_subtract',
-        'threshold': '_threshold',
-    }
-
     def __init__(
         self,
         paths='.',
         extension='.png',
         savepath='.',
         stack=None,
-        transforms=CONFIG['image transforms'],
+        transforms=IMAGE_TRANSFORMS,
         viewer=ImgSeriesViewer,
-        image_manager=ImageManager,
+        img_manager=ImageManager,
         file_manager=FileManager,
     ):
         """Init image series object.
@@ -74,30 +160,24 @@ class ImgSeries(filo.Series):
 
         - viewer: which Viewer class to use for show(), inspect() etc.
 
-        - image_manager: class (or object) that defines how to read and
-                         transform images
+        - img_manager: class (or object) that defines how to read and
+                       transform images
 
         - file_manager: class (or object) that defines how to interact with
                         saved files
         """
-        self.image_manager = image_manager
         self.file_manager = file_manager
-
-        # Create image transform objects and associated methods and
-        # link image transform names to actual functions that apply them
+        self.Viewer = viewer
+        self.img_processor = ImageProcessor(
+            img_series=self,
+            img_manager=img_manager,
+        )
+        # to be able to apply transforms in the order they are requested
         self.transforms = transforms
-        self.transform_funcs = OrderedDict()
-
-        for transform_name in self.transforms:
-
+        for order, transform_name in enumerate(self.transforms):
+            transform_obj = Transforms[transform_name](img_series=self)
             # e.g. self.rotation = Rotation(self)
-            transform_obj = Transforms[transform_name](self)
             setattr(self, transform_name, transform_obj)
-
-            # e.g. self.transform_funcs['grayscale'] = self._rgb_to_gray
-            transform_func_name = self._transforms_funcs[transform_name]
-            transform_func = getattr(self, transform_func_name)
-            self.transform_funcs[transform_name] = transform_func
 
         # Display options (do not impact analysis)
         self.display = Display(self)
@@ -118,8 +198,7 @@ class ImgSeries(filo.Series):
                                  extension=extension,
                                  savepath=savepath)
 
-        self.Viewer = viewer
-
+        # Remember which type (B&W or color) the raw images are
         img = self.read()
         self.initial_ndim = img.ndim
         self.ndim = self.initial_ndim
@@ -132,53 +211,13 @@ class ImgSeries(filo.Series):
 
     # ========================== Global transforms ===========================
 
-    def _rotate(self, img):
-        """Rotate image according to pre-defined rotation parameters"""
-        return self.image_manager.rotate(img,
-                                         angle=self.rotation.data['angle'])
-
-    def _crop(self, img):
-        """Crop image according to pre-defined crop parameters"""
-        return self.image_manager.crop(img,
-                                       self.crop.data['zone'])
-
-    def _filter(self, img):
-        """Crop image according to pre-defined crop parameters"""
-        return self.image_manager.filter(img,
-                                         filter_type=self.filter.data['type'],
-                                         size=self.filter.data['size'])
-
-    def _subtract(self, img):
-        """Subtract pre-set reference image to current image."""
-        img_ref = self.subtraction.reference_image
-        return self.image_manager.subtract(img,
-                                           img_ref,
-                                           relative=self.subtraction.relative)
-
-    def _rgb_to_grey(self, img):
-        """Convert RGB to grayscale"""
-        return self.image_manager.rgb_to_grey(img)
-
-    def _threshold(self, img):
-        return self.image_manager.threshold(img,
-                                            vmin=self.threshold.vmin,
-                                            vmax=self.threshold.vmax)
-
-    def _apply_transform(self, img, **kwargs):
-        """Apply stored transforms on the image (crop, rotation, etc.)"""
-        for transform_name, transform_function in self.transform_funcs.items():
-            transform_object = getattr(self, transform_name)      # e.g. self.rotation
-            if not transform_object.is_empty and kwargs.get(transform_name, True):
-                img = transform_function(img)
-        return img
-
     @property
     def active_transforms(self):
-        active_trnsfms = {}
+        active_trnsfms = []
         for transform_name in self.transforms:
             transform_object = getattr(self, transform_name)
             if not transform_object.is_empty:
-                active_trnsfms[transform_name] = transform_object.data
+                active_trnsfms.append(transform_name)
         return active_trnsfms
 
     # ============================= Misc. tools ==============================
@@ -248,12 +287,7 @@ class ImgSeries(filo.Series):
                   this particular transform.
                   e.g. images.read(subtraction=False)
         """
-        if not self.is_stack:
-            img = self.image_manager.read(self.files[num].file)
-        else:
-            img = self.stack[num]
-
-        return self._apply_transform(img, **kwargs) if transform else img
+        return self.img_processor.read(num=num, transform=transform, **kwargs)
 
     def profile(self, npts=100, radius=2, **kwargs):
         """Interactively get intensity profile by drawing a line on image."""
@@ -273,7 +307,7 @@ class ImgSeries(filo.Series):
         fname = CONFIG['filenames']['transform'] if filename is None else filename
         transform_data = self.file_manager.from_json(self.savepath, fname)
 
-        for transform_name in CONFIG['image transforms']:
+        for transform_name in self.transforms:
             transform_object = getattr(self, transform_name)
             transform_object.data = transform_data.get(transform_name, {})
             transform_object._update_parameters()
@@ -287,9 +321,11 @@ class ImgSeries(filo.Series):
         filename='Test' will load from Test.json.
         """
         fname = CONFIG['filenames']['transform'] if filename is None else filename
+        transform_data = {}
 
-        transform_data = {transform_name: getattr(self, transform_name).data
-                          for transform_name in CONFIG['image transforms']}
+        for transform_name in self.active_transforms:
+            transform_object = getattr(self, transform_name)
+            transform_data[transform_name] = transform_object.data
 
         self.file_manager.to_json(transform_data, self.savepath, fname)
 
@@ -377,6 +413,11 @@ class ImgSeries(filo.Series):
         nums = self._set_substack(start, end, skip)
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)
+
+
+# ----------------------------------------------------------------------------
+# ============== Factory function to generate ImgSeries objects ==============
+# ----------------------------------------------------------------------------
 
 
 def series(*args, cache=False, cache_size=516, **kwargs):

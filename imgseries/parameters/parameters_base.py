@@ -57,9 +57,10 @@ class TransformParameter(Parameter):
     These parameters DO impact analysis and are stored in metadata.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.order = self.img_series.transforms.index(self.parameter_type)
+    @property
+    def order(self):
+        # Order in which transform is applied if several transforms defined
+        return self.img_series.transforms.index(self.parameter_type)
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
@@ -80,7 +81,11 @@ class TransformParameter(Parameter):
         """What to do when a parameter is updated"""
         self._clear_cache()
 
-        subtraction = self.img_series.subtraction
+        try:
+            subtraction = self.img_series.subtraction
+        except AttributeError:
+            return
+
         if not subtraction.is_empty and self.order <= subtraction.order:
             subtraction._update_reference_image()
 

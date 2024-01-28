@@ -11,6 +11,7 @@ from imgbasics.cropping import _cropzone_draw
 
 # Local imports
 from .parameters_base import AnalysisParameter
+from ..managers import max_pixel_range
 
 
 class Zones(AnalysisParameter):
@@ -264,9 +265,7 @@ class Threshold(AnalysisParameter):
                 line, = ax.plot(x, y, linewidth=2, c='r')
                 self.lines.append(line)
 
-        image_manager = self.analysis.img_series.image_manager
-
-        level_min, level_max = image_manager.max_pixel_range(img)
+        level_min, level_max = max_pixel_range(img)
         level_step = 1 if type(level_max) == int else None
 
         level_start = level_max // 2

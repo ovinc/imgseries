@@ -1,5 +1,5 @@
 {
-    "vmin": 31.0,
-    "vmax": 157.0,
-    "cmap": "viridis"
+    "vmin": 37.0,
+    "vmax": 144.0,
+    "cmap": "inferno"
 }

@@ -234,9 +234,11 @@ class Filter(TransformParameter):
 
         @lru_cache(maxsize=516)
         def filter_image(size):
-            return self.img_series.image_manager.filter(img,
-                                                        filter_type='gaussian',
-                                                        size=size)
+            return self.img_series.img_processor.img_manager.filter(
+                img=img,
+                filter_type='gaussian',
+                size=size,
+            )
 
         def update_image(size):
             self.size = size

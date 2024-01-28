@@ -35,14 +35,14 @@
             536
         ]
     },
-    "time (utc)": "2023-10-09 09:29:38",
+    "time (utc)": "2024-01-28 19:35:27",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "39d978e95d1d938cffd5b67f4bd9742dff5cf372",
+            "hash": "d4a58695989a69999f36e51c4ec4245ea362041b",
             "status": "dirty"
         },
         "imgbasics": {
@@ -50,7 +50,8 @@
             "tag": "v0.3.0"
         },
         "filo": {
-            "status": "not a git repository",
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
             "tag": "v1.1.5"
         },
         "matplotlib": {

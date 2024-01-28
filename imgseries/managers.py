@@ -1,4 +1,4 @@
-"""Class ImgSeries for image series manipulation"""
+"""Image / File managers"""
 
 # Standard library imports
 import json
@@ -12,38 +12,39 @@ from imgbasics.transform import rotate
 import numpy as np
 
 
-class ImageManager:
+PIXEL_DEPTHS = {'uint8': 2**8 - 1,
+                'uint16': 2**16 - 1}
 
-    pixel_depths = {'uint8': 2**8 - 1,
-                    'uint16': 2**16 - 1}
+
+def max_pixel_range(img):
+    """Return max pixel value depending on img type, for use in plt.imshow.
+
+    Input
+    -----
+    img: numpy array
+
+    Output
+    ------
+    vmin, vmax: max pixel value (None if not float or uint8/16)
+    """
+    dtype_name = img.dtype.name
+
+    if 'float' in dtype_name:
+        img_finite = img[np.isfinite(img)]  # remove nan and inf
+        return img_finite.min(), img_finite.max()
+
+    elif 'bool' in dtype_name:
+        return 0, 1
+
+    return 0, PIXEL_DEPTHS.get(img.dtype.name, None)
+
+
+class ImageManager:
 
     @staticmethod
     def read(file):
         """load file into image array (file: pathlib Path object)."""
         return io.imread(file)
-
-    @classmethod
-    def max_pixel_range(cls, img):
-        """Return max pixel value depending on img type, for use in plt.imshow.
-
-        Input
-        -----
-        img: numpy array
-
-        Output
-        ------
-        vmin, vmax: max pixel value (None if not float or uint8/16)
-        """
-        dtype_name = img.dtype.name
-
-        if 'float' in dtype_name:
-            img_finite = img[np.isfinite(img)]  # remove nan and inf
-            return img_finite.min(), img_finite.max()
-
-        elif 'bool' in dtype_name:
-            return 0, 1
-
-        return 0, cls.pixel_depths.get(img.dtype.name, None)
 
     # =========== Define how to transform images (crop, rotate, etc.) ============
 
@@ -65,20 +66,20 @@ class ImageManager:
         else:
             return (img - img_ref) / img_ref
 
-    @classmethod
-    def rgb_to_grey(cls, img):
+    @staticmethod
+    def rgb_to_grey(img):
         """How to convert an RGB image to grayscale"""
-        _, vmax = cls.max_pixel_range(img)
+        _, vmax = max_pixel_range(img)
         img_grey = skimage.color.rgb2gray(img)
         if type(vmax) is int:
             return (img_grey * vmax).astype(img.dtype)
         else:
             return img_grey
 
-    @classmethod
-    def filter(cls, img, filter_type='gaussian', size=1):
+    @staticmethod
+    def filter(img, filter_type='gaussian', size=1):
         """Crop an image to zone (X0, Y0, Width, Height)"""
-        _, vmax = cls.max_pixel_range(img)
+        _, vmax = max_pixel_range(img)
         if filter_type == 'gaussian':
             img_filtered = filters.gaussian(img, sigma=size)
         else:
@@ -88,14 +89,14 @@ class ImageManager:
         else:
             return img_filtered
 
-    @classmethod
-    def threshold(cls, img, vmin=None, vmax=None):
+    @staticmethod
+    def threshold(img, vmin=None, vmax=None):
         """Threshold image (vmin <= v <= vmax --> 1, else 0).
 
         Return binary (boolean) image (True / False).
         """
         if None in (vmin, vmax):
-            val_min, val_max = cls.max_pixel_range(img)
+            val_min, val_max = max_pixel_range(img)
             vmin = val_min if vmin is None else vmin
             vmax = val_max if vmax is None else vmax
         condition = (img >= vmin) & (img <= vmax)
