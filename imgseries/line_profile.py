@@ -104,7 +104,8 @@ class ProfileViewer(AnalysisViewer):
 
         self.ax_profile.relim()  # without this, axes limits change don't work
         self.ax_profile.autoscale(axis='both')
-        self.fig.canvas.draw()
+
+        # self.fig.canvas.draw()  REMOVED, because not sure if necessary
 
 
 class Profile:
