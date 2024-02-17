@@ -31,10 +31,7 @@ class Grayscale(TransformParameter):
 
     @property
     def apply(self):
-        try:
-            return self.data['apply']
-        except KeyError:
-            return
+        return self.data.get('apply')
 
     @apply.setter
     def apply(self, value):
@@ -113,10 +110,7 @@ class Rotation(TransformParameter):
 
     @property
     def angle(self):
-        try:
-            return self.data['angle']
-        except KeyError:
-            return
+        return self.data.get('angle')
 
     @angle.setter
     def angle(self, value):
@@ -190,10 +184,7 @@ class Crop(TransformParameter):
 
     @property
     def zone(self):
-        try:
-            return self.data['zone']
-        except KeyError:
-            return
+        return self.data.get('zone')
 
     @zone.setter
     def zone(self, value):
@@ -234,7 +225,7 @@ class Filter(TransformParameter):
 
         @lru_cache(maxsize=516)
         def filter_image(size):
-            return self.img_series.img_processor.img_manager.filter(
+            return self.img_series.img_transformer.img_manager.filter(
                 img=img,
                 filter_type='gaussian',
                 size=size,
@@ -266,10 +257,7 @@ class Filter(TransformParameter):
     def size(self):
         # auto-select filter type if not specified
         self.type = self.data.get('type', 'gaussian')
-        try:
-            return self.data['size']
-        except KeyError:
-            return
+        return self.data.get('size')
 
     @size.setter
     def size(self, value):
@@ -286,10 +274,7 @@ class Filter(TransformParameter):
 
     @property
     def type(self):
-        try:
-            return self.data['type']
-        except KeyError:
-            return
+        return self.data.get('type')
 
     @type.setter
     def type(self, value):
@@ -322,10 +307,7 @@ class Subtraction(TransformParameter):
 
     @property
     def reference(self):
-        try:
-            return self.data['reference']
-        except KeyError:
-            return
+        return self.data.get('reference')
 
     @reference.setter
     def reference(self, value):
@@ -335,10 +317,7 @@ class Subtraction(TransformParameter):
 
     @property
     def relative(self):
-        try:
-            return self.data['relative']
-        except KeyError:
-            return
+        return self.data.get('relative')
 
     @relative.setter
     def relative(self, value):
@@ -369,10 +348,7 @@ class Threshold(TransformParameter):
 
     @property
     def vmin(self):
-        try:
-            return self.data['vmin']
-        except KeyError:
-            return
+        return self.data.get('vmin')
 
     @vmin.setter
     def vmin(self, value):
@@ -381,10 +357,7 @@ class Threshold(TransformParameter):
 
     @property
     def vmax(self):
-        try:
-            return self.data['vmax']
-        except KeyError:
-            return
+        return self.data.get('vmax')
 
     @vmax.setter
     def vmax(self, value):
@@ -392,5 +365,15 @@ class Threshold(TransformParameter):
         self._update_parameters()
 
 
-all_transforms = Grayscale, Rotation, Crop, Filter, Subtraction, Threshold
-Transforms = {transform.parameter_type: transform for transform in all_transforms}
+all_transforms = (
+    Grayscale,
+    Rotation,
+    Crop,
+    Filter,
+    Subtraction,
+    Threshold,
+)
+
+Transforms = {
+    transform.parameter_type: transform for transform in all_transforms
+}

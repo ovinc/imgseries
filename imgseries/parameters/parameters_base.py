@@ -1,6 +1,10 @@
 """Base classes for display / transform / analysis parameters"""
 
 
+import pandas as pd
+from ..config import CONFIG, FILENAMES
+
+
 class Parameter:
     """Base class to define common methods for different parameters."""
 
@@ -90,6 +94,25 @@ class TransformParameter(Parameter):
             subtraction._update_reference_image()
 
 
+class CorrectionParameter(Parameter):
+    """Prameter for corrections (flicker, shaking, etc.) on image series"""
+
+    parameter_type = 'flicker'
+
+    def load(self, filename=None):
+        """Load parameter data from .json and .tsv files (with same name).
+
+        Redefine Parameter.load() because here stored as tsv file.
+        """
+        path = self.img_series.savepath
+        fname = CONFIG['filenames'][self.parameter_type] if filename is None else filename
+        try:  # if there is metadata, load it
+            self.data = self.img_series.file_manager.from_json(path, fname)
+        except FileNotFoundError:
+            self.data = {}
+        self.data['correction'] = self.img_series.file_manager.from_tsv(path, fname)
+
+
 class AnalysisParameter(Parameter):
     """Base class for parameters used in analysis (contours, zones, etc.)"""
 
@@ -100,7 +123,7 @@ class AnalysisParameter(Parameter):
         ----------
         - analysis: object of an analysis class (e.g. GreyLevel)
         """
-        self.analysis = analysis  # ImgSeries object on which to define zones
+        self.analysis = analysis  # Analysis object (grey level)
         self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}
 
     def _load(self, filename=None):

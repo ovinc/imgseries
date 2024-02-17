@@ -110,12 +110,13 @@ class Front1D(Analysis):
                    load analysis data and metadata.
                    (if not specified, use default Results)
         """
-        super().__init__(img_series=img_series,
-                         savepath=savepath,
-                         Viewer=Viewer,
-                         Formatter=Formatter,
-                         Results=Results,
-                         )
+        super().__init__(
+            img_series=img_series,
+            savepath=savepath,
+            Viewer=Viewer,
+            Formatter=Formatter,
+            Results=Results,
+        )
 
     def _analyze(self, num, live=False):
         """Basic analysis function, to be threaded or multiprocessed.

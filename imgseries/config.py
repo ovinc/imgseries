@@ -21,7 +21,15 @@ FILENAMES = {
     'glevel': 'Img_GreyLevel',           # program will add .tsv or
     'ctrack': 'Img_ContourTracking',     # .json depending on context
     'front1d': 'Img_Front1D',
+    'flicker': 'Img_Flicker',
+    'shaking': 'Img_Shaking'
 }
+
+# Correction names and the order in which they are applied
+IMAGE_CORRECTIONS = (
+    'flicker',
+    'shaking',
+)
 
 # Transform names and the order in which they are applied
 IMAGE_TRANSFORMS = (

@@ -10,16 +10,17 @@ import filo
 from skimage import io
 
 # local imports
-from .config import CONFIG, IMAGE_TRANSFORMS
+from .config import CONFIG, IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
 from .managers import FileManager, ImageManager
 from .viewers import ImgSeriesViewer
 from .line_profile import Profile
 from .parameters.transform import Transforms
+from .parameters.correction import Corrections
 from .parameters.display import Display
 
 
 class ImageProcessor:
-    """Class that connects ImageManager to an image series to act on it."""
+    """Base class for ImageTransformer, ImageCorrector and ImageReader"""
 
     def __init__(self, img_series, img_manager):
         """Parameters:
@@ -31,10 +32,15 @@ class ImageProcessor:
         self.img_series = img_series
         self.img_manager = img_manager
 
-    # -------------------------- Global transforms ---------------------------
+
+class ImageTransformer(ImageProcessor):
+    """Class that connects ImageManager to an image series to act on it.
+
+    (for global image transforms)
+    """
 
     # NOTE: the name of the methods must correspond to the transform names
-    # (parameter_type name in the transform) with underscore in front
+    # (parameter_type name in the transform)
 
     def rotation(self, img):
         """Rotate image according to pre-defined rotation parameters"""
@@ -80,14 +86,64 @@ class ImageProcessor:
             vmax=self.img_series.threshold.vmax,
         )
 
-    # ----------------------- Reading image from file ------------------------
+
+class ImageCorrector(ImageProcessor):
+    """Class that connects ImageManager to an image series to act on it.
+
+    (for image corrections)
+    """
+
+    # NOTE: the name of the methods must correspond to the correction names
+    # (parameter_type name in the correction).
+
+    def flicker(self, img, num):
+        """Flicker correction by dividing image by factor"""
+        return self.img_manager.divide(
+            img=img,
+            value=self.img_series.flicker.data['correction']['ratio'].loc[num]
+        )
+
+    def shaking(self, img, num):
+        """NOT IMPLEMENTED YET // TODO"""
+        return img
+
+
+class ImageReader(ImageProcessor):
+    """Class that connects ImageManager to an image series to act on it.
+
+    (for reading images and applying transforms/corrections on them).
+    This is a base class, children:
+        - ImgSeriesReader
+        - TiffStackReader
+        - HDF5Reader (not implemented yet)
+    """
+
+    def apply_correction(self, img, num, correction_name):
+        """Apply specific correction (str) to image and return new img array"""
+        correction_object = getattr(self.img_series, correction_name)
+        if correction_object.is_empty:
+            return img
+        correction_function = getattr(self.img_series.img_corrector, correction_name)
+        return correction_function(img=img, num=num)
+
+    def apply_corrections(self, img, num, **kwargs):
+        """Apply stored corrections on the image (flicker, shaking, etc.)"""
+        for correction_name in self.img_series.corrections:
+            # Do not consider any correction specifically marked as false
+            if kwargs.get(correction_name, True):
+                img = self.apply_correction(
+                    img=img,
+                    num=num,
+                    correction_name=correction_name,
+                )
+        return img
 
     def apply_transform(self, img, transform_name):
         """Apply specific transform (str) to image and return new img array"""
         transform_object = getattr(self.img_series, transform_name)
         if transform_object.is_empty:
             return img
-        transform_function = getattr(self, transform_name)
+        transform_function = getattr(self.img_series.img_transformer, transform_name)
         return transform_function(img)
 
     def apply_transforms(self, img, **kwargs):
@@ -101,19 +157,43 @@ class ImageProcessor:
                 )
         return img
 
-    def read(self, num, transform, **kwargs):
+    def _read(self, num):
+        """How to read image from series/stack. To be defined in subclasses"""
+        pass
+
+    def read(self, num, correction=True, transform=True, **kwargs):
         """Read image #num in image series and apply transforms if requested.
 
         Kwargs can be rotation=True or threshold=False to switch on/off
         transforms during the processing of the image
         """
-        if not self.img_series.is_stack:
-            file = self.img_series.files[num].file
-            img = self.img_manager.read(file)
-        else:
-            img = self.img_series.stack[num]
+        img = self._read(num=num)
+        img = self.apply_corrections(img, num, **kwargs) if correction else img
+        img = self.apply_transforms(img, **kwargs) if transform else img
+        return img
 
-        return self.apply_transforms(img, **kwargs) if transform else img
+
+class ImgSeriesReader(ImageReader):
+
+    def _read(self, num):
+        """read raw image from image series"""
+        file = self.img_series.files[num].file
+        return self.img_manager.read(file)
+
+
+class TiffStackReader(ImageReader):
+
+    def _read(self, num):
+        """read raw image from stack"""
+        return self.img_series.stack[num]
+
+
+class HDF5Reader(ImageReader):
+    """NOT IMPLEMENTED // TODO"""
+    pass
+
+
+# ========================= MAIN IMAGE SERIES CLASS ==========================
 
 
 class ImgSeries(filo.Series):
@@ -134,6 +214,7 @@ class ImgSeries(filo.Series):
         extension='.png',
         savepath='.',
         stack=None,
+        corrections=IMAGE_CORRECTIONS,
         transforms=IMAGE_TRANSFORMS,
         viewer=ImgSeriesViewer,
         img_manager=ImageManager,
@@ -154,6 +235,10 @@ class ImgSeries(filo.Series):
         - stack: path to the stack (.tiff) file
           (parameters paths & extension will be ignored)
 
+        - corrections: iterable of name of corrections to consider (their
+                       order indicates the order in which they are applied),
+                       e.g. corrections=('shaking', 'flicker')
+
         - transforms: iterable of names of transforms to consider (their order
                       indicates the order in which they are applied), e.g.
                       transforms=('rotation', 'crop', 'filter')
@@ -166,37 +251,61 @@ class ImgSeries(filo.Series):
         - file_manager: class (or object) that defines how to interact with
                         saved files
         """
+        # ------------------ Check if stack or image series ------------------
+        # Done here because self.stack will be an array, and bool(array)
+        # generates warnings / errors
+        self.is_stack = bool(stack)
+
+        if self.is_stack:
+            self.img_reader = TiffStackReader(
+                img_series=self,
+                img_manager=img_manager,
+            )
+            self.stack_path = Path(stack)
+            self.stack = io.imread(stack, plugin="tifffile")
+            self.savepath = Path(savepath)
+
+        else:
+            # Inherit useful methods and attributes for file series
+            # (including self.savepath)
+            super().__init__(
+                paths=paths,
+                extension=extension,
+                savepath=savepath,
+            )
+            self.img_reader = ImgSeriesReader(
+                img_series=self,
+                img_manager=img_manager,
+            )
+        # --------------------------------------------------------------------
+
         self.file_manager = file_manager
         self.Viewer = viewer
-        self.img_processor = ImageProcessor(
+
+        self.img_corrector = ImageCorrector(
             img_series=self,
             img_manager=img_manager,
         )
-        # to be able to apply transforms in the order they are requested
+
+        self.img_transformer = ImageTransformer(
+            img_series=self,
+            img_manager=img_manager,
+        )
+
+        self.corrections = corrections
+        for correction_name in self.corrections:
+            correction_obj = Corrections[correction_name](img_series=self)
+            # e.g. self.flicker = Flicker(self)
+            setattr(self, correction_name, correction_obj)
+
         self.transforms = transforms
-        for order, transform_name in enumerate(self.transforms):
+        for transform_name in self.transforms:
             transform_obj = Transforms[transform_name](img_series=self)
             # e.g. self.rotation = Rotation(self)
             setattr(self, transform_name, transform_obj)
 
         # Display options (do not impact analysis)
         self.display = Display(self)
-
-        # Done here because self.stack will be an array, and bool(array)
-        # generates warnings / errors
-        self.is_stack = bool(stack)
-
-        if self.is_stack:
-            self.stack_path = Path(stack)
-            self.stack = io.imread(stack, plugin="tifffile")
-            self.savepath = Path(savepath)
-        else:
-            # Inherit useful methods and attributes for file series
-            # (including self.savepath)
-            filo.Series.__init__(self,
-                                 paths=paths,
-                                 extension=extension,
-                                 savepath=savepath)
 
         # Remember which type (B&W or color) the raw images are
         img = self.read()
@@ -209,7 +318,16 @@ class ImgSeries(filo.Series):
         else:
             return f"{self.__class__.name}, file '{self.stack_path}', savepath '{self.savepath}'"
 
-    # ========================== Global transforms ===========================
+    # ===================== Corrections and  Transforms ======================
+
+    @property
+    def active_corrections(self):
+        active_corrs = []
+        for correction_name in self.corrections:
+            correction_object = getattr(self, correction_name)
+            if not correction_object.is_empty:
+                active_corrs.append(correction_name)
+        return active_corrs
 
     @property
     def active_transforms(self):
@@ -269,13 +387,18 @@ class ImgSeries(filo.Series):
 
     # ============================ Public methods ============================
 
-    def read(self, num=0, transform=True, **kwargs):
+    def read(self, num=0, correction=True, transform=True, **kwargs):
         """Load image data as an array.
 
         Parameters
         ----------
 
         - num: image identifier (integer)
+
+        - transform: By default, if corrections are defined on the image
+                     (flicker, shaking etc.), then they are applied here.
+                     Put correction=False to only load the raw image in the
+                     stack.
 
         - transform: By default, if transforms are defined on the image
                      (rotation, crop etc.), then they are applied here.
@@ -287,7 +410,12 @@ class ImgSeries(filo.Series):
                   this particular transform.
                   e.g. images.read(subtraction=False)
         """
-        return self.img_processor.read(num=num, transform=transform, **kwargs)
+        return self.img_reader.read(
+            num=num,
+            correction=correction,
+            transform=transform,
+            **kwargs,
+        )
 
     def profile(self, npts=100, radius=2, **kwargs):
         """Interactively get intensity profile by drawing a line on image."""

@@ -159,14 +159,17 @@ class Analysis:
                     data = self._analyze(num, live=False)
                     self.formatter._store_data(data)
             else:
-                # plot uses self.__analyze_live to calculate and store data
+                # plot uses self._analyze_live to calculate and store data
                 live_plot = self.Viewer(self, live=True)
                 # without self.animation, the animation is garbage collected
                 self.animation = live_plot.animate(nums=self.nums, blit=blit)
 
         # Finalize and format data -------------------------------------------
 
-        self.formatter._save_results()
+        # if live, it's the _on_fig_close() method of the viewer which takes
+        # care of saving the data
+        if not live:
+            self.formatter._save_results()
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.
@@ -406,13 +409,15 @@ class PandasTsvResults(Results):
 
         # save analysis metadata ---------------------------------------------
 
-        gittools.save_metadata(file=metadata_file,
-                               info=self.metadata,
-                               module=CONFIG['checked modules'],
-                               dirty_warning=True,
-                               notag_warning=True,
-                               nogit_ok=True,
-                               nogit_warning=True)
+        gittools.save_metadata(
+            file=metadata_file,
+            info=self.metadata,
+            module=CONFIG['checked modules'],
+            dirty_warning=True,
+            notag_warning=True,
+            nogit_ok=True,
+            nogit_warning=True,
+        )
 
     def load(self, filename=None):
         """Load analysis data and metadata and stores it in self.data/metadata.

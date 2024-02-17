@@ -247,12 +247,13 @@ class ContourTracking(Analysis):
         """
         self.save_raw_contours = save_raw_contours
 
-        super().__init__(img_series=img_series,
-                         Viewer=Viewer,
-                         Formatter=Formatter,
-                         Results=Results,
-                         savepath=savepath,
-                         )
+        super().__init__(
+            img_series=img_series,
+            Viewer=Viewer,
+            Formatter=Formatter,
+            Results=Results,
+            savepath=savepath,
+        )
 
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()

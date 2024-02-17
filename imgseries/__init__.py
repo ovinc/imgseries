@@ -2,9 +2,9 @@
 
 from .managers import ImageManager, FileManager
 from .image_series import ImgSeries, series
-from .analysis import GreyLevel, ContourTracking
+from .analysis import GreyLevel, ContourTracking, Front1D, Flicker
 from .analysis import GreyLevelResults, ContourTrackingResults
-from .analysis.front_1d import Front1D
+from .analysis import Front1DResults, FlickerResults
 
 from importlib_metadata import version
 

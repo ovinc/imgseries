@@ -10,6 +10,10 @@ from skimage import filters
 import imgbasics
 from imgbasics.transform import rotate
 import numpy as np
+import pandas as pd
+
+# local imports
+from .config import CONFIG
 
 
 PIXEL_DEPTHS = {'uint8': 2**8 - 1,
@@ -65,6 +69,13 @@ class ImageManager:
             return img - img_ref
         else:
             return (img - img_ref) / img_ref
+
+    @staticmethod
+    def divide(img, value):
+        """Divide image by value, but keep initial data type"""
+        # Avoids problems, e.g. np.uint8(257) is actually 1
+        temp_img = np.clip(img / value, *max_pixel_range(img))
+        return temp_img.astype(img.dtype)
 
     @staticmethod
     def rgb_to_grey(img):
@@ -128,3 +139,13 @@ class FileManager:
         file = path / (filename + '.json')
         with open(file, 'w', encoding='utf8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
+
+    @staticmethod
+    def from_tsv(path, filename):
+        """"Load tsv data file as a dataframe.
+
+        path: pathlib object (folder containing the file)
+        filename: name of the file without extension
+        """
+        file = path / (filename + '.tsv')
+        return pd.read_csv(file, index_col='num', sep=CONFIG['csv separator'])

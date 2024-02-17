@@ -26,6 +26,17 @@ class ImageViewer:
         """
         pass
 
+    def _connect_events(self):
+        """Called after _create_figure() to connect events, e.g. figure closing"""
+        self.cid_close = self.fig.canvas.mpl_connect(
+            'close_event',
+            self._on_fig_close,
+        )
+
+    def _on_fig_close(self, event):
+        """Define in subclasses if necessary to trigger sth on fig. closing"""
+        pass
+
     def _get_data(self, num):
         """How to get image / analysis and other data to _plot for each frame.
 
@@ -66,6 +77,7 @@ class ImageViewer:
     def show(self, num=0):
         """Show a single, non-animated image (num: image number)."""
         self._create_figure(num=num)
+        self._connect_events()
         self._plot(num=num)
         return self.axs
 
@@ -78,14 +90,18 @@ class ImageViewer:
         """
         num_min = min(nums)
         self._create_figure(num=num_min)
+        self._connect_events()
         self.plot_init_done = False
 
-        animation = FuncAnimation(fig=self.fig,
-                                  func=self._plot,
-                                  frames=nums,
-                                  cache_frame_data=False,
-                                  repeat=False,
-                                  blit=blit)
+        animation = FuncAnimation(
+            fig=self.fig,
+            func=self._plot,
+            frames=nums,
+            cache_frame_data=False,
+            repeat=False,
+            blit=blit,
+            init_func=lambda: None,  # prevents calling twice the first num
+        )
 
         return animation
 
@@ -100,6 +116,7 @@ class ImageViewer:
         num_step = (num_max - num_min) // (len(nums) - 1)
 
         self._create_figure(num=num_min)
+        self._connect_events()
         self.plot_init_done = False
 
         self._plot(num=num_min)
@@ -107,14 +124,16 @@ class ImageViewer:
         self.fig.subplots_adjust(bottom=0.1)
         ax_slider = self.fig.add_axes([0.1, 0.01, 0.8, 0.03])
 
-        slider = Slider(ax=ax_slider,
-                        label='#',
-                        valmin=num_min,
-                        valmax=num_max,
-                        valinit=num_min,
-                        valstep=num_step,
-                        color='steelblue',
-                        alpha=0.5)
+        slider = Slider(
+            ax=ax_slider,
+            label='#',
+            valmin=num_min,
+            valmax=num_max,
+            valinit=num_min,
+            valstep=num_step,
+            color='steelblue',
+            alpha=0.5,
+        )
 
         slider.on_changed(self._plot)
 
@@ -204,6 +223,11 @@ class AnalysisViewer(ImageViewer):
             return self.analysis._analyze_live(num)
         else:
             return self.analysis.formatter._regenerate_data(num)
+
+    def _on_fig_close(self, event):
+        """This is because we want the analysis (i.e. animation) to finish
+        before saving the data in live mode."""
+        self.analysis.formatter._save_results()
 
 
 # ==================== Interactive setting of parameters =====================
@@ -437,7 +461,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
     def _update_min(self, value):
         _, vmax = self._get_current_range()
         self.current_range = value, vmax
-        img = self.img_series.img_processor.img_manager.threshold(
+        img = self.img_series.img_transformer.img_manager.threshold(
             img=self.img_raw,
             vmin=value,
             vmax=vmax,
@@ -448,7 +472,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
     def _update_max(self, value):
         vmin, _ = self._get_current_range()
         self.current_range = vmin, value
-        img = self.img_series.img_processor.img_manager.threshold(
+        img = self.img_series.img_transformer.img_manager.threshold(
             img=self.img_raw,
             vmin=vmin,
             vmax=value,
@@ -467,7 +491,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
         self.auto_range = vmin_auto, vmax_auto
         self.init_range = self._get_init_range()
 
-        self.img = self.img_series.img_processor.img_manager.threshold(
+        self.img = self.img_series.img_transformer.img_manager.threshold(
             self.img_raw,
             *self.init_range,
         )

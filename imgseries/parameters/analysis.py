@@ -20,7 +20,7 @@ class Zones(AnalysisParameter):
     parameter_type = 'zones'
 
     def define(self, n=1, num=0, draggable=False, **kwargs):
-        """Interactively define n zones image.
+        """Interactively define n zones in image.
 
         Parameters
         ----------
