@@ -1,7 +1,12 @@
 """Class ImgSeries for image series manipulation"""
 
+# Standard library
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
 # Nonstandard
 import matplotlib.pyplot as plt
+from skimage import io
+from tqdm import tqdm
 
 # local imports
 from .line_profile import Profile
@@ -165,10 +170,6 @@ class ImageReader(ImageProcessor):
         img = self.apply_corrections(img, num, **kwargs) if correction else img
         img = self.apply_transforms(img, **kwargs) if transform else img
         return img
-
-
-
-
 
 
 # ========================= MAIN IMAGE SERIES CLASS ==========================
@@ -466,3 +467,76 @@ class ImgSeriesBase:
         nums = self._set_substack(start, end, skip)
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)
+
+    # =========================== Export to files ============================
+
+    def export(
+        self,
+        filename='Img-',
+        extension='.png',
+        ndigits=5,
+        folder='Export',
+    ):
+        """Export images"""
+        export = Export(self)
+        export.export()
+
+
+class Export:
+
+    def __init__(
+        self,
+        img_series,
+        filename='Img-',
+        extension='.png',
+        ndigits=5,
+        folder='Export',
+    ):
+        """Export images.
+
+        Parameters:
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - with_display: if True, export images with display options as well
+          (e.g., contrast, colormap, etc.)
+          NOT IMPLEMENTED YET
+        """
+        self.img_series = img_series
+        self.filename = filename
+        self.extension = extension
+        self.ndigits = ndigits
+
+        self.export_folder = self.img_series.savepath / folder
+        self.export_folder.mkdir(exist_ok=True)
+
+    def _export(self, num):
+        img = self.img_series.read(num=num)
+        fname = f'{self.filename}{num:0{self.ndigits}}{self.extension}'
+        file = self.export_folder / fname
+        io.imsave(file, img)
+
+    def export(self, start=0, end=None, skip=1, with_display=False):
+        nums = self.img_series._set_substack(start, end, skip)
+        for num in nums:
+            self._export(num)
+
+    # futures = {}
+
+    #         with ProcessPoolExecutor(max_workers=nprocess) as executor:
+
+    #             for num in self.nums:
+    #                 future = executor.submit(self._analyze, num, live=False)
+    #                 futures[num] = future
+
+    #             # Waitbar ----------------------------------------------------
+    #             futures_list = list(futures.values())
+    #             for future in tqdm(as_completed(futures_list), total=self.nimg):
+    #                 pass
+
+    #             # Get results ------------------------------------------------
+    #             for num, future in futures.items():
+    #                 data = future.result()
+    #                 self.formatter._store_data(data)
