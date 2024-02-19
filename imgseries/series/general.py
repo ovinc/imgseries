@@ -476,10 +476,37 @@ class ImgSeriesBase:
         extension='.png',
         ndigits=5,
         folder='Export',
+        start=0,
+        end=None,
+        skip=1,
+        with_display=False,
+        parallel=True,
     ):
-        """Export images"""
-        export = Export(self)
-        export.export()
+        """Export images
+
+        - start, end, skip: images to consider. These numbers refer to 'num'
+          identifier which starts at 0 in the first folder and can thus be
+          different from the actual number in the image filename
+
+        - with_display: if True, export images with display options as well
+          (e.g., contrast, colormap, etc.)
+          NOT IMPLEMENTED YET
+        """
+        export = Export(
+            self,
+            filename=filename,
+            extension=extension,
+            ndigits=ndigits,
+            folder=folder,
+            with_display=with_display,
+        )
+
+        export.run(
+            start=start,
+            end=end,
+            skip=skip,
+            parallel=parallel,
+        )
 
 
 class Export:
@@ -491,52 +518,51 @@ class Export:
         extension='.png',
         ndigits=5,
         folder='Export',
+        with_display=False,
     ):
-        """Export images.
-
-        Parameters:
-
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
-
-        - with_display: if True, export images with display options as well
-          (e.g., contrast, colormap, etc.)
-          NOT IMPLEMENTED YET
-        """
+        """Export images."""
         self.img_series = img_series
         self.filename = filename
         self.extension = extension
         self.ndigits = ndigits
-
         self.export_folder = self.img_series.savepath / folder
         self.export_folder.mkdir(exist_ok=True)
+        self.with_display = with_display
 
-    def _export(self, num):
+    def _run(self, num):
         img = self.img_series.read(num=num)
         fname = f'{self.filename}{num:0{self.ndigits}}{self.extension}'
         file = self.export_folder / fname
-        io.imsave(file, img)
 
-    def export(self, start=0, end=None, skip=1, with_display=False):
+        if self.with_display:
+            kwargs = self.img_series._get_imshow_kwargs()
+            plt.imsave(file, img, **kwargs)
+        else:
+            io.imsave(file, img)
+
+    def run(
+        self,
+        start=0,
+        end=None,
+        skip=1,
+        parallel=True,
+    ):
         nums = self.img_series._set_substack(start, end, skip)
-        for num in nums:
-            self._export(num)
 
-    # futures = {}
+        if not parallel:
+            for num in tqdm(nums):
+                self._run(num)
+            return
 
-    #         with ProcessPoolExecutor(max_workers=nprocess) as executor:
+        futures = {}
 
-    #             for num in self.nums:
-    #                 future = executor.submit(self._analyze, num, live=False)
-    #                 futures[num] = future
+        with ProcessPoolExecutor() as executor:
 
-    #             # Waitbar ----------------------------------------------------
-    #             futures_list = list(futures.values())
-    #             for future in tqdm(as_completed(futures_list), total=self.nimg):
-    #                 pass
+            for num in nums:
+                future = executor.submit(self._run, num)
+                futures[num] = future
 
-    #             # Get results ------------------------------------------------
-    #             for num, future in futures.items():
-    #                 data = future.result()
-    #                 self.formatter._store_data(data)
+            # Waitbar ----------------------------------------------------
+            futures_list = list(futures.values())
+            for future in tqdm(as_completed(futures_list), total=len(nums)):
+                pass
