@@ -66,7 +66,7 @@ class Analysis:
             # Below, pre-populate parameters to be saved as metadata.
             # Other metadata will be added to this dict before saving
             # into metadata file
-            stack_path = os.path.relpath(self.img_series.stack_path, savepath)
+            stack_path = os.path.relpath(self.img_series.path, savepath)
             self.results.metadata['stack'] = stack_path
         else:
             folders = [os.path.relpath(f, savepath) for f in self.img_series.folders]

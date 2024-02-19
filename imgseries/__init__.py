@@ -1,7 +1,7 @@
 """Image analysis tools for image series."""
 
 from .managers import ImageManager, FileManager
-from .image_series import ImgSeries, series
+from .series import ImgSeries, series, ImgStack, stack
 from .analysis import GreyLevel, ContourTracking, Front1D, Flicker
 from .analysis import GreyLevelResults, ContourTrackingResults
 from .analysis import Front1DResults, FlickerResults

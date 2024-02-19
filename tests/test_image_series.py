@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import ImgSeries
+from imgseries import series, stack
 
 
 # =============================== Misc. config ===============================
@@ -18,8 +18,11 @@ modulefolder = Path(imgseries.__file__).parent / '..'
 basefolder = modulefolder / 'data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
-images = ImgSeries(folders, savepath=basefolder)
+images = series(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
+
+tiff_stack = Path('data/stack') / 'ImgStack.tif'
+img_stack = stack(tiff_stack)
 
 # ======================== Test general image series =========================
 
@@ -78,3 +81,9 @@ def test_img_time_update():
     images.load_time('Img_Files_Rounded.tsv')
     assert images.info.loc[n, 'time (unix)'] == 1599832477
     images.load_time('Img_Files_Saved.tsv')  # resset to previous state
+
+
+def test_read_stack():
+    """Read data from stack file"""
+    img = img_stack.read(num=10)
+    assert img.shape == (100, 112)

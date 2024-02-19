@@ -1,22 +1,16 @@
 """Class ImgSeries for image series manipulation"""
 
-# Standard library imports
-from pathlib import Path
-from functools import lru_cache
-
 # Nonstandard
 import matplotlib.pyplot as plt
-import filo
-from skimage import io
 
 # local imports
-from .config import CONFIG, IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
-from .managers import FileManager, ImageManager
-from .viewers import ImgSeriesViewer
 from .line_profile import Profile
-from .parameters.transform import Transforms
-from .parameters.correction import Corrections
-from .parameters.display import Display
+from ..config import CONFIG, IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
+from ..managers import FileManager, ImageManager
+from ..viewers import ImgSeriesViewer
+from ..parameters.transform import Transforms
+from ..parameters.correction import Corrections
+from ..parameters.display import Display
 
 
 class ImageProcessor:
@@ -173,47 +167,21 @@ class ImageReader(ImageProcessor):
         return img
 
 
-class ImgSeriesReader(ImageReader):
-
-    def _read(self, num):
-        """read raw image from image series"""
-        file = self.img_series.files[num].file
-        return self.img_manager.read(file)
 
 
-class TiffStackReader(ImageReader):
-
-    def _read(self, num):
-        """read raw image from stack"""
-        return self.img_series.stack[num]
-
-
-class HDF5Reader(ImageReader):
-    """NOT IMPLEMENTED // TODO"""
-    pass
 
 
 # ========================= MAIN IMAGE SERIES CLASS ==========================
 
 
-class ImgSeries(filo.Series):
-    """Class to manage series of images, possibly in several folders."""
+class ImgSeriesBase:
+    """Base class for series of images (or stacks)"""
 
-    # Only for __repr__ (str representation of class object, see filo.Series)
-    name = 'Image Series'
-
-    # Default filename to save file info with save_info (see filo.Series)
-    info_filename = CONFIG['filenames']['files'] + '.tsv'
-
-    # cache images during read() or not (if so, see ImgSeriesCached)
+    # cache images during read() or not
     cache = False
 
     def __init__(
         self,
-        paths='.',
-        extension='.png',
-        savepath='.',
-        stack=None,
         corrections=IMAGE_CORRECTIONS,
         transforms=IMAGE_TRANSFORMS,
         viewer=ImgSeriesViewer,
@@ -224,17 +192,6 @@ class ImgSeries(filo.Series):
 
         Parameters
         ----------
-        - paths can be a string, path object, or a list of str/paths if data
-          is stored in multiple folders.
-
-        - extension: extension of files to consider (e.g. '.png')
-
-        - savepath: folder in which to save parameters (transform, display etc.)
-
-        If file series is in a stack rather than in a series of images:
-        - stack: path to the stack (.tiff) file
-          (parameters paths & extension will be ignored)
-
         - corrections: iterable of name of corrections to consider (their
                        order indicates the order in which they are applied),
                        e.g. corrections=('shaking', 'flicker')
@@ -251,34 +208,6 @@ class ImgSeries(filo.Series):
         - file_manager: class (or object) that defines how to interact with
                         saved files
         """
-        # ------------------ Check if stack or image series ------------------
-        # Done here because self.stack will be an array, and bool(array)
-        # generates warnings / errors
-        self.is_stack = bool(stack)
-
-        if self.is_stack:
-            self.img_reader = TiffStackReader(
-                img_series=self,
-                img_manager=img_manager,
-            )
-            self.stack_path = Path(stack)
-            self.stack = io.imread(stack, plugin="tifffile")
-            self.savepath = Path(savepath)
-
-        else:
-            # Inherit useful methods and attributes for file series
-            # (including self.savepath)
-            super().__init__(
-                paths=paths,
-                extension=extension,
-                savepath=savepath,
-            )
-            self.img_reader = ImgSeriesReader(
-                img_series=self,
-                img_manager=img_manager,
-            )
-        # --------------------------------------------------------------------
-
         self.file_manager = file_manager
         self.Viewer = viewer
 
@@ -307,16 +236,11 @@ class ImgSeries(filo.Series):
         # Display options (do not impact analysis)
         self.display = Display(self)
 
-        # Remember which type (B&W or color) the raw images are
+    def _get_initial_image_dims(self):
+        """Remember which type (B&W or color) the raw images are"""
         img = self.read()
         self.initial_ndim = img.ndim
         self.ndim = self.initial_ndim
-
-    def __repr__(self):
-        if not self.is_stack:
-            return super().__repr__()
-        else:
-            return f"{self.__class__.name}, file '{self.stack_path}', savepath '{self.savepath}'"
 
     # ===================== Corrections and  Transforms ======================
 
@@ -329,6 +253,12 @@ class ImgSeries(filo.Series):
                 active_corrs.append(correction_name)
         return active_corrs
 
+    def reset_corrections(self):
+        """Reset all active corrections."""
+        for correction_name in self.active_corrections:
+            correction_object = getattr(self, correction_name)
+            correction_object.reset()
+
     @property
     def active_transforms(self):
         active_trnsfms = []
@@ -338,18 +268,13 @@ class ImgSeries(filo.Series):
                 active_trnsfms.append(transform_name)
         return active_trnsfms
 
-    # ============================= Misc. tools ==============================
+    def reset_transforms(self):
+        """Reset all active transforms."""
+        for transform_name in self.active_transforms:
+            transform_object = getattr(self, transform_name)
+            transform_object.reset()
 
-    def _set_substack(self, start, end, skip):
-        """Generate subset of image numbers to be displayed/analyzed."""
-        if self.is_stack:
-            npts, *_ = self.stack.shape
-            all_nums = list(range(npts))
-            nums = all_nums[start:end:skip]
-        else:
-            files = self.files[start:end:skip]
-            nums = [file.num for file in files]
-        return nums
+    # ============================= Misc. tools ==============================
 
     def _get_imshow_kwargs(self, transform=True):
         """Define kwargs to pass to imshow (to have grey by default for 2D)."""
@@ -541,27 +466,3 @@ class ImgSeries(filo.Series):
         nums = self._set_substack(start, end, skip)
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)
-
-
-# ----------------------------------------------------------------------------
-# ============== Factory function to generate ImgSeries objects ==============
-# ----------------------------------------------------------------------------
-
-
-def series(*args, cache=False, cache_size=516, **kwargs):
-    """Generator of ImgSeries object with a caching option."""
-    if not cache:
-
-        return ImgSeries(*args, **kwargs)
-
-    else:
-
-        class ImgSeriesCached(ImgSeries):
-
-            cache = True
-
-            @lru_cache(maxsize=cache_size)
-            def read(self, num=0, transform=True, **kwargs):
-                return super().read(num, transform=transform, **kwargs)
-
-        return ImgSeriesCached(*args, **kwargs)

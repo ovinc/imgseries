@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import ImgSeries
+from imgseries import series, stack
 from imgseries import GreyLevel, GreyLevelResults
 
 
@@ -19,12 +19,11 @@ modulefolder = Path(imgseries.__file__).parent / '..'
 basefolder = modulefolder / 'data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
-stackfolder = Path('data/stack')
-tiff_stack = stackfolder / 'ImgStack.tif'
+tiff_stack = Path('data/stack') / 'ImgStack.tif'
 
 # =============== Test avg gray level analysis on image series ===============
 
-images = ImgSeries(folders, savepath=basefolder)
+images = series(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 gl = GreyLevel(images)
@@ -49,13 +48,13 @@ def test_glevel_results_load():
 
 # =============== Test avg gray level analysis on image stacks ===============
 
-stack = ImgSeries(stack=tiff_stack, savepath=stackfolder)
+img_stack = stack(tiff_stack)
 
-glstack = GreyLevel(stack, savepath=basefolder / 'stack')
+glstack = GreyLevel(img_stack, savepath=basefolder / 'stack')
 glstack.zones.load('Img_GreyLevel_Saved')
 
 
 def test_glevelstack_analysis_basic():
     glstack.run()
-    assert glstack.img_series.stack.shape == (200, 100, 112)
+    assert glstack.img_series.data.shape == (200, 100, 112)
     assert len(glstack.results.data) == 200

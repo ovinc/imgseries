@@ -46,7 +46,17 @@ def max_pixel_range(img):
 class ImageManager:
 
     @staticmethod
-    def read(file):
+    def read_image(file):
+        """load file into image array (file: pathlib Path object)."""
+        return io.imread(file)
+
+    @staticmethod
+    def read_tiff_stack_slice(file, num):
+        """load file into image array (file: pathlib Path object)."""
+        return io.imread(file, key=num)
+
+    @staticmethod
+    def read_tiff_stack_whole(file):
         """load file into image array (file: pathlib Path object)."""
         return io.imread(file)
 

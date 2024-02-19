@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from drapo import Line
 
-from .viewers import AnalysisViewer
+from ..viewers import AnalysisViewer
 
 
 class InteractiveLine(Line):
