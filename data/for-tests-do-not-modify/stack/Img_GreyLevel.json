@@ -1,0 +1,34 @@
+{
+    "stack": "ImgStack.tif",
+    "zones": {
+        "zone 1": [
+            5,
+            2,
+            100,
+            92
+        ]
+    },
+    "time (utc)": "2021-01-09 21:25:45",
+    "code version": {
+        "imov": {
+            "hash": "48feb116dea5950c6158c0ae3e142ef6b4474b49",
+            "status": "dirty",
+            "tag": "v2.1.3"
+        },
+        "filo": {
+            "hash": "2125bc2e5e11593b51671dc692c193f098df2041",
+            "status": "clean",
+            "tag": "v1.1.2"
+        },
+        "gittools": {
+            "hash": "2d4738814492d38a3f706e6445cbacff47e54e45",
+            "status": "clean",
+            "tag": "v0.4.1"
+        },
+        "plov": {
+            "hash": "f567e5b98a4a32ae2aaa4adb498ce21f18c58a9c",
+            "status": "clean",
+            "tag": "v1.1.1"
+        }
+    }
+}
