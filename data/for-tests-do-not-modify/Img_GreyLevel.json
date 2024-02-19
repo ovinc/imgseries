@@ -26,7 +26,7 @@
             58
         ]
     },
-    "function": "<function mean at 0x119d2edd0>",
+    "function": "numpy.mean",
     "grayscale": {},
     "rotation": {
         "angle": 22.765009107511496
@@ -42,14 +42,14 @@
     "filter": {},
     "subtraction": {},
     "threshold": {},
-    "time (utc)": "2024-02-19 11:09:51",
+    "time (utc)": "2024-02-19 17:24:12",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
+            "hash": "a991c82340d9b14df2ebe976bb30003932800062",
             "status": "dirty"
         },
         "imgbasics": {

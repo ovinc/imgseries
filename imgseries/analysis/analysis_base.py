@@ -412,24 +412,8 @@ class PandasTsvResults(Results):
             e.g. filename='Test' will create Test.tsv and Test.json files,
             containing tab-separated data file and metadata file, respectively.
         """
-        name = self._set_filename(filename)
-        analysis_file = self.savepath / (name + '.tsv')
-        metadata_file = self.savepath / (name + '.json')
-
-        # save analysis data -------------------------------------------------
-        self.data.to_csv(analysis_file, sep=CONFIG['csv separator'])
-
-        # save analysis metadata ---------------------------------------------
-
-        gittools.save_metadata(
-            file=metadata_file,
-            info=self.metadata,
-            module=CONFIG['checked modules'],
-            dirty_warning=True,
-            notag_warning=True,
-            nogit_ok=True,
-            nogit_warning=True,
-        )
+        self._save_data()
+        self._save_metadata(metadata=self.metadata)
 
     def load(self, filename=None):
         """Load analysis data and metadata and stores it in self.data/metadata.
@@ -459,6 +443,12 @@ class PandasTsvResults(Results):
         data = pd.read_csv(analysis_file, index_col='num', sep=CONFIG['csv separator'])
         return data
 
+    def _save_data(self, filename=None):
+        """Inverse of _load_data()"""
+        name = self._set_filename(filename)
+        analysis_file = self.savepath / (name + '.tsv')
+        self.data.to_csv(analysis_file, sep=CONFIG['csv separator'])
+
     def _load_metadata(self, filename=None):
         """Return analysis metadata from json file as a dictionary.
 
@@ -469,3 +459,18 @@ class PandasTsvResults(Results):
         """
         name = self._set_filename(filename)
         return FileManager.from_json(self.savepath, name)
+
+    def _save_metadata(self, metadata, filename=None):
+        """Inverse of _load_metadata"""
+        name = self._set_filename(filename)
+        metadata_file = self.savepath / (name + '.json')
+
+        gittools.save_metadata(
+            file=metadata_file,
+            info=metadata,
+            module=CONFIG['checked modules'],
+            dirty_warning=True,
+            notag_warning=True,
+            nogit_ok=True,
+            nogit_warning=True,
+        )

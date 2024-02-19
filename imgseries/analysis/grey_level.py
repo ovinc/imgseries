@@ -234,7 +234,9 @@ class GreyLevel(Analysis):
         Define in subclasses
         """
         self.results.metadata['zones'] = self.zones.data
-        self.results.metadata['function'] = str(self.func)
+
+        func_info = f'{self.func.__module__}.{self.func.__name__}'
+        self.results.metadata['function'] = func_info
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.

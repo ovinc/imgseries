@@ -1,52 +1,30 @@
 {
-    "path": [
-        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
-    ],
-    "folders": [
-        "../img1",
-        "../img2"
-    ],
     "contours": {
         "position": {
             "contour 1": [
-                186.38107291551614,
-                268.8803487163035
+                188.04110067355455,
+                267.5245090373116
             ],
             "contour 2": [
-                258.93756035280825,
-                269.7894418257783
+                258.9021791530991,
+                268.53190375527873
             ],
             "contour 3": [
-                322.9357384733174,
-                234.14933143477805
+                321.2973382438927,
+                233.5584805632059
             ]
         },
         "level": 182,
-        "image": 0
+        "image": 10
     },
-    "grayscale": {},
-    "rotation": {
-        "angle": 22.765009107511496
-    },
-    "crop": {
-        "zone": [
-            159,
-            171,
-            467,
-            380
-        ]
-    },
-    "filter": {},
-    "subtraction": {},
-    "threshold": {},
-    "time (utc)": "2024-02-19 11:38:36",
+    "time (utc)": "2024-02-19 18:02:01",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
+            "hash": "a991c82340d9b14df2ebe976bb30003932800062",
             "status": "dirty"
         },
         "imgbasics": {
