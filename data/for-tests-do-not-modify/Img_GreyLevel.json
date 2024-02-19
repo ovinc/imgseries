@@ -1,53 +1,55 @@
 {
     "path": [
-        "/Users/olivier.vincent/Python-OV/imgseries/data"
+        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
     ],
     "folders": [
-        "img1",
-        "img2"
+        "../img1",
+        "../img2"
     ],
-    "contours": {
-        "position": {
-            "contour 1": [
-                155.34855196067068,
-                248.8680542590701
-            ],
-            "contour 2": [
-                220.36855953462214,
-                277.00651519592867
-            ],
-            "contour 3": [
-                291.47083356083385,
-                268.9632883107061
-            ]
-        },
-        "level": 181,
-        "image": 10
-    },
-    "grayscale": {},
-    "rotation": {},
-    "crop": {
-        "zone": [
-            86,
-            73,
+    "zones": {
+        "zone 1": [
+            6,
+            6,
             454,
-            391
+            369
+        ],
+        "zone 2": [
+            83,
+            68,
+            295,
+            234
+        ],
+        "zone 3": [
+            385,
+            310,
+            68,
+            58
         ]
     },
-    "filter": {
-        "type": "gaussian",
-        "size": 2.0
+    "function": "<function mean at 0x119d2edd0>",
+    "grayscale": {},
+    "rotation": {
+        "angle": 22.765009107511496
     },
+    "crop": {
+        "zone": [
+            159,
+            171,
+            467,
+            380
+        ]
+    },
+    "filter": {},
     "subtraction": {},
     "threshold": {},
-    "time (utc)": "2024-01-28 19:45:29",
+    "time (utc)": "2024-02-19 11:09:51",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "d4a58695989a69999f36e51c4ec4245ea362041b",
+            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
             "status": "dirty"
         },
         "imgbasics": {

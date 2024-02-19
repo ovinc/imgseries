@@ -1,0 +1,70 @@
+{
+    "path": [
+        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
+    ],
+    "folders": [
+        "../img1",
+        "../img2"
+    ],
+    "contours": {
+        "position": {
+            "contour 1": [
+                186.38107291551614,
+                268.8803487163035
+            ],
+            "contour 2": [
+                258.93756035280825,
+                269.7894418257783
+            ],
+            "contour 3": [
+                322.9357384733174,
+                234.14933143477805
+            ]
+        },
+        "level": 182,
+        "image": 0
+    },
+    "grayscale": {},
+    "rotation": {
+        "angle": 22.765009107511496
+    },
+    "crop": {
+        "zone": [
+            159,
+            171,
+            467,
+            380
+        ]
+    },
+    "filter": {},
+    "subtraction": {},
+    "threshold": {},
+    "time (utc)": "2024-02-19 11:38:36",
+    "code version": {
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.19.3"
+        },
+        "imgseries": {
+            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
+            "status": "dirty"
+        },
+        "imgbasics": {
+            "status": "not a git repository",
+            "tag": "v0.3.0"
+        },
+        "filo": {
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
+            "tag": "v1.1.5"
+        },
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.7.0"
+        },
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.23.5"
+        }
+    }
+}

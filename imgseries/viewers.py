@@ -227,7 +227,8 @@ class AnalysisViewer(ImageViewer):
     def _on_fig_close(self, event):
         """This is because we want the analysis (i.e. animation) to finish
         before saving the data in live mode."""
-        self.analysis.formatter._save_results()
+        if self.live:
+            self.analysis.formatter._save_results()
 
 
 # ==================== Interactive setting of parameters =====================

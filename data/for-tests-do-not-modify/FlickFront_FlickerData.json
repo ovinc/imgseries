@@ -1,0 +1,51 @@
+{
+    "path": [
+        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
+    ],
+    "folders": [
+        "../front-flick"
+    ],
+    "zones": {
+        "zone 1": [
+            2,
+            49,
+            19,
+            97
+        ]
+    },
+    "function": "<function mean at 0x10807b0a0>",
+    "grayscale": {},
+    "rotation": {},
+    "crop": {},
+    "filter": {},
+    "subtraction": {},
+    "threshold": {},
+    "time (utc)": "2024-02-19 10:30:25",
+    "code version": {
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.19.3"
+        },
+        "imgseries": {
+            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
+            "status": "dirty"
+        },
+        "imgbasics": {
+            "status": "not a git repository",
+            "tag": "v0.3.0"
+        },
+        "filo": {
+            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
+            "status": "clean",
+            "tag": "v1.1.5"
+        },
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.7.0"
+        },
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.23.5"
+        }
+    }
+}

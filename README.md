@@ -26,7 +26,7 @@ pip install .
 Quick start
 ===========
 
-Below is some information to use the functions available in **imgseries**. Please also consult docstrings and the example Jupyter notebooks *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *GreyLevel.ipynb* and *ContourTracking.ipynb* for more details and examples.
+Below is some information to use the functions available in **imgseries**. Please also consult docstrings and the example Jupyter notebooks *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *Analysis_GreyLevel.ipynb* and *Analysis_ContourTracking.ipynb* for more details and examples.
 
 
 The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.Series`.
@@ -139,7 +139,7 @@ By default, caching is disabled because it can lead to significant memory usage 
 --------------------------------------------------------
 
 Follow the average grey level (brightness) of one or more selected zones on the image sequence.
-The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *GreyLevel.ipynb*
+The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_GreyLevel.ipynb*
 
 ```python
 from imgseries import GreyLevel, GreyLevelResults
@@ -173,7 +173,7 @@ results.data, results.metadata  # useful attributes
 `ContourTracking`: object tracking using contours in image series
 -----------------------------------------------------------------
 
-Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *ContourTracking.ipynb*
+Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_ContourTracking.ipynb*
 
 ```python
 from imgseries import ContourTracking, ContourTrackingResults
@@ -203,6 +203,17 @@ results = ContourTrackingResults()
 results.load()   # load analysis results (data + metadata)
 results.data, results.raw_contour_data, results.metadata  # useful attributes
 ```
+
+`Front1D`: Analyze 1D propagating fronts with grey level analysis
+-----------------------------------------------------------------
+
+Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Front1D.ipynb*
+
+
+
+`Flicker`: Get image flicker from grey level variations on a zone
+-----------------------------------------------------------------
+
 
 
 # Requirements / dependencies

@@ -1,30 +1,37 @@
 {
     "path": [
-        "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data"
+        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
     ],
     "folders": [
-        "img1",
-        "img2"
+        "../front-flick"
     ],
     "grayscale": {},
-    "rotation": {},
-    "crop": {},
+    "rotation": {
+        "angle": 0.278583442478391
+    },
+    "crop": {
+        "zone": [
+            26,
+            2,
+            219,
+            145
+        ]
+    },
     "filter": {},
     "subtraction": {},
     "threshold": {},
-    "time (utc)": "2023-04-15 18:23:28",
+    "time (utc)": "2024-02-19 10:44:34",
     "code version": {
         "skimage": {
             "status": "not a git repository",
-            "tag": "v0.17.2"
+            "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "59b4c385c2ea5e879bfc5a0f492358c35b3daf2d",
+            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "3f468b4021be56679a448bea57a229fc34c6721d",
-            "status": "clean",
+            "status": "not a git repository",
             "tag": "v0.3.0"
         },
         "filo": {
@@ -34,11 +41,11 @@
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.3.2"
+            "tag": "v3.7.0"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.19.2"
+            "tag": "v1.23.5"
         }
     }
 }

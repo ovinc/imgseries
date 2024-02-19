@@ -1,48 +1,33 @@
 {
-    "path": "C:\\Users\\olivier.vincent\\Python-OV\\imgseries\\data",
-    "folders": [
-        "img1",
-        "img2"
+    "path": [
+        "/Users/olivier.vincent/Python-OV/imgseries/data/for-tests-do-not-modify"
     ],
-    "zones": {
-        "zone 1": [
-            18,
-            15,
-            152,
-            121
-        ],
-        "zone 2": [
-            444,
-            19,
-            129,
-            127
-        ],
-        "zone 3": [
-            44,
-            454,
-            504,
-            65
-        ]
-    },
+    "folders": [
+        "../front-flick"
+    ],
+    "grayscale": {},
     "rotation": {
-        "angle": -0.3425123582361368
+        "angle": 0.278583442478391
     },
     "crop": {
         "zone": [
-            10,
-            8,
-            591,
-            536
+            26,
+            2,
+            219,
+            145
         ]
     },
-    "time (utc)": "2024-01-28 19:36:01",
+    "filter": {},
+    "subtraction": {},
+    "threshold": {},
+    "time (utc)": "2024-02-19 10:41:38",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.19.3"
         },
         "imgseries": {
-            "hash": "d4a58695989a69999f36e51c4ec4245ea362041b",
+            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
             "status": "dirty"
         },
         "imgbasics": {
@@ -62,9 +47,5 @@
             "status": "not a git repository",
             "tag": "v1.23.5"
         }
-    },
-    "grayscale": {},
-    "filter": {},
-    "subtraction": {},
-    "threshold": {}
+    }
 }
