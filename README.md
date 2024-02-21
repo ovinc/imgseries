@@ -114,8 +114,8 @@ images.threshold.vmax = 240  # everything below vmax is True, rest False
 # Note: threshold.vmin can be combined with threshold.vmax for a bandpass
 
 # Other transform parameters / methods:
-images.save_transform()  # save rotation, crop etc. parameters in a json file
-images.load_transform()  # load rotation, crop etc. parameters from json file
+images.save_transforms()  # save rotation, crop etc. parameters in a json file
+images.load_transforms()  # load rotation, crop etc. parameters from json file
 images.active_transforms  # see currently applied transforms on images
 images.reset_transforms()  # reset all transforms
 

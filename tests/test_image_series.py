@@ -58,7 +58,7 @@ def test_load_global_transform():
 
     images.rotation.reset()
     images.crop.reset()
-    images.load_transform()
+    images.load_transforms()
 
     img_raw = images.read(n, transform=False)
     img_tot = images.read(n)

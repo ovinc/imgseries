@@ -348,7 +348,7 @@ class ImgSeriesBase:
         profile = Profile(self, npts=npts, radius=radius, **kwargs)
         return profile
 
-    def load_transform(self, filename=None):
+    def load_transforms(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.
 
         Transforms are applied and stored in self.rotation, self.crop, etc.
@@ -366,7 +366,7 @@ class ImgSeriesBase:
             transform_object.data = transform_data.get(transform_name, {})
             transform_object._update_parameters()
 
-    def save_transform(self, filename=None):
+    def save_transforms(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.
 
         If filename is not specified, use default filenames.

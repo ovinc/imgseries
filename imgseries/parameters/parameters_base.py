@@ -68,7 +68,7 @@ class TransformParameter(Parameter):
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
-        return self.img_series.load_transform(filename=filename)
+        return self.img_series.load_transforms(filename=filename)
 
     def reset(self):
         """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
