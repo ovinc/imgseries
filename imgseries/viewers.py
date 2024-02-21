@@ -113,7 +113,11 @@ class ImageViewer:
         """
         num_min = min(nums)
         num_max = max(nums)
-        num_step = (num_max - num_min) // (len(nums) - 1)
+
+        if num_max > num_min:  # avoids division by 0 error when just 1 image
+            num_step = (num_max - num_min) // (len(nums) - 1)
+        else:
+            num_step = 1
 
         self._create_figure(num=num_min)
         self._connect_events()

@@ -1,11 +1,19 @@
 About
 =====
 
-Image analysis tools for image series, based on the following classes:
+Image inspection and analysis tools for image series, based on the following classes.
 
-- `ImgSeries`: general class for image series,
+*Representation of image sequences:*
+- `ImgSeries` (sequence stored in multiple files),
+- `ImgStack` (sequence stored in a stack, e.g. tiff or HDF5).
+Objects from these classes can also be generated with the `series()` and `stack()` methods, respectively;
+
+*Analysis of image sequences:*
 - `GreyLevel`: evolution of average gray level of selected zone(s),
-- `ContourTracking`: track objects by contour(s) detection.
+- `ContourTracking`: track objects by contour(s) detection,
+- `Front1D`: measure fronts propagating in one direction,
+- `Flicker`: analyze image flicker with reference zone(s).
+These classes act on `ImgSeries` or `ImgStack` objects.
 
 
 Install
@@ -106,9 +114,18 @@ images.threshold.vmax = 240  # everything below vmax is True, rest False
 # Note: threshold.vmin can be combined with threshold.vmax for a bandpass
 
 # Other transform parameters / methods:
+images.save_transform()  # save rotation, crop etc. parameters in a json file
+images.load_transform()  # load rotation, crop etc. parameters from json file
 images.active_transforms  # see currently applied transforms on images
-images.save_transform()  # save rotation and crop parameters in a json file
-images.load_transform()  # load rotation and crop parameters from json file
+images.reset_transforms()  # reset all transforms
+
+# Corrections can also be applied to image sequences, e.g. flicker and shaking
+# (See also Flicker analysis class, below)
+# Contrary to transforms, corrections can be
+images.flicker.load()
+images.save_corrections()
+images.active_corrections  # see currently applied corrections on images
+images.reset_corrections()  # reset all corrections
 
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
@@ -207,13 +224,33 @@ results.data, results.raw_contour_data, results.metadata  # useful attributes
 `Front1D`: Analyze 1D propagating fronts with grey level analysis
 -----------------------------------------------------------------
 
-Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Front1D.ipynb*
+Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Analysis_Front1D.ipynb*
 
+```python
+from imgseries import Front1D, Front1DResults
+f1d = Front1D(images)
+f1d.run()
+```
 
 
 `Flicker`: Get image flicker from grey level variations on a zone
 -----------------------------------------------------------------
 
+Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Analysis_Flicker.ipynb*
+
+```python
+from imgseries import Flicker, FlickerResults
+flick = Flicker(images)
+flick.zones.define()
+flick.run()
+```
+
+The results are stored as a ratio, which is by how much the pixel values in the image have to be divided to remove apparent flicker.
+
+Afterwards, these results can be loaded in the image series to correct flicker automatically (as a *corrections* parameter):
+```python
+images.flicker.load()
+```
 
 
 # Requirements / dependencies

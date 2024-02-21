@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from drapo import Line
+from skimage import measure
 
 from ..viewers import AnalysisViewer
 
@@ -54,7 +55,6 @@ class ProfileViewer(AnalysisViewer):
         profiles = self.analysis._generate_profiles(
             img=self.img,
             line_position=self.interactive_line.get_position(),
-            npts=self.analysis.npts,
             radius=self.analysis.radius,
         )
 
@@ -105,7 +105,9 @@ class ProfileViewer(AnalysisViewer):
         self.ax_profile.relim()  # without this, axes limits change don't work
         self.ax_profile.autoscale(axis='both')
 
-        # self.fig.canvas.draw()  REMOVED, because not sure if necessary
+        # DO NOT REMOVE BELOW (if not present, line profile does not update
+        # when line is moved and released by the user)
+        self.fig.canvas.draw()
 
 
 class Profile:
@@ -113,42 +115,29 @@ class Profile:
     def __init__(
         self,
         img_series,
-        npts=100,
-        radius=2,
+        radius=1,
         viewer=ProfileViewer,
         **kwargs,
     ):
         self.Viewer = viewer
         self.img_series = img_series
-        self.npts = npts
         self.radius = radius
         self.kwargs = kwargs
 
     @staticmethod
-    def _generate_profiles(img, line_position, npts, radius):
-
-        img_shape = img.shape[:-1] if img.ndim > 2 else img.shape
-        ii, jj = np.indices(img_shape)
+    def _generate_profiles(img, line_position, radius):
 
         (x1, y1), (x2, y2) = line_position
 
-        xx = np.linspace(x1, x2, num=npts)
-        yy = np.linspace(y1, y2, num=npts)
+        # For some reason, coordinates need to be reversed here between x/y
+        # when calling the scikit-image function
+        pt1 = (y1, x1)
+        pt2 = (y2, x2)
 
-        rr = np.hypot(xx - xx[0], yy - yy[0])
+        levels = measure.profile_line(img, src=pt1, dst=pt2, linewidth=radius)
+        rr = np.arange(len(levels))
 
-        def calculate_local_level(x, y):
-            dx = ii - y  # for some reason, x and y have to be reversed here
-            dy = jj - x
-            dd = np.hypot(dx, dy)
-            return img[dd < radius].mean(axis=0)
-
-        levels = []
-        for x, y in zip(xx, yy):
-            level = calculate_local_level(x, y)
-            levels.append(level)
-
-        return rr, np.array(levels)
+        return rr, levels
 
     # ==================== Interactive inspection methods ====================
 
