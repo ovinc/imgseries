@@ -17,7 +17,7 @@ from ..viewers import AnalysisViewer
 
 class GreyLevelViewer(AnalysisViewer):
 
-    def _create_figure(self, num=0):
+    def _create_figure(self):
         self.fig = plt.figure(figsize=(5, 7))
         xmin = 0.1
         xmax = 0.9
@@ -192,20 +192,18 @@ class GreyLevel(Analysis):
         self.zones = Zones(self)
         self.func = func
 
-    def _analyze(self, num, live=False):
-        """Basic analysis function, to be threaded or multiprocessed.
+    def _analyze(self, img):
+        """Analysis process on single image. Must return a dict.
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, analysis results are displayed in real time
+        - img: image array to be analyzed (e.g. numpy array).
 
         Output
         ------
-        - data, handled by self._store_data()
+        - dict of data, handled by formatter._store_data()
         """
         glevels = []
-        img = self.img_series.read(num)
 
         for cropzone in self.zones.data.values():
             crop_func = self.img_series.img_transformer.img_manager.crop
@@ -213,10 +211,7 @@ class GreyLevel(Analysis):
             glevel = self.func(img_crop)
             glevels.append(glevel)
 
-        data = {'num': num}
-        data['glevels'] = glevels
-        if live:
-            data['image'] = img
+        data = {'glevels': glevels}
 
         return data
 

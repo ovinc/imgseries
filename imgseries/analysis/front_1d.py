@@ -11,7 +11,7 @@ from ..viewers import AnalysisViewer
 
 class Front1DViewer(AnalysisViewer):
 
-    def _create_figure(self, num=0):
+    def _create_figure(self):
         self.fig = plt.figure(figsize=(5, 7))
         xmin = 0.05
         xmax = 0.95
@@ -118,21 +118,17 @@ class Front1D(Analysis):
             Results=Results,
         )
 
-    def _analyze(self, num, live=False):
+    def _analyze(self, img):
         """Basic analysis function, to be threaded or multiprocessed.
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, analysis results are displayed in real time
+        - img: image array to be analyzed (e.g. numpy array).
 
         Output
         ------
-        - data, handled by self._store_data()
+        - data, handled by self.formatter._store_data()
         """
-        img = self.img_series.read(num=num)
         front_data = img.mean(axis=0)
-        data = {'analysis': front_data, 'num': num}
-        if live:
-            data['image'] = img
+        data = {'analysis': front_data}
         return data

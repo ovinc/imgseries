@@ -279,37 +279,33 @@ class ContourTracking(Analysis):
                 xc, yc, *_ = contour_analysis
                 self.reference_positions[i] = (xc, yc)
 
-    def _analyze(self, num, live=False):
+    def _analyze(self, img):
         """Find contours at level in file i closest to the reference positions.
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, plots detected contours on image
+        - img: image array to be analyzed (e.g. numpy array).
 
         Output
         ------
         [(x1, y1, p1, a1), (y2, y2, p2, a1), ..., (xn, yn, pn, an)] where n is the
         number of contours followed and (x, y), p, a is position, perimeter, area
         """
-        img = self.img_series.read(num)
         contours = self._find_contours(img, self.threshold.value)
 
         data = {'contour properties': []}     # Stores analysis data (centroid etc.)
         data['raw contours'] = []       # Stores full (x, y) contour data
-        data['num'] = num
-
-        if live:
-            data['image'] = img
 
         for refpos in self.reference_positions:
 
             try:
                 # this time edge=false, because trying to find contour closest
                 # to the recorded centroid position, not edges
-                contour = imgbasics.closest_contour(contours=contours,
-                                                    position=refpos,
-                                                    edge=True)
+                contour = imgbasics.closest_contour(
+                    contours=contours,
+                    position=refpos,
+                    edge=True,
+                )
 
             except imgbasics.ContourError:
                 # No contour at all detected on image --> return NaN

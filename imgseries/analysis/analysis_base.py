@@ -82,7 +82,7 @@ class Analysis:
             self.results.metadata[transform_name] = transform_data
 
     def _analyze_live(self, num):
-        data = self._analyze(num, live=True)
+        data = self.analyze(num=num, live=True)
         self.formatter._store_data(data)
         return data
 
@@ -139,7 +139,7 @@ class Analysis:
             with ProcessPoolExecutor(max_workers=nprocess) as executor:
 
                 for num in self.nums:
-                    future = executor.submit(self._analyze, num, live=False)
+                    future = executor.submit(self.analyze, num, live=False)
                     futures[num] = future
 
                 # Waitbar ----------------------------------------------------
@@ -156,7 +156,7 @@ class Analysis:
 
             if not live:
                 for num in tqdm(self.nums):
-                    data = self._analyze(num, live=False)
+                    data = self.analyze(num=num, live=False)
                     self.formatter._store_data(data)
             else:
                 # plot uses self._analyze_live to calculate and store data
@@ -283,22 +283,41 @@ class Analysis:
         Define in subclasses."""
         pass
 
-    def _analyze(self, num, live=False):
-        """Analysis process on single image. Returns data handled by _store_data.
+    def _analyze(self, img):
+        """Analysis process on single image. Must return a dict.
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, analysis results are displayed in real time
-
+        - img: image array to be analyzed (e.g. numpy array).
 
         Output
         ------
-        - data, handled by self._store_data()
+        - dict of data, handled by formatter._store_data()
 
         Define in subclasses."""
         pass
 
+    def analyze(self, num, live=False):
+        """Same as _analyze, but with num as input instead of img.
+
+        Can be subclassed if necessary.
+
+        Parameters
+        ----------
+        - num: file number identifier across the image file series
+        - live: if True, add image to data for live visualization
+
+        Output
+        ------
+        - dict of data, handled by formatter._store_data()
+
+        Define in subclasses."""
+        img = self.img_series.read(num=num)
+        data = self._analyze(img=img)
+        data['num'] = num
+        if live:
+            data['image'] = img
+        return data
 
 # ================================ Formatters ================================
 

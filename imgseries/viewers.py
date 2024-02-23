@@ -17,12 +17,9 @@ class ImageViewer:
         """Init Image Viewer"""
         self.plot_init_done = False
 
-    def _create_figure(self, num=0):
+    def _create_figure(self):
         """Define in subclass, has to define at least self.fig., and self.axs
         if self.axs is not defined in self._first_plot()
-
-        num is optional, it's in case the figure creation must do something
-        related to a specific frame before calling the first _get_data()
         """
         pass
 

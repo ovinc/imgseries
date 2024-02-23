@@ -90,22 +90,21 @@ class Flicker(GreyLevel):
         """Check everything OK before starting analysis & initialize params."""
         super()._initialize()
         self.ref_values = None
-        data = self._analyze(num=self.reference, live=False)
+        data = self.analyze(num=self.reference, live=False)
         self.ref_values = data['glevels']
 
-    def _analyze(self, num, live=False):
+    def _analyze(self, img):
         """Basic analysis function, to be threaded or multiprocessed.
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, analysis results are displayed in real time
+        - img: image array to be analyzed (e.g. numpy array).
 
         Output
         ------
-        - data, handled by self._store_data()
+        - data, handled by self.formatter._store_data()
         """
-        data = super()._analyze(num=num, live=live)
+        data = super()._analyze(img)
         glevels = data['glevels']
         if self.ref_values is not None:
             # Only useful to define reference values upon __init__()

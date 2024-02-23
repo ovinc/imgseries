@@ -74,7 +74,7 @@ images.show(10)        # show image in a matplotlib graph
 
 images.animate()       # see image series as a movie (start, end, skip options)
 images.inspect()       # browse through image series with a slider (same options)
-images.profile         # object that also has inspect(), animate() methods etc.
+images.profile()         # object that also has inspect(), animate() methods etc.
 
 # Define display options (only for grayscale imagee --------------------------
 # (see details in notebook)
