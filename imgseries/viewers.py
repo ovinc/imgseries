@@ -10,6 +10,48 @@ from matplotlib.widgets import Slider, Button
 from .managers import max_pixel_range
 
 
+class KeyPressSlider(Slider):
+    """Slider to inspect images, with keypress response"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._connect_events()
+        if self.valstep is None:
+            self.keystep = (self.valmax - self.valmin) * 0.01
+        else:
+            self.keystep = self.valstep
+
+    def _increase_val(self, nstep=1):
+        """Increase value by a nstep steps; got to beginning if > valmax"""
+        new_val = self.val + nstep * self.keystep
+        if new_val > self.valmax:
+            new_val = self.valmin
+        self.set_val(new_val)
+
+    def _decrease_val(self, nstep=1):
+        """Increase value by a nstep steps; got to beginning if > valmax"""
+        new_val = self.val - nstep * self.keystep
+        if new_val < self.valmin:
+            new_val = self.valmax
+        self.set_val(new_val)
+
+    def _connect_events(self):
+        self.cid_keypressk = self.ax.figure.canvas.mpl_connect(
+            'key_press_event',
+            self._on_key_press,
+        )
+
+    def _on_key_press(self, event):
+        if event.key == 'right':
+            self._increase_val()
+        if event.key == 'left':
+            self._decrease_val()
+        if event.key == 'up':
+            self._increase_val(nstep=10)
+        if event.key == 'down':
+            self._decrease_val(nstep=10)
+
+
 class ImageViewer:
     """Base class for plotting of images and additional data for animations."""
 
@@ -25,13 +67,6 @@ class ImageViewer:
 
     def _connect_events(self):
         """Called after _create_figure() to connect events, e.g. figure closing"""
-        self.cid_close = self.fig.canvas.mpl_connect(
-            'close_event',
-            self._on_fig_close,
-        )
-
-    def _on_fig_close(self, event):
-        """Define in subclasses if necessary to trigger sth on fig. closing"""
         pass
 
     def _get_data(self, num):
@@ -73,7 +108,7 @@ class ImageViewer:
 
     def show(self, num=0):
         """Show a single, non-animated image (num: image number)."""
-        self._create_figure(num=num)
+        self._create_figure()
         self._connect_events()
         self._plot(num=num)
         return self.axs
@@ -85,8 +120,7 @@ class ImageViewer:
         - nums: frames to consider for the animation (iterable)
         - blit: if True, use blitting for fast rendering
         """
-        num_min = min(nums)
-        self._create_figure(num=num_min)
+        self._create_figure()
         self._connect_events()
         self.plot_init_done = False
 
@@ -116,7 +150,7 @@ class ImageViewer:
         else:
             num_step = 1
 
-        self._create_figure(num=num_min)
+        self._create_figure()
         self._connect_events()
         self.plot_init_done = False
 
@@ -125,7 +159,7 @@ class ImageViewer:
         self.fig.subplots_adjust(bottom=0.1)
         ax_slider = self.fig.add_axes([0.1, 0.01, 0.8, 0.03])
 
-        slider = Slider(
+        slider = KeyPressSlider(
             ax=ax_slider,
             label='#',
             valmin=num_min,
@@ -163,7 +197,7 @@ class ImgSeriesViewer(ImageViewer):
         self.kwargs = kwargs
         super().__init__()
 
-    def _create_figure(self, num=0):
+    def _create_figure(self):
         self.fig, self.ax = plt.subplots()
         self.axs = self.ax,
 
@@ -224,6 +258,13 @@ class AnalysisViewer(ImageViewer):
             return self.analysis._analyze_live(num)
         else:
             return self.analysis.formatter._regenerate_data(num)
+
+    def _connect_events(self):
+        """Connect figure events"""
+        self.cid_close = self.fig.canvas.mpl_connect(
+            'close_event',
+            self._on_fig_close,
+        )
 
     def _on_fig_close(self, event):
         """This is because we want the analysis (i.e. animation) to finish

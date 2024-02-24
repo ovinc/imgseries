@@ -266,7 +266,7 @@ images.flicker.load()
 - filo (file series management) >= 1.1
 - gittools (get git commit info) >= 0.5
 - imgbasics (basic image processing) >= 0.3.0
-- drapo (interactive tools for matplotlib figures) >= 1.2.0
+- drapo (interactive tools for matplotlib figures) >= 1.2.1
 
 
 ## Python version

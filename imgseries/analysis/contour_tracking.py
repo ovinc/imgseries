@@ -19,7 +19,7 @@ from ..viewers import AnalysisViewer
 
 class ContourTrackingViewer(AnalysisViewer):
 
-    def _create_figure(self, num=0):
+    def _create_figure(self):
         self.fig, self.ax = plt.subplots()
         self.axs = self.ax,
 

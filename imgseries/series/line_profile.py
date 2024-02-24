@@ -15,27 +15,28 @@ class InteractiveLine(Line):
         self.viewer = viewer
 
     def on_mouse_release(self, event):
+        """Trigger re-plotting when Line is released"""
         super().on_mouse_release(event)
         if event.inaxes is not self.viewer.ax_img:
             return
         self.viewer._plot(num=self.viewer.num)
 
+    def _on_right_pick(self):
+        """To avoid deleting line with right click"""
+        pass
+
 
 class ProfileViewer(AnalysisViewer):
 
-    def _create_figure(self, num=0):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Current img number, will be updated with self._get_data()
+        self.num = None
+
+    def _create_figure(self):
         self.fig, self.axs = plt.subplots(2, 1, figsize=(10, 15))
         self.ax_img, self.ax_profile = self.axs
         self.ax_profile.grid()
-
-        self.num = num
-        self.img = self.analysis.img_series.read(num=num)
-
-        self.imshow = self.analysis.img_series._imshow(self.img,
-                                                       ax=self.ax_img,
-                                                       **self.kwargs)
-
-        self.interactive_line = InteractiveLine(self, ax=self.ax_img)
 
     def _get_data(self, num):
         """How to get image / analysis and other data to _plot for each frame.
@@ -43,22 +44,16 @@ class ProfileViewer(AnalysisViewer):
         Input: image number (int)
         Output: data (arbitrary data format usable by _first_plot() and _update_plot())
         """
-        data = {}
+        data = {'num': num}
 
-        # if image hasn't changed (just line position, no need to reload image)
+        # If image hasn't changed (just line position, no need to reload image);
+        # The lines below are also exectuted when profile is first loaded
+        # in order to define self.num and self.img for the first time
         if num != self.num:
             self.num = num
-            img = self.analysis.img_series.read(num=num)
-            self.img = img
-            data['image'] = img  # to update image on plot if img has changed
-
-        profiles = self.analysis._generate_profiles(
-            img=self.img,
-            line_position=self.interactive_line.get_position(),
-            radius=self.analysis.radius,
-        )
-
-        data['profiles'] = profiles
+            # to update image on plot if img has changed
+            self.img = self.analysis.img_series.read(num=num)
+            data['new image'] = self.img
 
         return data
 
@@ -69,7 +64,25 @@ class ProfileViewer(AnalysisViewer):
 
         Input: data
         """
-        rr, levels = data['profiles']
+        self.imshow = self.analysis.img_series._imshow(
+            self.img,
+            ax=self.ax_img,
+            **self.kwargs,
+        )
+
+        # This needs to be called AFTER the first imshow(), because
+        # if not, it's the line which will set the limits of the image
+        # (typically, 0 to 1)
+        self.interactive_line = InteractiveLine(self, ax=self.ax_img)
+
+        # Calculate and display first profile --------------------------------
+
+        rr, levels = self.analysis._generate_profiles(
+            img=self.img,
+            line_position=self.interactive_line.get_position(),
+            radius=self.analysis.radius,
+        )
+
         self.profile_curves = self.ax_profile.plot(rr, levels)
         if len(self.profile_curves) > 1:
             colors = ('r', 'g', 'b')
@@ -87,13 +100,17 @@ class ProfileViewer(AnalysisViewer):
         Input: data
         """
         try:
-            img = data['image']
+            img = data['new image']
         except KeyError:
             pass
         else:
             self.imshow.set_array(img)
 
-        rr, levels = data['profiles']
+        rr, levels = self.analysis._generate_profiles(
+            img=self.img,  # self.img and not img, in case image has not been updated
+            line_position=self.interactive_line.get_position(),
+            radius=self.analysis.radius,
+        )
 
         if len(self.profile_curves) > 1:
             for i, profile_curve in enumerate(self.profile_curves):
