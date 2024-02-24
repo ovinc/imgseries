@@ -159,3 +159,14 @@ class FileManager:
         """
         file = path / (filename + '.tsv')
         return pd.read_csv(file, index_col='num', sep=CONFIG['csv separator'])
+
+    @staticmethod
+    def to_tsv(data, path, filename):
+        """"Save dataframe to tsv data file.
+
+        data: pandas dataframe
+        path: pathlib object (folder containing the file)
+        filename: name of the file without extension
+        """
+        file = path / (filename + '.tsv')
+        data.to_csv(file, sep=CONFIG['csv separator'])

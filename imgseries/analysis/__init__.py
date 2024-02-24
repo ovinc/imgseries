@@ -5,8 +5,9 @@ from .contour_tracking import ContourTracking
 from .flicker import Flicker
 from .front_1d import Front1D
 
-from .analysis_base import Analysis, Results, Formatter
-from .analysis_base import PandasFormatter, PandasTsvResults
+from .analysis_base import Analysis
+from .results import Results, PandasTsvResults
+from .formatters import Formatter, PandasFormatter
 
 
 # Define default results classes for analysis ================================

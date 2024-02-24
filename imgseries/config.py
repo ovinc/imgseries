@@ -18,11 +18,6 @@ FILENAMES = {
     'files': 'Img_Files',          # for file info (timing etc.)
     'transform': 'Img_Transform',  # this is to store rotation angle etc.
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
-    'glevel': 'Img_GreyLevel',           # program will add .tsv or
-    'ctrack': 'Img_ContourTracking',     # .json depending on context
-    'front1d': 'Img_Front1D',
-    'flicker': 'Img_Flicker',
-    'shaking': 'Img_Shaking'
 }
 
 # Correction names and the order in which they are applied
@@ -45,5 +40,6 @@ CONFIG = {
     'csv separator': csv_separator,
     'filenames': FILENAMES,
     'image transforms': IMAGE_TRANSFORMS,
+    'image corrections': IMAGE_CORRECTIONS,
     'checked modules': checked_modules,
 }

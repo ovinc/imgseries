@@ -206,10 +206,12 @@ class ImgSeriesViewer(ImageViewer):
         return {'num': num, 'image': img}
 
     def _first_plot(self, data):
-        self.imshow = self.img_series._imshow(data['image'],
-                                              ax=self.ax,
-                                              transform=self.transform,
-                                              **self.kwargs)
+        self.imshow = self.img_series._imshow(
+            data['image'],
+            ax=self.ax,
+            transform=self.transform,
+            **self.kwargs,
+        )
         self._display_info(data)
         self.ax.axis('off')
         self.updated_artists = [self.imshow]
@@ -253,11 +255,11 @@ class AnalysisViewer(ImageViewer):
         """Analyses classes should define adequate methods if needed:
 
         - Analysis.__analyze_live() to get real time data from analysis
-        - Analysis._regenerate_data() to get usable data from stored data."""
+        - Analysis._generate_data() to get usable data from stored data."""
         if self.live:
             return self.analysis._analyze_live(num)
         else:
-            return self.analysis.formatter._regenerate_data(num)
+            return self.analysis.formatter._generate_data(num)
 
     def _connect_events(self):
         """Connect figure events"""
@@ -270,7 +272,7 @@ class AnalysisViewer(ImageViewer):
         """This is because we want the analysis (i.e. animation) to finish
         before saving the data in live mode."""
         if self.live:
-            self.analysis.formatter._save_results()
+            self.analysis.formatter._to_results()
 
 
 # ==================== Interactive setting of parameters =====================
@@ -386,25 +388,29 @@ class DoubleSliderBase:
 
         vmin, vmax = self.init_range
         vmin_min, vmax_max = self.max_range
-        v_step = 1 if type(vmax_max) == int else None
+        v_step = 1 if type(vmax_max) is int else None
 
-        self.widgets['slider min'] = Slider(ax=self.axs['slider min'],
-                                            label='min',
-                                            valmin=vmin_min,
-                                            valmax=vmax_max,
-                                            valinit=vmin,
-                                            valstep=v_step,
-                                            color='steelblue',
-                                            alpha=0.5)
+        self.widgets['slider min'] = Slider(
+            ax=self.axs['slider min'],
+            label='min',
+            valmin=vmin_min,
+            valmax=vmax_max,
+            valinit=vmin,
+            valstep=v_step,
+            color='steelblue',
+            alpha=0.5,
+        )
 
-        self.widgets['slider max'] = Slider(ax=self.axs['slider max'],
-                                            label='max',
-                                            valmin=vmin_min,
-                                            valmax=vmax_max,
-                                            valinit=vmax,
-                                            valstep=v_step,
-                                            color='steelblue',
-                                            alpha=0.5)
+        self.widgets['slider max'] = Slider(
+            ax=self.axs['slider max'],
+            label='max',
+            valmin=vmin_min,
+            valmax=vmax_max,
+            valinit=vmax,
+            valstep=v_step,
+            color='steelblue',
+            alpha=0.5,
+        )
 
         self.widgets['button reset'] = Button(self.axs['button reset'], 'Reset')
         self.widgets['button full'] = Button(self.axs['button full'], 'Full')
@@ -468,9 +474,11 @@ class ContrastSetterViewer(DoubleSliderBase):
         self.init_range = self._get_init_range()
 
     def _create_imshow(self):
-        return self.img_series._imshow(self.img,
-                                       ax=self.axs['image'],
-                                       **self.kwargs)
+        return self.img_series._imshow(
+            self.img,
+            ax=self.axs['image'],
+            **self.kwargs,
+        )
 
 
 class ThresholdSetterViewer(DoubleSliderBase):
@@ -544,6 +552,8 @@ class ThresholdSetterViewer(DoubleSliderBase):
         # displayed properly because at this stage the img_series is not
         # thresholded yet and still has default vmin, vmax from before
         # thresholding.
-        return self.img_series._imshow(self.img,
-                                       ax=self.axs['image'],
-                                       vmin=0, vmax=1)
+        return self.img_series._imshow(
+            self.img,
+            ax=self.axs['image'],
+            vmin=0, vmax=1,
+        )
