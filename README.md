@@ -15,6 +15,8 @@ Objects from these classes can also be generated with the `series()` and `stack(
 - `Flicker`: analyze image flicker with reference zone(s).
 These classes act on `ImgSeries` or `ImgStack` objects.
 
+The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see *Customize_Analysis.ipynb* and *Customize_Images.ipynb* for examples.
+
 
 Install
 =======
@@ -62,6 +64,9 @@ images = ImgSeries(paths=['img1', 'img2'])  # implicitly, savepath is current di
 images = series(paths=['img1', 'img2'])
 # (the series() function is a bit more powerful than the ImgSeries class, as it
 # allows the user to select caching options for speed improvements, see below)
+
+# Image dimensions in x and y
+images.nx, images.ny
 
 # Access individual images in the series -------------------------------------
 
@@ -155,7 +160,7 @@ By default, caching is disabled because it can lead to significant memory usage 
 `GreyLevel`: average grey level analysis in image series
 --------------------------------------------------------
 
-Follow the average grey level (brightness) of one or more selected zones on the image sequence.
+Follow the average grey level (brightness) of one or more selected zones (default: whole image) on the image sequence.
 The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_GreyLevel.ipynb*
 
 ```python
@@ -165,6 +170,7 @@ from imgseries import GreyLevel, GreyLevelResults
 gl = GreyLevel(images)
 
 # Prepare and run analysis ---------------------------------------------------
+# NOTE: if no zones are defined, full image is taken as a default
 gl.zones.define()  # interactively select zones on image
 gl.zones.load()    # alternative to define() where zones are loaded from saved metadata
 

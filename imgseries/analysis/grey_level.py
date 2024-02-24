@@ -184,8 +184,9 @@ class GreyLevel(Analysis):
             Results=Results,
         )
 
-        # empty zones object, needs to be filled with zones.define() or
-        # zones.load() prior to starting analysis with self.run()
+        # empty zones object, if not filled with zones.define() or
+        # zones.load() prior to starting analysis with self.run(),
+        # the whole image is considered
         self.zones = Zones(self)
         self.func = func
 
@@ -215,9 +216,12 @@ class GreyLevel(Analysis):
     def _initialize(self):
         """Check everything OK before starting analysis & initialize params."""
         if self.zones.is_empty:
-            msg = "Analysis zones not defined yet. Use self.zones.define(),  "\
-                  "or self.zones.load() if zones have been previously saved."
-            raise AttributeError(msg)
+            self._set_default_zone()
+
+    def _set_default_zone(self):
+        print('Warning: no zones defined; taking full image as default.')
+        default_crop = 0, 0, self.img_series.nx, self.img_series.ny
+        self.zones.data = {'zone 1': default_crop}
 
     def _add_metadata(self):
         """Add useful analysis parameters etc. to the self.metadata dict.

@@ -238,8 +238,9 @@ class ImgSeriesBase:
         self.display = Display(self)
 
     def _get_initial_image_dims(self):
-        """Remember which type (B&W or color) the raw images are"""
+        """Remember which type (B&W or color) and shape the raw images are"""
         img = self.read()
+        self.ny, self.nx, *_ = img.shape
         self.initial_ndim = img.ndim
         self.ndim = self.initial_ndim
 

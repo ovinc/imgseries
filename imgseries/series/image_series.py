@@ -99,13 +99,8 @@ class ImgSeries(ImgSeriesBase, filo.Series):
 
     def _set_substack(self, start, end, skip):
         """Generate subset of image numbers to be displayed/analyzed."""
-        if self.is_stack:
-            npts, *_ = self.stack.shape
-            all_nums = list(range(npts))
-            nums = all_nums[start:end:skip]
-        else:
-            files = self.files[start:end:skip]
-            nums = [file.num for file in files]
+        files = self.files[start:end:skip]
+        nums = [file.num for file in files]
         return nums
 
 
