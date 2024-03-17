@@ -46,8 +46,8 @@ The management of file series, possibly spread out over multiple folders, follow
 If running on a Windows machine and using the parallel option in some of the analysis codes, the call of the function must not be run during import of the python file containing the script (e.g. by using a `if __name__ == '__main__'` block). This is because in Windows, multiprocessing imports the main program when setting up processes, which causes recursive problems. The problem does not arise on Linux / MacOS.
 
 
-`ImgSeries`: general image series manipulation
-----------------------------------------------
+`ImgSeries`, `ImgStack`: general image series manipulation
+----------------------------------------------------------
 
 See also the notebook with examples and details: *ImgSeries.ipynb*
 
@@ -131,6 +131,9 @@ images.flicker.load()
 images.save_corrections()
 images.active_corrections  # see currently applied corrections on images
 images.reset_corrections()  # reset all corrections
+
+# Exporting images (with transforms and/or corrections)
+images.export()  # see Export.ipynb for examples
 
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
@@ -282,4 +285,41 @@ images.flicker.load()
 
 Olivier Vincent
 
-(olivier.vincent@univ-lyon1.fr)
+(ovinc.py@mgmail.com)
+
+# License
+
+This software is under the CeCILL-2.1 license, equivalent to GNU-GPL (see https://cecill.info/)
+
+Copyright Olivier Vincent (2021-2024)
+(ovinc.py@gmail.com)
+
+This software is a computer program whose purpose is to provide tools for
+inspection and analysis of image sequences
+(either as individual files or as stacks).
+
+This software is governed by the CeCILL license under French law and
+abiding by the rules of distribution of free software. You can  use,
+modify and/ or redistribute the software under the terms of the CeCILL
+license as circulated by CEA, CNRS and INRIA at the following URL
+"http://www.cecill.info".
+
+As a counterpart to the access to the source code and rights to copy,
+modify and redistribute granted by the license, users are provided only
+with a limited warranty  and the software's author, the holder of the
+economic rights, and the successive licensors have only limited
+liability.
+
+In this respect, the user's attention is drawn to the risks associated
+with loading, using, modifying and/or developing or reproducing the
+software by the user in light of its specific status of free software,
+that may mean that it is complicated to manipulate, and that also
+therefore means that it is reserved for developers and experienced
+professionals having in-depth computer knowledge. Users are therefore
+encouraged to load and test the software's suitability as regards their
+requirements in conditions enabling the security of their systems and/or
+data to be ensured and, more generally, to use and operate it in the
+same conditions as regards security.
+
+The fact that you are presently reading this means that you have had
+knowledge of the CeCILL license and that you accept its terms.

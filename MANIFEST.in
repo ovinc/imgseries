@@ -1,0 +1,7 @@
+include *.ipynb
+recursive-include data *.jpg
+recursive-include data *.json
+recursive-include data *.png
+recursive-include data *.tif
+recursive-include data *.tsv
+recursive-include tests *.py
