@@ -15,13 +15,13 @@ from imgseries import series, stack
 # =============================== Misc. config ===============================
 
 modulefolder = Path(imgseries.__file__).parent / '..'
-basefolder = modulefolder / 'data/for-tests-do-not-modify'
+basefolder = modulefolder / 'examples/data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
 images = series(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
 
-tiff_stack = Path('data/stack') / 'ImgStack.tif'
+tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 img_stack = stack(tiff_stack)
 
 # ======================== Test general image series =========================

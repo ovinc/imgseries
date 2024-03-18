@@ -15,28 +15,21 @@ Objects from these classes can also be generated with the `series()` and `stack(
 - `Flicker`: analyze image flicker with reference zone(s).
 These classes act on `ImgSeries` or `ImgStack` objects.
 
-The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see *Customize_Analysis.ipynb* and *Customize_Images.ipynb* for examples.
+The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see *Customize_Analysis.ipynb* and *Customize_Images.ipynb* in the `examples` folder.
 
+How to install:
 
-Install
-=======
-
-#### Method 1
-In a terminal:
 ```bash
-pip install git+https://cameleon.univ-lyon1.fr/ovincent/imgseries
+pip install imgseries
 ```
 
-#### Method 2
-Clone or copy the project into a folder, then cd into the folder where *setup.py* is located, and in a terminal:
-```bash
-pip install .
-```
+The package is under CeCILL license (equivalent to - and compatible with - GNU GPL, see below).
 
 Quick start
 ===========
 
-Below is some information to use the functions available in **imgseries**. Please also consult docstrings and the example Jupyter notebooks *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *Analysis_GreyLevel.ipynb* and *Analysis_ContourTracking.ipynb* for more details and examples.
+Below is some information to use the functions available in **imgseries**.
+For more details and examples, please also consult docstrings and the Jupyter notebooks in the `examples` folder: *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *Analysis_GreyLevel.ipynb* and *Analysis_ContourTracking.ipynb*.
 
 
 The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.Series`.
@@ -49,7 +42,7 @@ If running on a Windows machine and using the parallel option in some of the ana
 `ImgSeries`, `ImgStack`: general image series manipulation
 ----------------------------------------------------------
 
-See also the notebook with examples and details: *ImgSeries.ipynb*
+See also the notebook with examples and details *ImgSeries.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import ImgSeries, series
@@ -133,7 +126,7 @@ images.active_corrections  # see currently applied corrections on images
 images.reset_corrections()  # reset all corrections
 
 # Exporting images (with transforms and/or corrections)
-images.export()  # see Export.ipynb for examples
+images.export()  # see examples/Export.ipynb for examples
 
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
@@ -164,7 +157,7 @@ By default, caching is disabled because it can lead to significant memory usage 
 --------------------------------------------------------
 
 Follow the average grey level (brightness) of one or more selected zones (default: whole image) on the image sequence.
-The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_GreyLevel.ipynb*
+The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_GreyLevel.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import GreyLevel, GreyLevelResults
@@ -199,7 +192,7 @@ results.data, results.metadata  # useful attributes
 `ContourTracking`: object tracking using contours in image series
 -----------------------------------------------------------------
 
-Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_ContourTracking.ipynb*
+Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_ContourTracking.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import ContourTracking, ContourTrackingResults
@@ -233,7 +226,7 @@ results.data, results.raw_contour_data, results.metadata  # useful attributes
 `Front1D`: Analyze 1D propagating fronts with grey level analysis
 -----------------------------------------------------------------
 
-Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Analysis_Front1D.ipynb*
+Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Analysis_Front1D.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import Front1D, Front1DResults
@@ -245,7 +238,7 @@ f1d.run()
 `Flicker`: Get image flicker from grey level variations on a zone
 -----------------------------------------------------------------
 
-Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Analysis_Flicker.ipynb*
+Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Analysis_Flicker.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import Flicker, FlickerResults

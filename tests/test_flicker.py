@@ -16,7 +16,7 @@ from imgseries import Flicker, FlickerResults
 # =============================== Misc. config ===============================
 
 modulefolder = Path(imgseries.__file__).parent / '..'
-basefolder = modulefolder / 'data/for-tests-do-not-modify'
+basefolder = modulefolder / 'examples/data/for-tests-do-not-modify'
 folder = basefolder / '..' / 'front-flick'
 
 # ================== Test flicker analysis on image series ===================

@@ -6,4 +6,4 @@
 build/
 dist/
 *DS_Store*
-data/untracked_data/
+examples/data/untracked_data/

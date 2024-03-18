@@ -16,10 +16,10 @@ from imgseries import ContourTracking, ContourTrackingResults
 # =============================== Misc. config ===============================
 
 modulefolder = Path(imgseries.__file__).parent / '..'
-basefolder = modulefolder / 'data/for-tests-do-not-modify'
+basefolder = modulefolder / 'examples/data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
-tiff_stack = Path('data/stack') / 'ImgStack.tif'
+tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 
 # ================== Test contour tracking on image series ===================
 
