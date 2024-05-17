@@ -52,8 +52,8 @@ class Results:
             e.g. filename='Test' will create Test.tsv and Test.json files,
             containing tab-separated data file and metadata file, respectively.
         """
-        self._save_data()
-        self._save_metadata(metadata=self.metadata)
+        self._save_data(filename=filename)
+        self._save_metadata(metadata=self.metadata, filename=filename)
 
     def load(self, filename=None):
         """Load analysis data and metadata and stores it in self.data/metadata.
