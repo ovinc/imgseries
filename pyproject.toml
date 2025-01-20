@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imgseries"
+authors = [
+    {name = "Olivier Vincent", email = "ovinc.py@gmail.com"},
+]
+description = "Image inspection and analysis tools for image series."
+readme = "README.md"
+requires-python = ">=3.6"
+keywords = [
+    "image",
+    "analysis",
+    "inspection",
+    "series",
+    "contour",
+    "tracking",
+    "grey",
+    "level",
+    "gray",
+]
+license = {text = "CeCILL-2.1"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: CEA CNRS Inria Logiciel Libre License, version 2.1 (CeCILL-2.1)",
+]
+dependencies = [
+    "scikit-image",
+    "matplotlib",
+    "numpy",
+    "tqdm",
+    "importlib-metadata",
+    "imgbasics >= 0.3.0",
+    "filo >= 1.1",
+    "gittools >= 0.5",
+    "drapo >= 1.2.1",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/ovinc/imgseries"
+Documentation = "https://github.com/ovinc/imgseries/README.md"
+Repository = "https://github.com/ovinc/imgseries.git"
+
+[project.optional-dependencies]
+opencv = ["opencv-python",]
+
+[tool.setuptools.packages.find]
+exclude = ["examples",]
+
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools-scm

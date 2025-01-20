@@ -491,7 +491,6 @@ class ImgSeriesBase:
 
         - with_display: if True, export images with display options as well
           (e.g., contrast, colormap, etc.)
-          NOT IMPLEMENTED YET
         """
         export = Export(
             self,
