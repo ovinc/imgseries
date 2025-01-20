@@ -43,3 +43,8 @@ CONFIG = {
     'image corrections': IMAGE_CORRECTIONS,
     'checked modules': checked_modules,
 }
+
+PIXEL_DEPTHS = {
+    'uint8': 2**8 - 1,
+    'uint16': 2**16 - 1,
+}

@@ -238,14 +238,16 @@ class Filter(TransformParameter):
 
         self.size = 1
 
-        slider = Slider(ax=ax_slider,
-                        label='size',
-                        valmin=0,
-                        valmax=max_size,
-                        valinit=1,
-                        valstep=0.1,
-                        color='steelblue',
-                        alpha=0.5)
+        slider = Slider(
+            ax=ax_slider,
+            label='size',
+            valmin=0,
+            valmax=max_size,
+            valinit=1,
+            valstep=0.1,
+            color='steelblue',
+            alpha=0.5,
+        )
 
         slider.on_changed(update_image)
 

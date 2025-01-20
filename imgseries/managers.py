@@ -13,11 +13,7 @@ import numpy as np
 import pandas as pd
 
 # local imports
-from .config import CONFIG
-
-
-PIXEL_DEPTHS = {'uint8': 2**8 - 1,
-                'uint16': 2**16 - 1}
+from .config import CONFIG, PIXEL_DEPTHS
 
 
 def max_pixel_range(img):

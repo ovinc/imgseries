@@ -59,13 +59,15 @@ class Zones(AnalysisParameter):
             line, = ax.plot(1, 1, linestyle=None, label=f'zone {k + 1}')
             clr = line.get_color()
 
-            _, cropzone = imgbasics.imcrop(img,
-                                           color=clr,
-                                           message=msg,
-                                           draggable=draggable,
-                                           ax=ax,
-                                           closefig=False,
-                                           **kwargs)
+            _, cropzone = imgbasics.imcrop(
+                img,
+                color=clr,
+                message=msg,
+                draggable=draggable,
+                ax=ax,
+                closefig=False,
+                **kwargs,
+            )
 
             name = f'zone {k + 1}'
             zones[name] = cropzone
@@ -170,9 +172,11 @@ class Contours(AnalysisParameter):
 
         plt.close(fig)
 
-        self.data = {'position': positions,
-                     'level': level,
-                     'image': num}
+        self.data = {
+            'position': positions,
+            'level': level,
+            'image': num,
+        }
 
     def show(self, **kwargs):
         """Show reference contours used for contour tracking.
@@ -271,14 +275,16 @@ class Threshold(AnalysisParameter):
         level_start = level_max // 2
         draw_contours(level_start)
 
-        slider = Slider(ax=ax_slider,
-                        label='level',
-                        valmin=level_min,
-                        valmax=level_max,
-                        valinit=level_start,
-                        valstep=level_step,
-                        color='steelblue',
-                        alpha=0.5)
+        slider = Slider(
+            ax=ax_slider,
+            label='level',
+            valmin=level_min,
+            valmax=level_max,
+            valinit=level_start,
+            valstep=level_step,
+            color='steelblue',
+            alpha=0.5,
+        )
 
         self.data = {'value': level_start}
 

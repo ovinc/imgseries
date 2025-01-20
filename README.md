@@ -278,7 +278,7 @@ images.flicker.load()
 
 Olivier Vincent
 
-(ovinc.py@mgmail.com)
+(ovinc.py@gmail.com)
 
 # License
 
