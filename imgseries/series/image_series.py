@@ -97,11 +97,17 @@ class ImgSeries(ImgSeriesBase, filo.Series):
 
         self._get_initial_image_dims()
 
-    def _set_substack(self, start, end, skip):
-        """Generate subset of image numbers to be displayed/analyzed."""
-        files = self.files[start:end:skip]
-        nums = [file.num for file in files]
-        return nums
+    @property
+    def nums(self):
+        """Iterator (sliceable) of image identifiers.
+
+        Allows the user to do e.g.
+        ```python
+        for num in images.nums[::3]:
+            images.read(num)
+        ```
+        """
+        return range(len(self.files))
 
 
 # ----------------------------------------------------------------------------

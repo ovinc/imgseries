@@ -195,7 +195,7 @@ class Profile:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.img_series._set_substack(start, end, skip)
+        nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.inspect(nums=nums)
 
@@ -217,6 +217,6 @@ class Profile:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.img_series._set_substack(start, end, skip)
+        nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)

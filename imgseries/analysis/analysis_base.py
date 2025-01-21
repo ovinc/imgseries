@@ -130,7 +130,7 @@ class Analysis:
         block). This is because apparently multiprocessing imports the main
         program initially, which causes recursive problems.
         """
-        self.nums = self.img_series._set_substack(start, end, skip)
+        self.nums = self.img_series.nums[start:end:skip]
         self.nimg = len(self.nums)
 
         self._initialize()
@@ -249,7 +249,7 @@ class Analysis:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.img_series._set_substack(start, end, skip)
+        nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.inspect(nums=nums)
 
@@ -271,7 +271,7 @@ class Analysis:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.img_series._set_substack(start, end, skip)
+        nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)
 

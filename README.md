@@ -6,7 +6,7 @@ Image inspection and analysis tools for image series, based on the following cla
 *Representation of image sequences:*
 - `ImgSeries` (sequence stored in multiple files),
 - `ImgStack` (sequence stored in a stack, e.g. tiff or HDF5).
-Objects from these classes can also be generated with the `series()` and `stack()` methods, respectively;
+Objects from these classes can also be generated with the `series()` and `stack()` functions, respectively;
 
 *Analysis of image sequences:*
 - `GreyLevel`: evolution of average gray level of selected zone(s),
@@ -42,7 +42,7 @@ If running on a Windows machine and using the parallel option in some of the ana
 `ImgSeries`, `ImgStack`: general image series manipulation
 ----------------------------------------------------------
 
-See also the notebook with examples and details *ImgSeries.ipynb* in the `examples` folder.
+See also the notebooks with examples and details in the `examples/` folder.
 
 ```python
 from imgseries import ImgSeries, series
@@ -58,8 +58,11 @@ images = series(paths=['img1', 'img2'])
 # (the series() function is a bit more powerful than the ImgSeries class, as it
 # allows the user to select caching options for speed improvements, see below)
 
-# Image dimensions in x and y
-images.nx, images.ny
+# Images info
+images.nx, images.ny  # image dimensions in x and y
+images.ndim           # 2 for grayscale, 3 for color
+images.ntot           # total number of images in the series
+images.nums           # (sliceable iterator, see looping below)
 
 # Access individual images in the series -------------------------------------
 
@@ -67,6 +70,18 @@ images.files[10]       # filo.File object of image number num=10
 images.files[10].file  # actual pathlib.Path file object
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
+
+# Loop on images -------------------------------------------------------------
+
+for num in images.nums:  # loop on all images
+    images.read(num)
+    ...
+
+for num in images.nums[::2]:  # every two images
+    ...
+
+for num in images.nums[10:25]  # Images 10 to 24
+    ...
 
 # Interactive views of image sequence ----------------------------------------
 

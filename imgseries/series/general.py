@@ -244,6 +244,29 @@ class ImgSeriesBase:
         self.initial_ndim = img.ndim
         self.ndim = self.initial_ndim
 
+    # =========================== Iteration tools ============================
+
+    @property
+    def nums(self):
+        """Iterator (sliceable) of image identifiers.
+
+        Allows the user to do e.g.
+        ```python
+        for num in images.nums[::3]:
+            images.read(num)
+        ```
+        Define in subclasses.
+        """
+        pass
+
+    @property
+    def ntot(self):
+        """Total number of images in the image series.
+
+        Can be subclassed if necessary.
+        """
+        return len(self.nums)
+
     # ===================== Corrections and  Transforms ======================
 
     @property
@@ -443,7 +466,7 @@ class ImgSeriesBase:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self._set_substack(start, end, skip)
+        nums = self.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.inspect(nums=nums)
 
@@ -465,7 +488,7 @@ class ImgSeriesBase:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self._set_substack(start, end, skip)
+        nums = self.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.animate(nums=nums, blit=blit)
 
@@ -547,7 +570,7 @@ class Export:
         skip=1,
         parallel=True,
     ):
-        nums = self.img_series._set_substack(start, end, skip)
+        nums = self.img_series.nums[start:end:skip]
 
         if not parallel:
             for num in tqdm(nums):

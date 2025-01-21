@@ -113,12 +113,23 @@ class ImgStack(ImgSeriesBase):
 
         self._get_initial_image_dims()
 
-    def _set_substack(self, start, end, skip):
-        """Generate subset of image numbers to be displayed/analyzed."""
+    @property
+    def nums(self):
+        """Iterator (sliceable) of image identifiers.
+
+        Allows the user to do e.g.
+        ```python
+        for num in images.nums[::3]:
+            images.read(num)
+        ```
+        """
         npts = self.img_reader.number_of_images
-        all_nums = list(range(npts))
-        nums = all_nums[start:end:skip]
-        return nums
+        return range(npts)
+
+    @property
+    def ntot(self):
+        """Subclassed here car already available in image reader."""
+        return self.img_reader.number_of_images
 
 
 # ----------------------------------------------------------------------------
