@@ -22,7 +22,7 @@ class Display(DisplayParameter):
     - colormap (cmap)
     """
 
-    parameter_type = 'display'
+    parameter_name = 'display'
 
     def _define_contrast(self, num=0, **kwargs):
         """Interactively define brightness / contrast

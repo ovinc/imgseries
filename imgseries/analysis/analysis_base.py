@@ -78,7 +78,7 @@ class Analysis:
 
     def _add_transform_to_metadata(self):
         """Add information about image transforms (rotation, crop etc.) to metadata."""
-        for transform_name in CONFIG['image transforms']:
+        for transform_name in self.img_series.transform_order:
             transform_data = getattr(self.img_series, transform_name).data
             self.results.metadata[transform_name] = transform_data
 
@@ -201,7 +201,7 @@ class Analysis:
 
         # re-apply transforms (rotation, crop etc.)
 
-        for transform_name in CONFIG['image transforms']:
+        for transform_name in self.img_series.transform_order:
 
             # e.g. self.img_series.crop.reset()
             getattr(self.img_series, transform_name).reset()

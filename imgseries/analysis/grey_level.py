@@ -4,7 +4,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from imgbasics.cropping import _cropzone_draw
+import imgbasics
 
 # Local imports
 from .analysis_base import Analysis
@@ -68,7 +68,7 @@ class GreyLevelViewer(AnalysisViewer):
             self.pts.append(pt)
 
             zone = self.analysis.zones.data[zone_name]
-            _cropzone_draw(self.ax_img, zone, c=color)
+            imgbasics.cropping._cropzone_draw(self.ax_img, zone, c=color)
 
         self.ax_analysis.legend()
         self.ax_analysis.grid()
@@ -204,8 +204,7 @@ class GreyLevel(Analysis):
         glevels = []
 
         for cropzone in self.zones.data.values():
-            crop_func = self.img_series.img_transformer.img_manager.crop
-            img_crop = crop_func(img, cropzone)
+            img_crop = imgbasics.imcrop(img, cropzone)
             glevel = self.func(img_crop)
             glevels.append(glevel)
 

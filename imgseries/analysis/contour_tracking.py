@@ -11,7 +11,7 @@ import imgbasics
 from .analysis_base import Analysis
 from .formatters import PandasFormatter
 from .results import PandasTsvResults
-from ..managers import FileManager
+from ..fileio import FileIO
 from ..parameters.analysis import Contours, Threshold
 from ..viewers import AnalysisViewer
 
@@ -172,7 +172,7 @@ class ContourTrackingResults_PandasTsv(PandasTsvResults):
     def _save_raw_contour_data(self, filename=None):
         name = self._set_filename(filename)
         raw_data_filename = name + '_RawContourData'
-        FileManager.to_json(
+        FileIO.to_json(
             self.raw_contour_data,
             self.savepath,
             raw_data_filename,
@@ -181,7 +181,7 @@ class ContourTrackingResults_PandasTsv(PandasTsvResults):
     def _load_raw_contour_data(self, filename=None):
         name = self._set_filename(filename)
         raw_data_filename = name + '_RawContourData'
-        return FileManager.from_json(
+        return FileIO.from_json(
             self.savepath,
             raw_data_filename,
         )

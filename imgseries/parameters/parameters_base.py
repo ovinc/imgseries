@@ -1,14 +1,13 @@
 """Base classes for display / transform / analysis parameters"""
 
 
-import pandas as pd
-from ..config import CONFIG, FILENAMES
+from ..config import CONFIG
 
 
 class Parameter:
     """Base class to define common methods for different parameters."""
 
-    parameter_type = None  # define in subclasses (e.g. "zones")
+    parameter_name = None  # define in subclasses (e.g. "zones")
 
     def __init__(self, img_series):
         """Init parameter object.
@@ -33,7 +32,7 @@ class Parameter:
         """
         self.reset()  # useful when using caching
         all_data = self._load(filename=filename)
-        self.data = all_data[self.parameter_type]
+        self.data = all_data[self.parameter_name]
 
     def reset(self):
         """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
@@ -64,7 +63,7 @@ class TransformParameter(Parameter):
     @property
     def order(self):
         # Order in which transform is applied if several transforms defined
-        return self.img_series.transforms.index(self.parameter_type)
+        return self.img_series.transform_order.index(self.parameter_name)
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
@@ -97,7 +96,7 @@ class TransformParameter(Parameter):
 class CorrectionParameter(Parameter):
     """Prameter for corrections (flicker, shaking, etc.) on image series"""
 
-    parameter_type = 'flicker'
+    parameter_name = 'flicker'
 
     def load(self, filename=None):
         """Load parameter data from .json and .tsv files (with same name).
@@ -105,7 +104,7 @@ class CorrectionParameter(Parameter):
         Redefine Parameter.load() because here stored as tsv file.
         """
         path = self.img_series.savepath
-        fname = CONFIG['filenames'][self.parameter_type] if filename is None else filename
+        fname = CONFIG['filenames'][self.parameter_name] if filename is None else filename
         try:  # if there is metadata, load it
             self.data = self.img_series.file_manager.from_json(path, fname)
         except FileNotFoundError:
@@ -132,5 +131,5 @@ class AnalysisParameter(Parameter):
 
     def save(self, filename=None):
         """Save info about parameter in json file."""
-        metadata = {self.parameter_type: self.data}
+        metadata = {self.parameter_name: self.data}
         self.analysis.results._save_metadata(metadata, filename=filename)

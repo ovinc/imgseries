@@ -10,104 +10,15 @@ from tqdm import tqdm
 
 # local imports
 from .line_profile import Profile
-from ..config import CONFIG, IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
-from ..managers import FileManager, ImageManager
+from ..config import CONFIG
+from ..fileio import FileIO
 from ..viewers import ImgSeriesViewer
-from ..parameters.transform import Transforms
-from ..parameters.correction import Corrections
+from ..parameters.transform import TRANSFORMS
+from ..parameters.correction import CORRECTIONS
 from ..parameters.display import Display
 
 
-class ImageProcessor:
-    """Base class for ImageTransformer, ImageCorrector and ImageReader"""
-
-    def __init__(self, img_series, img_manager):
-        """Parameters:
-
-        - img_series: ImgSeries object
-        - img_manager: ImageManager object
-                       (can be customized when passed to ImgSeries)
-        """
-        self.img_series = img_series
-        self.img_manager = img_manager
-
-
-class ImageTransformer(ImageProcessor):
-    """Class that connects ImageManager to an image series to act on it.
-
-    (for global image transforms)
-    """
-
-    # NOTE: the name of the methods must correspond to the transform names
-    # (parameter_type name in the transform)
-
-    def rotation(self, img):
-        """Rotate image according to pre-defined rotation parameters"""
-        return self.img_manager.rotate(
-            img=img,
-            angle=self.img_series.rotation.data['angle'],
-        )
-
-    def crop(self, img):
-        """Crop image according to pre-defined crop parameters"""
-        return self.img_manager.crop(
-            img=img,
-            zone=self.img_series.crop.data['zone'],
-        )
-
-    def filter(self, img):
-        """Filter / blur image according to pre-defined filter parameters"""
-        return self.img_manager.filter(
-            img=img,
-            filter_type=self.img_series.filter.data['type'],
-            size=self.img_series.filter.data['size'],
-        )
-
-    def subtraction(self, img):
-        """Subtract pre-set reference image to current image."""
-        img_ref = self.img_series.subtraction.reference_image
-        return self.img_manager.subtract(
-            img=img,
-            img_ref=img_ref,
-            relative=self.img_series.subtraction.relative,
-        )
-
-    def grayscale(self, img):
-        """Convert RGB to grayscale"""
-        return self.img_manager.rgb_to_grey(
-            img=img,
-        )
-
-    def threshold(self, img):
-        return self.img_manager.threshold(
-            img=img,
-            vmin=self.img_series.threshold.vmin,
-            vmax=self.img_series.threshold.vmax,
-        )
-
-
-class ImageCorrector(ImageProcessor):
-    """Class that connects ImageManager to an image series to act on it.
-
-    (for image corrections)
-    """
-
-    # NOTE: the name of the methods must correspond to the correction names
-    # (parameter_type name in the correction).
-
-    def flicker(self, img, num):
-        """Flicker correction by dividing image by factor"""
-        return self.img_manager.divide(
-            img=img,
-            value=self.img_series.flicker.data['correction']['ratio'].loc[num]
-        )
-
-    def shaking(self, img, num):
-        """NOT IMPLEMENTED YET // TODO"""
-        return img
-
-
-class ImageReader(ImageProcessor):
+class ImageReader:
     """Class that connects ImageManager to an image series to act on it.
 
     (for reading images and applying transforms/corrections on them).
@@ -116,18 +27,23 @@ class ImageReader(ImageProcessor):
         - TiffStackReader
         - HDF5Reader (not implemented yet)
     """
+    def __init__(self, img_series):
+        """Parameters:
+
+        - img_series: ImgSeries object
+        """
+        self.img_series = img_series
 
     def apply_correction(self, img, num, correction_name):
         """Apply specific correction (str) to image and return new img array"""
-        correction_object = getattr(self.img_series, correction_name)
-        if correction_object.is_empty:
+        correction = getattr(self.img_series, correction_name)
+        if correction.is_empty:
             return img
-        correction_function = getattr(self.img_series.img_corrector, correction_name)
-        return correction_function(img=img, num=num)
+        return correction.apply(img=img, num=num)
 
     def apply_corrections(self, img, num, **kwargs):
         """Apply stored corrections on the image (flicker, shaking, etc.)"""
-        for correction_name in self.img_series.corrections:
+        for correction_name in self.img_series.correction_order:
             # Do not consider any correction specifically marked as false
             if kwargs.get(correction_name, True):
                 img = self.apply_correction(
@@ -139,15 +55,14 @@ class ImageReader(ImageProcessor):
 
     def apply_transform(self, img, transform_name):
         """Apply specific transform (str) to image and return new img array"""
-        transform_object = getattr(self.img_series, transform_name)
-        if transform_object.is_empty:
+        transform = getattr(self.img_series, transform_name)
+        if transform.is_empty:
             return img
-        transform_function = getattr(self.img_series.img_transformer, transform_name)
-        return transform_function(img)
+        return transform.apply(img)
 
     def apply_transforms(self, img, **kwargs):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
-        for transform_name in self.img_series.transforms:
+        for transform_name in self.img_series.transform_order:
             # Do not consider any transform specifically marked as false
             if kwargs.get(transform_name, True):
                 img = self.apply_transform(
@@ -183,56 +98,57 @@ class ImgSeriesBase:
 
     def __init__(
         self,
-        corrections=IMAGE_CORRECTIONS,
-        transforms=IMAGE_TRANSFORMS,
-        viewer=ImgSeriesViewer,
-        img_manager=ImageManager,
-        file_manager=FileManager,
+        corrections=None,
+        transforms=None,
+        correction_order=None,
+        transform_order=None,
+        Viewer=ImgSeriesViewer,
+        ImgReader=None,
     ):
         """Init image series object.
 
         Parameters
         ----------
-        - corrections: iterable of name of corrections to consider (their
-                       order indicates the order in which they are applied),
-                       e.g. corrections=('shaking', 'flicker')
+        corrections : dict
+            with keys: correction names and values: correction classes
 
-        - transforms: iterable of names of transforms to consider (their order
-                      indicates the order in which they are applied), e.g.
-                      transforms=('rotation', 'crop', 'filter')
+        transforms : dict
+            with keys: transform names and values: transform classes
 
-        - viewer: which Viewer class to use for show(), inspect() etc.
+        correction_order : iterable
+            iterable of names of corrections to consider (their order indicates
+            the order in which they are applied),
+            e.g. corrections=('flicker', 'shaking')
 
-        - img_manager: class (or object) that defines how to read and
-                       transform images
+        transform_order : iterable
+            iterable of names of transforms to consider (their order indicates
+            the order in which they are applied),
+            e.g. transforms=('rotation', 'crop', 'filter')
 
-        - file_manager: class (or object) that defines how to interact with
-                        saved files
+        Viewer : class
+            which Viewer class to use for show(), inspect() etc.
+
+        ImgReader : class
+            class (or object) that defines how to read images
         """
-        self.file_manager = file_manager
-        self.Viewer = viewer
+        self.Viewer = Viewer
+        self.img_reader = ImgReader(self)
 
-        self.img_corrector = ImageCorrector(
-            img_series=self,
-            img_manager=img_manager,
-        )
+        Corrections = CORRECTIONS if corrections is None else corrections
+        Transforms = TRANSFORMS if transforms is None else transforms
 
-        self.img_transformer = ImageTransformer(
-            img_series=self,
-            img_manager=img_manager,
-        )
+        self.correction_order = CONFIG['correction order'] if correction_order is None else correction_order
+        self.transform_order = CONFIG['transform order'] if transform_order is None else transform_order
 
-        self.corrections = corrections
-        for correction_name in self.corrections:
-            correction_obj = Corrections[correction_name](img_series=self)
+        for correction_name in self.correction_order:
+            correction = Corrections[correction_name](img_series=self)
             # e.g. self.flicker = Flicker(self)
-            setattr(self, correction_name, correction_obj)
+            setattr(self, correction_name, correction)
 
-        self.transforms = transforms
-        for transform_name in self.transforms:
-            transform_obj = Transforms[transform_name](img_series=self)
+        for transform_name in self.transform_order:
+            transform = Transforms[transform_name](img_series=self)
             # e.g. self.rotation = Rotation(self)
-            setattr(self, transform_name, transform_obj)
+            setattr(self, transform_name, transform)
 
         # Display options (do not impact analysis)
         self.display = Display(self)
@@ -272,32 +188,32 @@ class ImgSeriesBase:
     @property
     def active_corrections(self):
         active_corrs = []
-        for correction_name in self.corrections:
-            correction_object = getattr(self, correction_name)
-            if not correction_object.is_empty:
+        for correction_name in self.correction_order:
+            correction = getattr(self, correction_name)
+            if not correction.is_empty:
                 active_corrs.append(correction_name)
         return active_corrs
 
     def reset_corrections(self):
         """Reset all active corrections."""
         for correction_name in self.active_corrections:
-            correction_object = getattr(self, correction_name)
-            correction_object.reset()
+            correction = getattr(self, correction_name)
+            correction.reset()
 
     @property
     def active_transforms(self):
         active_trnsfms = []
-        for transform_name in self.transforms:
-            transform_object = getattr(self, transform_name)
-            if not transform_object.is_empty:
+        for transform_name in self.transform_order:
+            transform = getattr(self, transform_name)
+            if not transform.is_empty:
                 active_trnsfms.append(transform_name)
         return active_trnsfms
 
     def reset_transforms(self):
         """Reset all active transforms."""
         for transform_name in self.active_transforms:
-            transform_object = getattr(self, transform_name)
-            transform_object.reset()
+            transform = getattr(self, transform_name)
+            transform.reset()
 
     # ============================= Misc. tools ==============================
 
@@ -383,12 +299,12 @@ class ImgSeriesBase:
         filename='Test' will load from Test.json.
         """
         fname = CONFIG['filenames']['transform'] if filename is None else filename
-        transform_data = self.file_manager.from_json(self.savepath, fname)
+        transform_data = FileIO.from_json(self.savepath, fname)
 
-        for transform_name in self.transforms:
-            transform_object = getattr(self, transform_name)
-            transform_object.data = transform_data.get(transform_name, {})
-            transform_object._update_parameters()
+        for transform_name in self.transform_order:
+            transform = getattr(self, transform_name)
+            transform.data = transform_data.get(transform_name, {})
+            transform._update_parameters()
 
     def save_transforms(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.
@@ -402,10 +318,10 @@ class ImgSeriesBase:
         transform_data = {}
 
         for transform_name in self.active_transforms:
-            transform_object = getattr(self, transform_name)
-            transform_data[transform_name] = transform_object.data
+            transform = getattr(self, transform_name)
+            transform_data[transform_name] = transform.data
 
-        self.file_manager.to_json(transform_data, self.savepath, fname)
+        FileIO.to_json(transform_data, self.savepath, fname)
 
     def load_display(self, filename=None):
         """Load display parameters (contrast, colormapn etc.) from json file.
@@ -418,7 +334,7 @@ class ImgSeriesBase:
         filename='Test' will load from Test.json.
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        self.display.data = self.file_manager.from_json(self.savepath, fname)
+        self.display.data = FileIO.from_json(self.savepath, fname)
 
     def save_display(self, filename=None):
         """Save  display parameters (contrast, colormapn etc.) into json file.
@@ -429,7 +345,7 @@ class ImgSeriesBase:
         filename='Test' will load from Test.json.
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        self.file_manager.to_json(self.display.data, self.savepath, fname)
+        FileIO.to_json(self.display.data, self.savepath, fname)
 
     # ==================== Interactive inspection methods ====================
 
@@ -466,9 +382,8 @@ class ImgSeriesBase:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=nums)
+        return viewer.inspect(nums=self.nums[start:end:skip])
 
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
         """Interactively inspect image stack.
@@ -488,9 +403,8 @@ class ImgSeriesBase:
           and preset display parameters such as contrast, colormap etc.)
           (note: cmap is grey by default for 2D images)
         """
-        nums = self.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.animate(nums=nums, blit=blit)
+        return viewer.animate(nums=self.nums[start:end:skip], blit=blit)
 
     # =========================== Export to files ============================
 

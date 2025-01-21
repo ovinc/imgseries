@@ -7,7 +7,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Slider, Button
 
 # Local imports
-from .managers import max_pixel_range
+from .process import max_pixel_range, double_threshold
 
 
 class KeyPressSlider(Slider):
@@ -512,7 +512,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
     def _update_min(self, value):
         _, vmax = self._get_current_range()
         self.current_range = value, vmax
-        img = self.img_series.img_transformer.img_manager.threshold(
+        img = double_threshold(
             img=self.img_raw,
             vmin=value,
             vmax=vmax,
@@ -523,7 +523,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
     def _update_max(self, value):
         vmin, _ = self._get_current_range()
         self.current_range = vmin, value
-        img = self.img_series.img_transformer.img_manager.threshold(
+        img = double_threshold(
             img=self.img_raw,
             vmin=vmin,
             vmax=value,
@@ -542,7 +542,7 @@ class ThresholdSetterViewer(DoubleSliderBase):
         self.auto_range = vmin_auto, vmax_auto
         self.init_range = self._get_init_range()
 
-        self.img = self.img_series.img_transformer.img_manager.threshold(
+        self.img = double_threshold(
             self.img_raw,
             *self.init_range,
         )

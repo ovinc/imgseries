@@ -14,20 +14,18 @@ checked_modules = skimage, imgseries, imgbasics, filo, matplotlib, numpy
 
 csv_separator = '\t'
 
-FILENAMES = {
+filenames = {
     'files': 'Img_Files',          # for file info (timing etc.)
     'transform': 'Img_Transform',  # this is to store rotation angle etc.
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
 }
 
-# Correction names and the order in which they are applied
-IMAGE_CORRECTIONS = (
+default_correction_order = (
     'flicker',
     'shaking',
 )
 
-# Transform names and the order in which they are applied
-IMAGE_TRANSFORMS = (
+default_transform_order = (
     'grayscale',
     'rotation',
     'crop',
@@ -38,13 +36,8 @@ IMAGE_TRANSFORMS = (
 
 CONFIG = {
     'csv separator': csv_separator,
-    'filenames': FILENAMES,
-    'image transforms': IMAGE_TRANSFORMS,
-    'image corrections': IMAGE_CORRECTIONS,
+    'filenames': filenames,
     'checked modules': checked_modules,
-}
-
-PIXEL_DEPTHS = {
-    'uint8': 2**8 - 1,
-    'uint16': 2**16 - 1,
+    'correction order': default_correction_order,
+    'transform order': default_transform_order,
 }

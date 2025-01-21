@@ -8,7 +8,7 @@ import gittools
 
 # local imports
 from ..config import CONFIG
-from ..managers import FileManager
+from ..fileio import FileIO
 
 
 class Results:
@@ -79,7 +79,7 @@ class Results:
         filename='Test' will load from Test.json.
         """
         name = self._set_filename(filename)
-        return FileManager.from_json(self.savepath, name)
+        return FileIO.from_json(self.savepath, name)
 
     def _save_metadata(self, metadata, filename=None):
         """Inverse of _load_metadata"""
@@ -127,14 +127,14 @@ class PandasTsvResults(Results):
         If filename is specified, it must be an str without the extension, e.g.
         filename='Test' will load from Test.tsv.
         """
-        return FileManager.from_tsv(
+        return FileIO.from_tsv(
             path=self.savepath,
             filename=self._set_filename(filename)
         )
 
     def _save_data(self, filename=None):
         """Inverse of _load_data()"""
-        FileManager.to_tsv(
+        FileIO.to_tsv(
             data=self.data,
             path=self.savepath,
             filename=self._set_filename(filename),

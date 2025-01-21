@@ -12,20 +12,31 @@ from .parameters_base import CorrectionParameter
 class Flicker(CorrectionParameter):
     """Class to store flicker correction on image series"""
 
-    parameter_type = 'flicker'
+    parameter_name = 'flicker'
+
+    def apply(self, img, num):
+        """Flicker correction by dividing image by factor"""
+        return self.img_manager.divide(
+            img=img,
+            value=self.img_series.flicker.data['correction']['ratio'].loc[num]
+        )
 
 
 class Shaking(CorrectionParameter):
     """Class to store flicker correction transform"""
 
-    parameter_type = 'shaking'
+    parameter_name = 'shaking'
+
+    def apply(self, img, num):
+        """NOT IMPLEMENTED YET // TODO"""
+        return img
 
 
-all_corrections = (
+All_Corrections = (
     Flicker,
     Shaking,
 )
 
-Corrections = {
-    correction.parameter_type: correction for correction in all_corrections
+CORRECTIONS = {
+    Correction.parameter_name: Correction for Correction in All_Corrections
 }

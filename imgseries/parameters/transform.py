@@ -5,7 +5,6 @@ impacting further analysis of the images.
 """
 
 # Standard library
-from math import pi
 from functools import lru_cache
 
 # Non-standard modules
@@ -13,12 +12,14 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 import imgbasics
+from imgbasics.transform import rotate
 from imgbasics.cropping import _cropzone_draw
 from drapo import linput
 
 # Local imports
 from .parameters_base import TransformParameter
 from ..viewers import ThresholdSetterViewer
+from ..process import rgb_to_grey, double_threshold, gaussian_filter
 
 
 class Grayscale(TransformParameter):
@@ -27,26 +28,29 @@ class Grayscale(TransformParameter):
     grayscale.apply can be True or False
     """
 
-    parameter_type = 'grayscale'
+    parameter_name = 'grayscale'
 
     @property
-    def apply(self):
-        return self.data.get('apply')
+    def active(self):
+        return self.data.get('active')
 
-    @apply.setter
-    def apply(self, value):
+    @active.setter
+    def active(self, value):
         if value:
             self.img_series.ndim = 2
         else:
             self.img_series.ndim = self.img_series.initial_ndim
-        self.data['apply'] = value
+        self.data['active'] = value
         self._update_parameters()
+
+    def apply(self, img):
+        return rgb_to_grey(img)
 
 
 class Rotation(TransformParameter):
     """Class to store and manage rotation angles on series of images."""
 
-    parameter_type = 'rotation'
+    parameter_name = 'rotation'
 
     def define(self, num=0, vertical=False, **kwargs):
         """Interactively define rotation angle by drawing a line.
@@ -82,10 +86,10 @@ class Rotation(TransformParameter):
         dy = y1 - y2
         a, b = (dx, dy) if vertical else (dy, -dx)
 
-        angle = - np.arctan2(a, b) * 180 / pi
+        angle = - np.arctan2(a, b) * 180 / np.pi
         plt.close(fig)
 
-        self.data = {'angle': angle}
+        self.angle = angle
 
     def show(self, num=0, **kwargs):
         """Show the rotated image.
@@ -117,6 +121,14 @@ class Rotation(TransformParameter):
         self.data['angle'] = value
         self._update_parameters()
 
+    def apply(self, img):
+        return rotate(
+            img,
+            angle=self.angle,
+            resize=True,
+            order=3,
+        )
+
 
 class Crop(TransformParameter):
     """Class to store and manage global cropping (ROI) on series of images.
@@ -125,7 +137,7 @@ class Crop(TransformParameter):
     because they are applied on the coordinates of the rotated image.
     """
 
-    parameter_type = 'crop'
+    parameter_name = 'crop'
 
     def define(self, num=0, draggable=False, **kwargs):
         """Interactively define ROI
@@ -155,7 +167,7 @@ class Crop(TransformParameter):
         kwargs = {**default_kwargs, **kwargs}
 
         _, cropzone = imgbasics.imcrop(img, draggable=draggable, **kwargs)
-        self.data = {'zone': cropzone}
+        self.zone = cropzone
 
     def show(self, num=0, **kwargs):
         """Show the defined ROI on the full image.
@@ -191,11 +203,14 @@ class Crop(TransformParameter):
         self.data['zone'] = value
         self._update_parameters()
 
+    def apply(self, img):
+        return imgbasics.imcrop(img, self.zone)
+
 
 class Filter(TransformParameter):
     """Class to store and manage filters (gaussian smoothing, etc.)"""
 
-    parameter_type = 'filter'
+    parameter_name = 'filter'
 
     def define(self, num=0, max_size=10, **kwargs):
         """Interactively define filter.
@@ -225,11 +240,7 @@ class Filter(TransformParameter):
 
         @lru_cache(maxsize=516)
         def filter_image(size):
-            return self.img_series.img_transformer.img_manager.filter(
-                img=img,
-                filter_type='gaussian',
-                size=size,
-            )
+            return gaussian_filter(img, size=size)
 
         def update_image(size):
             self.size = size
@@ -257,21 +268,11 @@ class Filter(TransformParameter):
 
     @property
     def size(self):
-        # auto-select filter type if not specified
-        self.type = self.data.get('type', 'gaussian')
         return self.data.get('size')
 
     @size.setter
     def size(self, value):
-
         self.data['size'] = value
-
-        # Put default filter type if type is not set yet.
-        try:
-            self.data['type']
-        except KeyError:
-            self.data['type'] = 'gaussian'
-
         self._update_parameters()
 
     @property
@@ -282,6 +283,9 @@ class Filter(TransformParameter):
     def type(self, value):
         self.data['type'] = value
         self._update_parameters()
+
+    def apply(self, img):
+        return gaussian_filter(img, size=self.size)
 
 
 class Subtraction(TransformParameter):
@@ -295,7 +299,7 @@ class Subtraction(TransformParameter):
     i.e. I_final = (I - I_ref) / I_ref.
     """
 
-    parameter_type = 'subtraction'
+    parameter_name = 'subtraction'
 
     def _calculate_reference(self, ref_nums):
         imgs = []
@@ -326,11 +330,17 @@ class Subtraction(TransformParameter):
         self.data['relative'] = value
         self._update_parameters()
 
+    def apply(self, img):
+        if not self.relative:
+            return img - self.reference
+        else:
+            return img / self.reference - 1
+
 
 class Threshold(TransformParameter):
     """Class to store and manage image thresholding."""
 
-    parameter_type = 'threshold'
+    parameter_name = 'threshold'
 
     def define(self, num=0, **kwargs):
         """Interactively define threshold
@@ -366,8 +376,11 @@ class Threshold(TransformParameter):
         self.data['vmax'] = value
         self._update_parameters()
 
+    def apply(self, img):
+        return double_threshold(img, vmin=self.vmin, vmax=self.vmax)
 
-all_transforms = (
+
+All_Transforms = (
     Grayscale,
     Rotation,
     Crop,
@@ -376,6 +389,6 @@ all_transforms = (
     Threshold,
 )
 
-Transforms = {
-    transform.parameter_type: transform for transform in all_transforms
+TRANSFORMS = {
+    Transform.parameter_name: Transform for Transform in All_Transforms
 }

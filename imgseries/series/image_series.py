@@ -7,8 +7,8 @@ from functools import lru_cache
 import filo
 
 # local imports
-from ..config import CONFIG, IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
-from ..managers import FileManager, ImageManager
+from ..config import CONFIG
+from ..fileio import FileIO
 from ..viewers import ImgSeriesViewer
 
 from .general import ImgSeriesBase, ImageReader
@@ -16,10 +16,14 @@ from .general import ImgSeriesBase, ImageReader
 
 class ImgSeriesReader(ImageReader):
 
+    @staticmethod
+    def _read_image(file):
+        return FileIO.read_single_image(file=file)
+
     def _read(self, num):
         """read raw image from image series"""
         file = self.img_series.files[num].file
-        return self.img_manager.read_image(file)
+        return self._read_image(file)
 
 
 class ImgSeries(ImgSeriesBase, filo.Series):
@@ -39,38 +43,48 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         paths='.',
         extension='.png',
         savepath='.',
-        corrections=IMAGE_CORRECTIONS,
-        transforms=IMAGE_TRANSFORMS,
-        viewer=ImgSeriesViewer,
-        img_manager=ImageManager,
-        file_manager=FileManager,
+        corrections=None,
+        transforms=None,
+        correction_order=None,
+        transform_order=None,
+        Viewer=ImgSeriesViewer,
+        ImgReader=ImgSeriesReader,
     ):
         """Init image series object.
 
         Parameters
         ----------
-        - paths can be a string, path object, or a list of str/paths if data
-          is stored in multiple folders.
+        paths : str, path object or iterable of those
+            can be a string, path object, or a list of str/paths if data
+            is stored in multiple folders.
 
-        - extension: extension of files to consider (e.g. '.png')
+        extension : str
+            extension of files to consider (e.g. '.png')
 
-        - savepath: folder in which to save parameters (transform, display etc.)
+        savepath: str or path object
+            folder in which to save parameters (transform, display etc.)
 
-        - corrections: iterable of name of corrections to consider (their
-                       order indicates the order in which they are applied),
-                       e.g. corrections=('shaking', 'flicker')
+        corrections : dict
+            with keys: correction names and values: correction classes
 
-        - transforms: iterable of names of transforms to consider (their order
-                      indicates the order in which they are applied), e.g.
-                      transforms=('rotation', 'crop', 'filter')
+        transforms : dict
+            with keys: transform names and values: transform classes
 
-        - viewer: which Viewer class to use for show(), inspect() etc.
+        correction_order : iterable
+            iterable of names of corrections to consider (their order indicates
+            the order in which they are applied),
+            e.g. corrections=('flicker', 'shaking')
 
-        - img_manager: class (or object) that defines how to read and
-                       transform images
+        transform_order : iterable
+            iterable of names of transforms to consider (their order indicates
+            the order in which they are applied),
+            e.g. transforms=('rotation', 'crop', 'filter')
 
-        - file_manager: class (or object) that defines how to interact with
-                        saved files
+        Viewer : class
+            which Viewer class to use for show(), inspect() etc.
+
+        ImgReader: class
+            class (or object) that defines how to read images
         """
         # Inherit useful methods and attributes for file series
         # (including self.savepath)
@@ -85,14 +99,10 @@ class ImgSeries(ImgSeriesBase, filo.Series):
             self,
             corrections=corrections,
             transforms=transforms,
-            viewer=viewer,
-            img_manager=img_manager,
-            file_manager=file_manager
-        )
-
-        self.img_reader = ImgSeriesReader(
-            img_series=self,
-            img_manager=img_manager,
+            correction_order=correction_order,
+            transform_order=transform_order,
+            Viewer=Viewer,
+            ImgReader=ImgReader,
         )
 
         self._get_initial_image_dims()

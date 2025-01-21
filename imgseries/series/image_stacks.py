@@ -5,8 +5,7 @@ from pathlib import Path
 from functools import lru_cache
 
 # local imports
-from ..config import IMAGE_TRANSFORMS, IMAGE_CORRECTIONS
-from ..managers import FileManager, ImageManager
+from ..fileio import FileIO
 from ..viewers import ImgSeriesViewer
 
 from .general import ImgSeriesBase, ImageReader
@@ -16,9 +15,15 @@ class TiffStackReader(ImageReader):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.data = self.img_manager.read_tiff_stack_whole(
-            file=self.img_series.path,
-        )
+        self.data = self._read_stack(file=self.img_series.path)
+
+    @staticmethod
+    def _read_stack(file):
+        """I do it this way so that it's easier to subclass
+
+        (User can provide own stack reader)
+        """
+        return FileIO.read_tiff_stack_whole(file=file)
 
     def _read(self, num):
         """read raw image from stack"""
@@ -34,10 +39,7 @@ class TiffStackReader(ImageReader):
     # BUT it's more difficult to get total number of images
     # def _read(self, num):
     #     """read raw image from stack"""
-    #     return self.img_manager.read_tiff_stack_slice(
-    #         file=self.img_series.path,
-    #         num=num
-    #     )
+    #     return FileIO._read_tiff_stack_slice(file=self.img_series.path, num=num)
 
 
 class HDF5Reader(ImageReader):
@@ -54,63 +56,67 @@ class ImgStack(ImgSeriesBase):
         self,
         path,
         savepath='.',
-        corrections=IMAGE_CORRECTIONS,
-        transforms=IMAGE_TRANSFORMS,
-        viewer=ImgSeriesViewer,
-        img_manager=ImageManager,
-        file_manager=FileManager,
+        corrections=None,
+        transforms=None,
+        correction_order=None,
+        transform_order=None,
+        Viewer=ImgSeriesViewer,
+        ImgReader=None,
     ):
         """Init image series object.
 
         Parameters
         ----------
-        - paths can be a string, path object, or a list of str/paths if data
-          is stored in multiple folders.
+        path : str or path object
 
-        - extension: extension of files to consider (e.g. '.png')
+        extension : str
+            extension of files to consider (e.g. '.tiff')
 
-        - savepath: folder in which to save parameters (transform, display etc.)
+        savepath : str or path object
+            folder in which to save parameters (transform, display etc.)
 
-        - corrections: iterable of name of corrections to consider (their
-                       order indicates the order in which they are applied),
-                       e.g. corrections=('shaking', 'flicker')
+        corrections : dict
+            with keys: correction names and values: correction classes
 
-        - transforms: iterable of names of transforms to consider (their order
-                      indicates the order in which they are applied), e.g.
-                      transforms=('rotation', 'crop', 'filter')
+        transforms : dict
+            with keys: transform names and values: transform classes
 
-        - viewer: which Viewer class to use for show(), inspect() etc.
+        correction_order : iterable
+            iterable of names of corrections to consider (their order indicates
+            the order in which they are applied),
+            e.g. corrections=('flicker', 'shaking')
 
-        - img_manager: class (or object) that defines how to read and
-                       transform images
+        transform_order : iterable
+            iterable of names of transforms to consider (their order indicates
+            the order in which they are applied),
+            e.g. transforms=('rotation', 'crop', 'filter')
 
-        - file_manager: class (or object) that defines how to interact with
-                        saved files
+        Viewer : class
+            which Viewer class to use for show(), inspect() etc.
+
+        ImgReader : class
+            class (or object) that defines how to read images
         """
-        super().__init__(
-            corrections=corrections,
-            transforms=transforms,
-            viewer=viewer,
-            img_manager=img_manager,
-            file_manager=file_manager
-        )
-
         self.path = Path(path)
         self.savepath = Path(savepath)
         extension = self.path.suffix.lower()
 
-        if extension in ('.tif', '.tiff'):
-            StackReader = TiffStackReader
-        elif extension == 'hdf5':
-            StackReader = HDF5Reader
+        if ImgReader is None:
+            if extension in ('.tif', '.tiff'):
+                ImgReader = TiffStackReader
+            elif extension == 'hdf5':
+                ImgReader = HDF5Reader
 
-        self.img_reader = StackReader(
-            img_series=self,
-            img_manager=img_manager,
+        super().__init__(
+            corrections=corrections,
+            transforms=transforms,
+            correction_order=correction_order,
+            transform_order=transform_order,
+            Viewer=Viewer,
+            ImgReader=ImgReader,
         )
 
         self.data = self.img_reader.data
-
         self._get_initial_image_dims()
 
     @property
