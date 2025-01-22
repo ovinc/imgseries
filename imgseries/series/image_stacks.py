@@ -5,46 +5,10 @@ from pathlib import Path
 from functools import lru_cache
 
 # local imports
-from ..fileio import FileIO
+from ..readers import HDF5Reader, TiffStackReader
 from ..viewers import ImgSeriesViewer
 
-from .general import ImgSeriesBase, ImageReader
-
-
-class TiffStackReader(ImageReader):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data = self._read_stack(file=self.img_series.path)
-
-    @staticmethod
-    def _read_stack(file):
-        """I do it this way so that it's easier to subclass
-
-        (User can provide own stack reader)
-        """
-        return FileIO.read_tiff_stack_whole(file=file)
-
-    def _read(self, num):
-        """read raw image from stack"""
-        return self.data[num]
-
-    @property
-    def number_of_images(self):
-        """number of images in the stack"""
-        npts, *_ = self.data.shape
-        return npts
-
-    # This is an alternative method to avoid loading all in memory
-    # BUT it's more difficult to get total number of images
-    # def _read(self, num):
-    #     """read raw image from stack"""
-    #     return FileIO._read_tiff_stack_slice(file=self.img_series.path, num=num)
-
-
-class HDF5Reader(ImageReader):
-    """NOT IMPLEMENTED // TODO"""
-    pass
+from .image_base import ImgSeriesBase
 
 
 class ImgStack(ImgSeriesBase):
@@ -58,9 +22,7 @@ class ImgStack(ImgSeriesBase):
         savepath='.',
         corrections=None,
         transforms=None,
-        correction_order=None,
-        transform_order=None,
-        Viewer=ImgSeriesViewer,
+        ImgViewer=ImgSeriesViewer,
         ImgReader=None,
     ):
         """Init image series object.
@@ -75,26 +37,23 @@ class ImgStack(ImgSeriesBase):
         savepath : str or path object
             folder in which to save parameters (transform, display etc.)
 
-        corrections : dict
-            with keys: correction names and values: correction classes
+        corrections : iterable of str
+            iterable of names of corrections to consider
+            (their order indicates the order in which they are applied),
+            e.g. corrections=('flicker', 'shaking');
+            if None, use default order.
 
-        transforms : dict
-            with keys: transform names and values: transform classes
+        transforms : iterable of str
+            iterable of names of transforms to consider
+            (their order indicates the order in which they are applied),
+            e.g. transforms=('rotation', 'crop', 'filter');
+            if None, use default order.
 
-        correction_order : iterable
-            iterable of names of corrections to consider (their order indicates
-            the order in which they are applied),
-            e.g. corrections=('flicker', 'shaking')
-
-        transform_order : iterable
-            iterable of names of transforms to consider (their order indicates
-            the order in which they are applied),
-            e.g. transforms=('rotation', 'crop', 'filter')
-
-        Viewer : class
+        ImgViewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
+            if None, use default viewer class
 
-        ImgReader : class
+        ImgReader : subclass of ImageReaderBase
             class (or object) that defines how to read images
         """
         self.path = Path(path)
@@ -110,9 +69,7 @@ class ImgStack(ImgSeriesBase):
         super().__init__(
             corrections=corrections,
             transforms=transforms,
-            correction_order=correction_order,
-            transform_order=transform_order,
-            Viewer=Viewer,
+            ImgViewer=ImgViewer,
             ImgReader=ImgReader,
         )
 
@@ -123,18 +80,25 @@ class ImgStack(ImgSeriesBase):
     def nums(self):
         """Iterator (sliceable) of image identifiers.
 
+        Examples
+        --------
         Allows the user to do e.g.
-        ```python
-        for num in images.nums[::3]:
-            images.read(num)
-        ```
+        >>> for num in images.nums[::3]:
+        >>>     images.read(num)
         """
         npts = self.img_reader.number_of_images
         return range(npts)
 
     @property
     def ntot(self):
-        """Subclassed here car already available in image reader."""
+        """Total number of images in the image series.
+
+        Subclassed here car already available in image reader.
+
+        Returns
+        -------
+        int
+        """
         return self.img_reader.number_of_images
 
 
@@ -144,7 +108,20 @@ class ImgStack(ImgSeriesBase):
 
 
 def stack(*args, cache=False, cache_size=516, **kwargs):
-    """Generator of ImgSeries object with a caching option."""
+    """Generator of ImgSeries object with a caching option.
+
+    Parameters
+    ----------
+    cache : bool
+        If True, use caching to keep images in memory once loaded.
+
+    cache_size : int
+        Maximum number of images kept in memory by the cache if used.
+
+    *args
+    **kwargs
+        Any arrguments and keyword arguments accepted by ImgStack.
+    """
     if not cache:
 
         return ImgStack(*args, **kwargs)

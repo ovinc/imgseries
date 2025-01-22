@@ -63,7 +63,7 @@ class TransformParameter(Parameter):
     @property
     def order(self):
         # Order in which transform is applied if several transforms defined
-        return self.img_series.transform_order.index(self.parameter_name)
+        return self.img_series.transforms.index(self.parameter_name)
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""

@@ -20,12 +20,12 @@ filenames = {
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
 }
 
-default_correction_order = (
+default_corrections = (
     'flicker',
     'shaking',
 )
 
-default_transform_order = (
+default_transforms = (
     'grayscale',
     'rotation',
     'crop',
@@ -38,6 +38,6 @@ CONFIG = {
     'csv separator': csv_separator,
     'filenames': filenames,
     'checked modules': checked_modules,
-    'correction order': default_correction_order,
-    'transform order': default_transform_order,
+    'correction order': default_corrections,
+    'transform order': default_transforms,
 }

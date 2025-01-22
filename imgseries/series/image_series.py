@@ -8,22 +8,10 @@ import filo
 
 # local imports
 from ..config import CONFIG
-from ..fileio import FileIO
+from ..readers import SingleImageReader
 from ..viewers import ImgSeriesViewer
 
-from .general import ImgSeriesBase, ImageReader
-
-
-class ImgSeriesReader(ImageReader):
-
-    @staticmethod
-    def _read_image(file):
-        return FileIO.read_single_image(file=file)
-
-    def _read(self, num):
-        """read raw image from image series"""
-        file = self.img_series.files[num].file
-        return self._read_image(file)
+from .image_base import ImgSeriesBase
 
 
 class ImgSeries(ImgSeriesBase, filo.Series):
@@ -45,10 +33,8 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         savepath='.',
         corrections=None,
         transforms=None,
-        correction_order=None,
-        transform_order=None,
-        Viewer=ImgSeriesViewer,
-        ImgReader=ImgSeriesReader,
+        ImgViewer=ImgSeriesViewer,
+        ImgReader=SingleImageReader,
     ):
         """Init image series object.
 
@@ -64,26 +50,23 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         savepath: str or path object
             folder in which to save parameters (transform, display etc.)
 
-        corrections : dict
-            with keys: correction names and values: correction classes
+        corrections : iterable of str
+            iterable of names of corrections to consider
+            (their order indicates the order in which they are applied),
+            e.g. corrections=('flicker', 'shaking');
+            if None, use default order.
 
-        transforms : dict
-            with keys: transform names and values: transform classes
+        transforms : iterable of str
+            iterable of names of transforms to consider
+            (their order indicates the order in which they are applied),
+            e.g. transforms=('rotation', 'crop', 'filter');
+            if None, use default order.
 
-        correction_order : iterable
-            iterable of names of corrections to consider (their order indicates
-            the order in which they are applied),
-            e.g. corrections=('flicker', 'shaking')
-
-        transform_order : iterable
-            iterable of names of transforms to consider (their order indicates
-            the order in which they are applied),
-            e.g. transforms=('rotation', 'crop', 'filter')
-
-        Viewer : class
+        ImgViewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
+            if None, use default viewer class
 
-        ImgReader: class
+        ImgReader : subclass of ImageReaderBase
             class (or object) that defines how to read images
         """
         # Inherit useful methods and attributes for file series
@@ -99,9 +82,7 @@ class ImgSeries(ImgSeriesBase, filo.Series):
             self,
             corrections=corrections,
             transforms=transforms,
-            correction_order=correction_order,
-            transform_order=transform_order,
-            Viewer=Viewer,
+            ImgViewer=ImgViewer,
             ImgReader=ImgReader,
         )
 
@@ -111,11 +92,11 @@ class ImgSeries(ImgSeriesBase, filo.Series):
     def nums(self):
         """Iterator (sliceable) of image identifiers.
 
+        Examples
+        --------
         Allows the user to do e.g.
-        ```python
-        for num in images.nums[::3]:
-            images.read(num)
-        ```
+        >>> for num in images.nums[::3]:
+        >>>     images.read(num)
         """
         return range(len(self.files))
 
@@ -126,7 +107,20 @@ class ImgSeries(ImgSeriesBase, filo.Series):
 
 
 def series(*args, cache=False, cache_size=516, **kwargs):
-    """Generator of ImgSeries object with a caching option."""
+    """Generator of ImgSeries object with a caching option.
+
+    Parameters
+    ----------
+    cache : bool
+        If True, use caching to keep images in memory once loaded.
+
+    cache_size : int
+        Maximum number of images kept in memory by the cache if used.
+
+    *args
+    **kwargs
+        Any arrguments and keyword arguments accepted by ImgSeries.
+    """
     if not cache:
 
         return ImgSeries(*args, **kwargs)

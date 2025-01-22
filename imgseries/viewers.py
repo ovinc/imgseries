@@ -52,7 +52,7 @@ class KeyPressSlider(Slider):
             self._decrease_val(nstep=10)
 
 
-class ImageViewer:
+class ImageViewerBase:
     """Base class for plotting of images and additional data for animations."""
 
     def __init__(self):
@@ -175,10 +175,10 @@ class ImageViewer:
         return slider
 
 
-class ImgSeriesViewer(ImageViewer):
+class ImgSeriesViewer(ImageViewerBase):
     """Matplotlib viewer to inspect image series (no analysis).
 
-    See ImageViewer for details.
+    See ImageViewerBase for details.
     """
 
     def __init__(self, img_series, transform=True, **kwargs):
@@ -230,7 +230,7 @@ class ImgSeriesViewer(ImageViewer):
         self.ax.set_title(f'{title} (#{num}){raw_info}')
 
 
-class AnalysisViewer(ImageViewer):
+class AnalysisViewer(ImageViewerBase):
     """Matplotlib viewer to display analysis results alongside images."""
 
     def __init__(self, analysis, live=False, **kwargs):
