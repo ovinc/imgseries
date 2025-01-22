@@ -1,7 +1,7 @@
 """Base classes for display / transform / analysis parameters"""
 
-
 from ..config import CONFIG
+from ..fileio import FileIO
 
 
 class Parameter:
@@ -14,7 +14,8 @@ class Parameter:
 
         Parameters
         ----------
-        - img_series: object of an image series class (e.g. ImgSeries)
+        img_series : ImgSeries or ImgStack object
+            object describing the image series to work with
         """
         self.img_series = img_series  # ImgSeries object on which to define zones
         self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}
@@ -25,10 +26,14 @@ class Parameter:
     def load(self, filename=None):
         """Load parameter data from .json file and put it in self.data.
 
-        If filename is not specified, use default filenames.
+        Parameters
+        ----------
+        filename : str
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.json.
+            If filename is not specified, use default filenames.
+
+            If filename is specified, it must be an str without the extension, e.g.
+            filename='Test' will load from Test.json.
         """
         self.reset()  # useful when using caching
         all_data = self._load(filename=filename)
@@ -92,6 +97,23 @@ class TransformParameter(Parameter):
         if not subtraction.is_empty and self.order <= subtraction.order:
             subtraction._update_reference_image()
 
+    def apply(self, img):
+        """How to apply the transform on an image array
+
+        To be defined in subclasses.
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
+        pass
+
 
 class CorrectionParameter(Parameter):
     """Prameter for corrections (flicker, shaking, etc.) on image series"""
@@ -106,10 +128,10 @@ class CorrectionParameter(Parameter):
         path = self.img_series.savepath
         fname = CONFIG['filenames'][self.parameter_name] if filename is None else filename
         try:  # if there is metadata, load it
-            self.data = self.img_series.file_manager.from_json(path, fname)
+            self.data = FileIO.from_json(path, fname)
         except FileNotFoundError:
             self.data = {}
-        self.data['correction'] = self.img_series.file_manager.from_tsv(path, fname)
+        self.data['correction'] = FileIO.from_tsv(path, fname)
 
 
 class AnalysisParameter(Parameter):
@@ -120,7 +142,8 @@ class AnalysisParameter(Parameter):
 
         Parameters
         ----------
-        - analysis: object of an analysis class (e.g. GreyLevel)
+        analysis :  Analysis object
+            object of an analysis class (e.g. GreyLevel)
         """
         self.analysis = analysis  # Analysis object (grey level)
         self.data = {}  # dict, e.g. {'zone 1": (x, y, w, h), 'zone 2': ... etc.}

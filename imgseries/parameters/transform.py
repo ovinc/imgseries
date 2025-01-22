@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import numpy as np
 import imgbasics
-from imgbasics.transform import rotate
-from imgbasics.cropping import _cropzone_draw
+import imgbasics.transform
+import imgbasics.cropping
 from drapo import linput
 
 # Local imports
@@ -25,7 +25,7 @@ from ..process import rgb_to_grey, double_threshold, gaussian_filter
 class Grayscale(TransformParameter):
     """Class to store RGB to gray transform.
 
-    grayscale.apply can be True or False
+    grayscale.active can be True or False
     """
 
     parameter_name = 'grayscale'
@@ -44,11 +44,23 @@ class Grayscale(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
         return rgb_to_grey(img)
 
 
 class Rotation(TransformParameter):
-    """Class to store and manage rotation angles on series of images."""
+    """Class to store and manage rotation on series of images."""
 
     parameter_name = 'rotation'
 
@@ -57,20 +69,25 @@ class Rotation(TransformParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) on which to define rotation angle. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define rotation angle. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - direction: can be horizontal (default, vertical=False) or vertical;
-          the drawn line will be brought to this direction after rotation.
+        vertical : bool
+            the direction can be horizontal (default, vertical=False)
+            or vertical;
+            the drawn line will be brought to this direction after rotation.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
 
-        Output
-        ------
-        None, but stores in self.data the rotation angle with key "angle"
+        Returns
+        -------
+        None
+            but stores in self.data the rotation angle with key "angle"
         """
         self.reset()
 
@@ -96,11 +113,13 @@ class Rotation(TransformParameter):
 
         Parameters
         ----------
-        - num: id number of image on which to show the zones (default first one).
+        num : int
+            id number of image on which to show the zones (default first one).
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         _, ax = plt.subplots()
         img = self.img_series.read(num=num)
@@ -122,7 +141,19 @@ class Rotation(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
-        return rotate(
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
+        return imgbasics.transform.rotate(
             img,
             angle=self.angle,
             resize=True,
@@ -144,21 +175,25 @@ class Crop(TransformParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) on which to define rotation angle. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define rotation angle. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - draggable: use draggable rectangle from drapo to define crop zones
-          instead of clicking to define opposite rectangle corners.
+        draggable : bool
+            If True, use draggable rectangle from drapo to define crop zones
+            instead of clicking to define opposite rectangle corners.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
 
-        Output
-        ------
-        None, but stores in self.data the (x, y, width, height) as a value in
-        a dict with key "zone".
+        Returns
+        -------
+        None
+            but stores in self.data the (x, y, width, height) as a value in
+            a dict with key "zone".
         """
         self.reset()
 
@@ -174,11 +209,13 @@ class Crop(TransformParameter):
 
         Parameters
         ----------
-        - num: id number of image on which to show the zones (default first one).
+        num : int
+            id number of image on which to show the zones (default first one).
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         img = self.img_series.read(num=num, crop=False)
 
@@ -186,7 +223,7 @@ class Crop(TransformParameter):
         self.img_series._imshow(img, ax=ax, **kwargs)
 
         try:
-            _cropzone_draw(ax, self.data['zone'], c='r')
+            imgbasics.cropping._cropzone_draw(ax, self.data['zone'], c='r')
         except KeyError:
             ax.set_title('No crop zone defined')
         else:
@@ -204,6 +241,18 @@ class Crop(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
         return imgbasics.imcrop(img, self.zone)
 
 
@@ -217,17 +266,23 @@ class Filter(TransformParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) to display. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) to display. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        max_size : float
+            max filter size settable with the slider
 
-        Output
-        ------
-        None, but stores in self.data a dict with info about the filter.
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
+
+        Returns
+        -------
+        None
+            but stores in self.data a dict with info about the filter.
         """
         self.reset()
 
@@ -285,6 +340,18 @@ class Filter(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
         return gaussian_filter(img, size=self.size)
 
 
@@ -331,10 +398,22 @@ class Subtraction(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
         if not self.relative:
-            return img - self.reference
+            return img - self.reference_image
         else:
-            return img / self.reference - 1
+            return img / self.reference_image - 1
 
 
 class Threshold(TransformParameter):
@@ -347,13 +426,15 @@ class Threshold(TransformParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) on which to define threshold. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define threshold. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         setter = ThresholdSetterViewer(self.img_series, num=num, **kwargs)
         return setter.run()
@@ -377,6 +458,18 @@ class Threshold(TransformParameter):
         self._update_parameters()
 
     def apply(self, img):
+        """How to apply the transform on an image array
+
+        Parameters
+        ----------
+        img : array_like
+            input image on which to apply the transform
+
+        Returns
+        -------
+        array_like
+            the processed image
+        """
         return double_threshold(img, vmin=self.vmin, vmax=self.vmax)
 
 

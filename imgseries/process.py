@@ -14,13 +14,15 @@ PIXEL_DEPTHS = {
 def max_pixel_range(img):
     """Return max pixel value depending on img type, for use in plt.imshow.
 
-    Input
-    -----
-    img: numpy array
+    Parameters
+    ----------
+    img : array_like
+       array containing the image data
 
-    Output
-    ------
-    vmin, vmax: max pixel value (None if not float or uint8/16)
+    Returns
+    -------
+    tuple
+        (vmin, vmax): max pixel value (None if not float or uint8/16)
     """
     dtype_name = img.dtype.name
 
@@ -38,14 +40,39 @@ def max_pixel_range(img):
 
 
 def divide(img, value):
-    """Divide image by value, but keep initial data type"""
+    """Divide image by value, but keep initial data type
+
+    Parameters
+    ----------
+    img : array_like
+       array containing the image data
+
+    value : float
+        constant value that will be used to divide the pixel values
+
+    Returns
+    -------
+    array_like
+        processed image
+    """
     # Avoids problems, e.g. np.uint8(257) is actually 1
     temp_img = np.clip(img / value, *max_pixel_range(img))
     return temp_img.astype(img.dtype)
 
 
 def rgb_to_grey(img):
-    """How to convert an RGB image to grayscale"""
+    """How to convert an RGB image to grayscale
+
+    Parameters
+    ----------
+    img : array_like
+       array containing the image data
+
+    Returns
+    -------
+    array_like
+        processed image
+    """
     _, vmax = max_pixel_range(img)
     img_grey = skimage.color.rgb2gray(img)
     if type(vmax) is int:
@@ -57,7 +84,23 @@ def rgb_to_grey(img):
 def double_threshold(img, vmin=None, vmax=None):
     """Threshold image (vmin <= v <= vmax --> 1, else 0).
 
-    Return binary (boolean) image (True / False).
+    Parameters
+    ----------
+    img : array_like
+       array containing the image data
+
+    vmin : int or float
+    vmax : int or float
+        values for thresholding the image
+
+    Returns
+    -------
+    array_like
+        processed image
+
+    Notes
+    -----
+        Returns binary (boolean) image (True / False).
     """
     if None in (vmin, vmax):
         val_min, val_max = max_pixel_range(img)
@@ -68,7 +111,21 @@ def double_threshold(img, vmin=None, vmax=None):
 
 
 def gaussian_filter(img, size):
-    """Gaussian filter to blur image"""
+    """Gaussian filter to blur image
+
+    Parameters
+    ----------
+    img : array_like
+       array containing the image data
+
+    size : float
+        standard deviation (in pixels) of the gaussian filter
+
+    Returns
+    -------
+    array_like
+        processed image
+    """
     _, vmax = max_pixel_range(img)
     img_filtered = skimage.filters.gaussian(img, sigma=size)
     if type(vmax) is int:

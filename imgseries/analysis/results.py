@@ -44,11 +44,11 @@ class Results:
 
         Parameters
         ----------
-        filename:
+        filename : str
 
-        - If filename is not specified, use default filenames.
+            If filename is not specified, use default filenames.
 
-        - If filename is specified, it must be an str without the extension
+            If filename is specified, it must be an str without the extension
             e.g. filename='Test' will create Test.tsv and Test.json files,
             containing tab-separated data file and metadata file, respectively.
         """
@@ -57,13 +57,14 @@ class Results:
 
     def load(self, filename=None):
         """Load analysis data and metadata and stores it in self.data/metadata.
+
         Parameters
         ----------
-        filename:
+        filename : str
 
-        - If filename is not specified, use default filenames.
+            If filename is not specified, use default filenames.
 
-        - If filename is specified, it must be an str without the extension
+            If filename is specified, it must be an str without the extension
             e.g. filename='Test' will create Test.tsv and Test.json files,
             containing tab-separated data file and metadata file, respectively.
         """
@@ -73,10 +74,14 @@ class Results:
     def _load_metadata(self, filename=None):
         """Return analysis metadata from json file as a dictionary.
 
-        If filename is not specified, use default filenames.
+        Parameters
+        ----------
+        filename : str
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.json.
+            If filename is not specified, use default filenames.
+
+            If filename is specified, it must be an str without the extension, e.g.
+            filename='Test' will load from Test.json.
         """
         name = self._set_filename(filename)
         return FileIO.from_json(self.savepath, name)
@@ -101,10 +106,14 @@ class Results:
     def _load_data(self, filename=None):
         """Load analysis data from tsv file and return it as pandas DataFrame.
 
-        If filename is not specified, use default filenames.
+        Parameters
+        ----------
+        filename : str
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.tsv.
+            If filename is not specified, use default filenames.
+
+            If filename is specified, it must be an str without the extension, e.g.
+            filename='Test' will load from Test.tsv.
         """
         pass
 
@@ -122,10 +131,14 @@ class PandasTsvResults(Results):
     def _load_data(self, filename=None):
         """Load analysis data from tsv file and return it as pandas DataFrame.
 
-        If filename is not specified, use default filenames.
+        Parameters
+        ----------
+        filename : str
 
-        If filename is specified, it must be an str without the extension, e.g.
-        filename='Test' will load from Test.tsv.
+            If filename is not specified, use default filenames.
+
+            If filename is specified, it must be an str without the extension, e.g.
+            filename='Test' will load from Test.tsv.
         """
         return FileIO.from_tsv(
             path=self.savepath,

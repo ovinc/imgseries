@@ -41,8 +41,15 @@ class ProfileViewer(AnalysisViewer):
     def _get_data(self, num):
         """How to get image / analysis and other data to _plot for each frame.
 
-        Input: image number (int)
-        Output: data (arbitrary data format usable by _first_plot() and _update_plot())
+        Parameters
+        ----------
+        num : int
+            image number
+
+        Returns
+        -------
+        any
+            arbitrary data format usable by _first_plot() and _update_plot()
         """
         data = {'num': num}
 
@@ -167,14 +174,17 @@ class Profile:
 
         Parameters
         ----------
-        - num: image identifier in the file series
+        num : int
+            image identifier in the file series
 
-        - transform: if True (default), apply active transforms
-                     if False, load raw image.
+        transform : bool
+            if True (default), apply active transforms
+            if False, load raw image.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs:
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.show(num=num)
@@ -182,18 +192,23 @@ class Profile:
     def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
         """Interactively inspect image series.
 
-        Parameters:
+        Parameters
+        ----------
+        start : int
+        end : int
+        skip : int
+            images to consider. These numbers refer to 'num' identifier which
+            starts at 0 in the first folder and can thus be different from the
+            actual number in the image filename
 
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
+        transform : bool
+            if True (default), apply active transforms
+            if False, use raw images.
 
-        - transform: if True (default), apply active transforms
-                     if False, use raw images.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
@@ -202,20 +217,26 @@ class Profile:
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
         """Interactively inspect image stack.
 
-        Parameters:
+        Parameters
+        ----------
+        start : int
+        end : int
+        skip : int
+            images to consider. These numbers refer to 'num' identifier which
+            starts at 0 in the first folder and can thus be different from the
+            actual number in the image filename
 
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
+        transform : bool
+            if True (default), apply active transforms
+            if False, use raw images.
 
-        - transform: if True (default), apply active transforms
-                     if False, use raw images.
+        blit : bool
+            if True, use blitting for faster animation.
 
-        - blit: if True, use blitting for faster animation.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)

@@ -6,6 +6,7 @@ impacting further analysis of the images, similarly to transform parameters.
 
 
 # Local imports
+from ..process import divide
 from .parameters_base import CorrectionParameter
 
 
@@ -16,7 +17,7 @@ class Flicker(CorrectionParameter):
 
     def apply(self, img, num):
         """Flicker correction by dividing image by factor"""
-        return self.img_manager.divide(
+        return divide(
             img=img,
             value=self.img_series.flicker.data['correction']['ratio'].loc[num]
         )

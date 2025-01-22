@@ -136,6 +136,63 @@ class ImgSeriesBase:
             transform = getattr(self, transform_name)
             transform.reset()
 
+    @staticmethod
+    def add_transform(Transform, order=None):
+        """Add custom transform to the available transforms
+
+        Parameters
+        ----------
+        Transform : subclass of TransformParameter
+            transform class created by user.
+        order : int
+            at which position in the transform sequence to apply transform
+            if None (default), add at the end of the transform list.
+        """
+        name = Transform.parameter_name
+
+        try:
+            TRANSFORMS[name]
+        except KeyError:  # Does not exist yet --> OK
+            pass
+        else:
+            raise ValueError(
+                f"'{name}' already exists as a transform name. "
+                'Please use another name, or remove the existing transform'
+                'with the same name.'
+            )
+
+        TRANSFORMS[name] = Transform
+
+        old_order = CONFIG['transform order']
+        if order is None:
+            new_order = old_order + (name,)
+        else:
+            new_order = old_order[:order] + (name,) + old_order[order:]
+        CONFIG['transform order'] = new_order
+
+    @staticmethod
+    def remove_transform(Transform, order=None):
+        """Remove custom transform from the available transforms
+
+        Parameters
+        ----------
+        Transform : subclass of TransformParameter
+            transform class created by user.
+        """
+        name = Transform.parameter_name
+        current_order = CONFIG['transform order']
+
+        try:
+            TRANSFORMS.pop(name)
+        except KeyError:
+            raise ValueError(
+                f"'{name}' transform does not exist. "
+                f"Existing transforms: [{', '.join(current_order)}]"
+            )
+
+        new_order = tuple(n for n in current_order if n != name)
+        CONFIG['transform order'] = new_order
+
     # ============================= Misc. tools ==============================
 
     def _get_imshow_kwargs(self, transform=True):

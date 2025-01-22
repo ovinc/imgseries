@@ -50,33 +50,39 @@ class Flicker(GreyLevel):
         Formatter=None,
         Results=None,
     ):
-        """Analysis of avg gray level on selected zone in series of images.
+        """Analysis of flicker on selected zone in series of images.
 
         Parameters
         ----------
-        - img_series: image series from the ImgSeries class or subclasses
+        img_series : ImgSeries or ImgStack object
+            image series on which the analysis will be run
 
-        - savepath: folder in which to save analysis data & metadata
+        savepath : str or Path object
+            folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
 
-        - reference: num of image which will serve to normalize others.
+        reference : int
+            num of image which will serve to normalize others.
 
-        - func: function to be applied on the image pixels in the defined
-                analysis zones (default: np.mean). Other typical functions
-                can be: np.sum, np.max, etc.
+        func : function
+            function to be applied on the image pixels in the defined
+            analysis zones (default: np.mean). Other typical functions
+            can be: np.sum, np.max, etc.
 
-        - Viewer: Viewer class/subclasses that is used to display and inspect
-                  analysis data (is used by ViewerTools)
-                  (if not specified, use default Viewer)
+        Viewer : class
+            (subclass of AnalysisViewer)
+            Viewer class/subclasses that is used to display and inspect
+            analysis data (is used by ViewerTools)
 
-        - Formatter: class/subclass of Formatter to format results spit out
-                     by the raw analysis into something storable/saveable
-                     by the Results class.
-                     (if not specified, use default Formatter)
+        Formatter: class
+            (subclass of Formatter)
+            class used to format results spit out by the raw analysis into
+            something storable/saveable by the Results class.
 
-        - Results: Results class/subclasses that is used to store, save and
-                   load analysis data and metadata.
-                   (if not specified, use default Results)
+        Results : class
+            (subclass of Results)
+            Results class/subclasses that is used to store, save and load
+            analysis data and metadata.
         """
         super().__init__(
             img_series=img_series,
@@ -100,11 +106,13 @@ class Flicker(GreyLevel):
 
         Parameters
         ----------
-        - img: image array to be analyzed (e.g. numpy array).
+        img : array_like
+            image array to be analyzed (e.g. numpy array).
 
-        Output
-        ------
-        - data, handled by self.formatter._store_data()
+        Returns
+        -------
+        dict
+            dict of data, handled by self.formatter._store_data()
         """
         data = super()._analyze(img)
         glevels = data['glevels']

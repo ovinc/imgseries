@@ -15,7 +15,7 @@ Objects from these classes can also be generated with the `series()` and `stack(
 - `Flicker`: analyze image flicker with reference zone(s).
 These classes act on `ImgSeries` or `ImgStack` objects.
 
-The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see *Customize_Analysis.ipynb* and *Customize_Images.ipynb* in the `examples` folder.
+The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see the *Customization* section below, and the notebooks situated in the `examples/examples_customize/` folder.
 
 How to install:
 
@@ -116,7 +116,7 @@ images.filter.define()
 images.threshold.define()
 
 # Manual:
-images.grayscale.apply = True
+images.grayscale.active = True
 images.rotation.angle = -70
 images.crop.zone = (2, 25, 400, 600)
 images.filter.size = 10
@@ -270,6 +270,17 @@ images.flicker.load()
 ```
 
 
+# Customization
+
+Several customizations are possible :
+
+- User-defined transforms can be added using `ImgSeries.add_transform()`, see *Customize_Transforms.ipynb* in the `examples/` folder.
+
+- Other image analysis tools can be developed using by creating new `Analysis` classes, see *Customize_Analysis.ipynb* in the `examples/` folder.
+
+- Custom image readers or image viewers can be used to read/display the images, see e.g. *Customize_Images.ipynb* in the `examples/` folder.
+
+
 # Requirements / dependencies
 
 ## Python packages
@@ -284,6 +295,9 @@ images.flicker.load()
 - gittools (get git commit info) >= 0.5
 - imgbasics (basic image processing) >= 0.3.0
 - drapo (interactive tools for matplotlib figures) >= 1.2.1
+
+(optional:)
+- opencv (cv2)
 
 
 ## Python version

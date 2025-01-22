@@ -29,13 +29,15 @@ class Display(DisplayParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         setter = ContrastSetterViewer(self.img_series, num=num, **kwargs)
         return setter.run()
@@ -45,13 +47,15 @@ class Display(DisplayParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         fig = plt.figure(figsize=(8, 5))
         ax_img = fig.add_axes([0.05, 0.05, 0.7, 0.9])
@@ -115,15 +119,18 @@ class Display(DisplayParameter):
 
         Parameters
         ----------
-        - param: 'contrast' (vmin, vmax) or 'colormap' (cmap)
+        param : str
+            'contrast' or 'colormap'
 
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         if param == 'contrast':
             return self._define_contrast(num=num, **kwargs)

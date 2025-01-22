@@ -116,9 +116,13 @@ class ImageViewerBase:
     def animate(self, nums, blit=False):
         """Animate an image _plot with a FuncAnimation
 
-        Parameters:
-        - nums: frames to consider for the animation (iterable)
-        - blit: if True, use blitting for fast rendering
+        Parameters
+        ----------
+        nums : iterable of ints
+            frames to consider for the animation
+
+        blit : bool
+            if True, use blitting for fast rendering
         """
         self._create_figure()
         self._connect_events()
@@ -139,8 +143,10 @@ class ImageViewerBase:
     def inspect(self, nums):
         """Inspect image series with a slider.
 
-        Parameters:
-        - nums: frames to consider for the animation (iterable)
+        Parameters
+        ----------
+        nums : iterable of ints
+            frames to consider for the animation
         """
         num_min = min(nums)
         num_max = max(nums)
@@ -182,15 +188,19 @@ class ImgSeriesViewer(ImageViewerBase):
     """
 
     def __init__(self, img_series, transform=True, **kwargs):
-        """Parameters
-           ----------
+        """Init Image series viewer
 
-        - img_series: image series or analysis series (e.g. GreyLevel)
+        Parameters
+        ----------
 
-        - transform: if True (default), apply global rotation and crop (if defined)
-                     if False, use raw images.
+        img_series : ImgSeries or ImgStack
 
-        - kwargs: any keyword-argument to pass to imshow().
+        transform : bool
+            if True (default), apply global rotation and crop (if defined)
+            if False, use raw images.
+
+        **kwargs
+            any keyword-argument to pass to imshow().
         """
         self.img_series = img_series
         self.transform = transform
@@ -234,17 +244,23 @@ class AnalysisViewer(ImageViewerBase):
     """Matplotlib viewer to display analysis results alongside images."""
 
     def __init__(self, analysis, live=False, **kwargs):
-        """Parameters
-           ----------
+        """Init analysis viewer
 
-        - analysis: analysis object (e.g. GreyLevel(), ContourTracking(), etc.)
+        Parameters
+        ----------
+        analysis : Analysis object
+            e.g. GreyLevel(), ContourTracking(), etc.
 
-        - live: if True, get data in real time from analysis being made.
+        live : bool
+            if True, get data in real time from analysis being made.
 
-        - kwargs: any keyword-argument to pass to imshow().
+        **kwargs
+            any keyword-argument to pass to imshow().
 
-        Note: transform=False not available here because analysis classes use
-        transformed images.
+        Notes
+        -----
+            transform=False not available here because analysis classes use
+            transformed images.
         """
         self.analysis = analysis
         self.live = live
@@ -286,15 +302,17 @@ class DoubleSliderBase:
 
         Parameters
         ----------
-        - img_series: ImgSeries object or equivalent.
+        img_series: ImgSeries object or equivalent (e.g. ImgStack).
 
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         self.img_series = img_series
         self.num = num
@@ -443,15 +461,17 @@ class ContrastSetterViewer(DoubleSliderBase):
 
         Parameters
         ----------
-        - img_series: ImgSeries object or equivalent.
+        img_series : ImgSeries object or equivalent (e.g. ImgStack).
 
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         super().__init__(img_series=img_series, num=num, **kwargs)
         if not self.img_series.threshold.is_empty:
@@ -489,15 +509,17 @@ class ThresholdSetterViewer(DoubleSliderBase):
 
         Parameters
         ----------
-        - img_series: ImgSeries object or equivalent.
+        img_series : ImgSeries object or equivalent (e.g. ImgStack).
 
-        - num: image ('num' id) on which to define contrast. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to define contrast. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         super().__init__(img_series=img_series, num=num, **kwargs)
         self.parameter = self.img_series.threshold

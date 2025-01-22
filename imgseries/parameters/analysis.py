@@ -24,25 +24,30 @@ class Zones(AnalysisParameter):
 
         Parameters
         ----------
-        - n: number of zones to analyze (default 1)
+        n : int
+            number of zones to analyze (default 1)
 
-        - num: image ('num' id) on which to select crop zones. Note that
-          this number can be different from the name written in the image
-          filename, because num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) on which to select crop zones. Note that
+            this number can be different from the name written in the image
+            filename, because num always starts at 0 in the first folder.
 
-        - draggable: use draggable rectangle from drapo to define crop zones
-          instead of clicking to define opposite rectangle corners.
+        draggable : bool
+            use draggable rectangle from drapo to define crop zones
+            instead of clicking to define opposite rectangle corners.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
 
-        Output
-        ------
-        None, but stores in self.data a dict with every cropzone used during
-        the analysis, with:
-        Keys: 'zone 1', 'zone 2', etc.
-        Values: tuples (x, y, width, height)
+        Returns
+        -------
+        None
+            but stores in self.data a dict with every cropzone used during
+            the analysis, with:
+            Keys: 'zone 1', 'zone 2', etc.
+            Values: tuples (x, y, width, height)
         """
         fig, ax = plt.subplots()
 
@@ -81,11 +86,13 @@ class Zones(AnalysisParameter):
 
         Parameters
         ----------
-        - num: id number of image on which to show the zones (default first one).
+        num : int
+            id number of image on which to show the zones (default first one).
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         img = self.analysis.img_series.read(num=num)
 
@@ -116,20 +123,25 @@ class Contours(AnalysisParameter):
 
         Parameters
         ----------
-        - level: grey level at which to define threshold to detect contours
+        level : int or float
+            grey level at which to define threshold to detect contours
 
-        - n: number of contours
+        n : int
+            number of contours
 
-        - num: image identifier (num=0 corresponds to first image in first folder)
+        num : int
+            image identifier (num=0 corresponds to first image in first folder)
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
 
-        Output
-        ------
-        None, but stores in self.data a dictionary with keys:
-        'position', 'level', 'image'
+        Returns
+        -------
+        None
+            but stores in self.data a dictionary with keys:
+            'position', 'level', 'image'
         """
         level = self.analysis.threshold.value
 
@@ -183,9 +195,10 @@ class Contours(AnalysisParameter):
 
         Parameters
         ----------
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         num = self.data['image']
         level = self.data['level']
@@ -234,18 +247,21 @@ class Threshold(AnalysisParameter):
 
         Parameters
         ----------
-        - num: image ('num' id) to display. Note that this number can be
-               different from the name written in the image filename, because
-               num always starts at 0 in the first folder.
+        num : int
+            image ('num' id) to display. Note that this number can be
+            different from the name written in the image filename, because
+            num always starts at 0 in the first folder.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
 
-        Output
-        ------
-        None, but stores in self.data a dict with threshold value
-        (key 'value') and accessible by self.value
+        Returns
+        -------
+        None
+            but stores in self.data a dict with threshold value
+            (key 'value') and accessible by self.value
         """
         self.reset()
 

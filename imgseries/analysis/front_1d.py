@@ -59,7 +59,11 @@ class Front1DFormatter_Pandas(PandasFormatter):
 
     def _regenerate_data(self, num):
         """How to go back to raw dict of data from self.data."""
-        return {'analysis': self.analysis.results.data.loc[num, 0:]}
+        try:  # This is because the df indexes vary whether from load_csv or not
+            data = self.analysis.results.data.loc[num, 0:]
+        except TypeError:
+            data = self.analysis.results.data.loc[num, '0':]
+        return {'analysis': data}
 
 
 class Front1DResults_PandasTsv(PandasTsvResults):
@@ -92,23 +96,27 @@ class Front1D(Analysis):
 
         Parameters
         ----------
-        - img_series: image series from the ImgSeries class or subclasses
+        img_series : ImgSeries or ImgStack object
+            image series on which the analysis will be run
 
-        - savepath: folder in which to save analysis data & metadata
+        savepath : str or Path object
+            folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
 
-        - Viewer: Viewer class/subclasses that is used to display and inspect
-                  analysis data (is used by ViewerTools)
-                  (if not specified, use default Viewer)
+        Viewer : class
+            (subclass of AnalysisViewer)
+            Viewer class/subclasses that is used to display and inspect
+            analysis data (is used by ViewerTools)
 
-        - Formatter: class/subclass of Formatter to format results spit out
-                     by the raw analysis into something storable/saveable
-                     by the Results class.
-                     (if not specified, use default Formatter)
+        Formatter: class
+            (subclass of Formatter)
+            class used to format results spit out by the raw analysis into
+            something storable/saveable by the Results class.
 
-        - Results: Results class/subclasses that is used to store, save and
-                   load analysis data and metadata.
-                   (if not specified, use default Results)
+        Results : class
+            (subclass of Results)
+            Results class/subclasses that is used to store, save and load
+            analysis data and metadata.
         """
         super().__init__(
             img_series=img_series,
@@ -123,11 +131,13 @@ class Front1D(Analysis):
 
         Parameters
         ----------
-        - img: image array to be analyzed (e.g. numpy array).
+        img : array_like
+            image array to be analyzed (e.g. numpy array).
 
-        Output
-        ------
-        - data, handled by self.formatter._store_data()
+        Returns
+        -------
+        dict
+            dict of data, handled by self.formatter._store_data()
         """
         front_data = img.mean(axis=0)
         data = {'analysis': front_data}

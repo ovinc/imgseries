@@ -11,7 +11,6 @@ from tqdm import tqdm
 # local imports
 from .formatters import Formatter
 from .results import Results
-from ..config import CONFIG
 from ..viewers import AnalysisViewer
 
 
@@ -36,21 +35,27 @@ class Analysis:
 
         Parameters
         ----------
+        img_series : ImgSeries or ImgStack object
+            image series on which the analysis will be run
 
-        - img_series: image series from the ImgSeries class or subclasses
-
-        - savepath: folder in which to save analysis data & metadata
+        savepath : str or Path object
+            folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
 
-        - Viewer: Viewer class/subclasses that is used to display and inspect
-                  analysis data (is used by ViewerTools)
+        Viewer : class
+            (subclass of AnalysisViewer)
+            Viewer class/subclasses that is used to display and inspect
+            analysis data (is used by ViewerTools)
 
-        - Formatter: class/subclass of Formatter to format results spit out
-                     by the raw analysis into something storable/saveable
-                     by the Results class.
+        Formatter: class
+            (subclass of Formatter)
+            class used to format results spit out by the raw analysis into
+            something storable/saveable by the Results class.
 
-        - Results: Results class/subclasses that is used to store, save and
-                   load analysis data and metadata.
+        Results : class
+            (subclass of Results)
+            Results class/subclasses that is used to store, save and load
+            analysis data and metadata.
         """
         Viewer = self.DefaultViewer if Viewer is None else Viewer
         Formatter = self.DefaultFormatter if Formatter is None else Formatter
@@ -101,34 +106,44 @@ class Analysis:
     ):
         """Start analysis of image sequence.
 
-        PARAMETERS
+        Parameters
         ----------
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
+        start : int
+        end : int
+        skip : int
+            images to consider. These numbers refer to 'num' identifier which
+            starts at 0 in the first folder and can thus be different from the
+            actual number in the image filename
 
-        - parallel: if True, distribute computation across different processes.
-          (only available if calculations on each image is independent of
-          calculations on the other images)
+        parallel : bool
+            if True, distribute computation across different processes.
+            (only available if calculations on each image is independent of
+            calculations on the other images)
 
-        - nprocess: number of process workers; if None (default), use default
-          in ProcessPoolExecutor, depends on the number of cores of computer)
+        nprocess : int
+            number of process workers; if None (default), use default
+            in ProcessPoolExecutor, depends on the number of cores of computer)
 
-        - live: if True, plot analysis results in real time.
-        - blit: if True, use blitting to speed up live display
+        live : bool
+            if True, plot analysis results in real time.
 
-        OUTPUT
-        ------
-        Pandas dataframe with image numbers as the index, and with columns
-        containing timestamps and the calculated data.
+        blit : bool
+            if True, use blitting to speed up live display
 
-        WARNING
+        Returns
         -------
-        If running on a Windows machine and using the parallel option, the
-        function call must not be run during import of the file containing
-        the script (i.e. the function must be in a `if __name__ == '__main__'`
-        block). This is because apparently multiprocessing imports the main
-        program initially, which causes recursive problems.
+        pd.DataFrame
+            Pandas dataframe with image numbers as the index, and with columns
+            containing timestamps and the calculated data.
+
+        Warning
+        -------
+            If running on a Windows machine and using the parallel option,
+            the function call must not be run during import of the file
+            containing the script (i.e. the function must be in a
+            `if __name__ == '__main__'` block).
+            This is because apparently multiprocessing imports the main
+            program initially, which causes recursive problems.
         """
         self.nums = self.img_series.nums[start:end:skip]
         self.nimg = len(self.nums)
@@ -188,13 +203,17 @@ class Analysis:
 
         Parameters
         ----------
-        - filename: name of the analysis results file (if None, use default)
+        filename : str
+            name of the analysis results file (if None, use default)
 
-        More or less equivalent to:
-        analysis.results.load(filename=filename)
-        image_series.load_transforms()
-        (except that transforms are loaded from the metadata file of the
-        analysis, not from a file generated by image_series.save_transforms())
+        Notes
+        -----
+            More or less equivalent to:
+            >>> analysis.results.load(filename=filename)
+            >>> image_series.load_transforms()
+            (except that transforms are loaded from the metadata file of the
+            analysis, not from a file generated by
+            image_series.save_transforms())
         """
         # load data from files
         self.results.load(filename=filename)
@@ -216,60 +235,95 @@ class Analysis:
     # repetition, but I eventually preferred to repeat code to avoid
     # multiple inheritance and weird couplings.
 
-    def show(self, num=0, transform=True, **kwargs):
+    def show(
+        self,
+        num=0,
+        transform=True,
+        **kwargs,
+    ):
         """Show image in a matplotlib window.
 
         Parameters
         ----------
-        - num: image identifier in the file series
+        num : int
+            image identifier in the file series
 
-        - transform: if True (default), apply active transforms
-                     if False, load raw image.
+        transform : bool
+            if True (default), apply active transforms
+            if False, load raw image.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.show(num=num)
 
-    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
+    def inspect(
+        self,
+        start=0,
+        end=None,
+        skip=1,
+        transform=True,
+        **kwargs,
+    ):
         """Interactively inspect image series.
 
-        Parameters:
+        Parameters
+        ----------
+        start : int
+        end : int
+        skip : int
+            images to consider. These numbers refer to 'num' identifier which
+            starts at 0 in the first folder and can thus be different from the
+            actual number in the image filename
 
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
+        transform : bool
+            if True (default), apply active transforms
+            if False, use raw images.
 
-        - transform: if True (default), apply active transforms
-                     if False, use raw images.
-
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
         return viewer.inspect(nums=nums)
 
-    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
+    def animate(
+        self,
+        start=0,
+        end=None,
+        skip=1,
+        transform=True,
+        blit=False,
+        **kwargs,
+    ):
         """Interactively inspect image stack.
 
-        Parameters:
+        Parameters
+        ----------
 
-        - start, end, skip: images to consider. These numbers refer to 'num'
-          identifier which starts at 0 in the first folder and can thus be
-          different from the actual number in the image filename
+        start : int
+        end : int
+        skip : int
+            images to consider. These numbers refer to 'num' identifier which
+            starts at 0 in the first folder and can thus be different from the
+            actual number in the image filename
 
-        - transform: if True (default), apply active transforms
-                     if False, use raw images.
+        transform : bool
+            if True (default), apply active transforms
+            if False, use raw images.
 
-        - blit: if True, use blitting for faster animation.
+        blit : bool
+            if True, use blitting for faster animation.
 
-        - kwargs: any keyword-argument to pass to imshow() (overrides default
-          and preset display parameters such as contrast, colormap etc.)
-          (note: cmap is grey by default for 2D images)
+        **kwargs
+            any keyword-argument to pass to imshow() (overrides default
+            and preset display parameters such as contrast, colormap etc.)
+            (note: cmap is grey by default for 2D images)
         """
         nums = self.img_series.nums[start:end:skip]
         viewer = self.Viewer(self, transform=transform, **kwargs)
@@ -297,8 +351,8 @@ class Analysis:
         ----------
         - img: image array to be analyzed (e.g. numpy array).
 
-        Output
-        ------
+        Returns
+        -------
         - dict of data, handled by formatter._store_data()
 
         Define in subclasses."""
@@ -314,8 +368,8 @@ class Analysis:
         - num: file number identifier across the image file series
         - live: if True, add image to data for live visualization
 
-        Output
-        ------
+        Returns
+        -------
         - dict of data, handled by formatter._store_data()
 
         Define in subclasses."""
