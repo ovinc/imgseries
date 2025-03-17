@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # Local imports
 from .analysis_base import Analysis
 from .formatters import PandasFormatter
-from .results import PandasTsvResults
+from .results import PandasTsvJsonResults
 from ..viewers import AnalysisViewer
 
 
@@ -66,7 +66,7 @@ class Front1DFormatter_Pandas(PandasFormatter):
         return {'analysis': data}
 
 
-class Front1DResults_PandasTsv(PandasTsvResults):
+class Front1DResults_PandasTsv(PandasTsvJsonResults):
 
     measurement_type = 'front1d'
     default_filename = 'Img_Front1D'

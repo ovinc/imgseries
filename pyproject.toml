@@ -34,7 +34,7 @@ dependencies = [
     "tqdm",
     "importlib-metadata",
     "imgbasics >= 0.3.0",
-    "filo >= 1.1",
+    "filo >= 1.2.0",
     "gittools >= 0.5",
     "drapo >= 1.2.1",
 ]

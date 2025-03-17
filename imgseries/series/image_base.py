@@ -171,7 +171,7 @@ class ImgSeriesBase:
         CONFIG['transform order'] = new_order
 
     @staticmethod
-    def remove_transform(Transform, order=None):
+    def remove_transform(Transform):
         """Remove custom transform from the available transforms
 
         Parameters
@@ -298,7 +298,8 @@ class ImgSeriesBase:
             self.rotation, self.crop, etc.
         """
         fname = CONFIG['filenames']['transform'] if filename is None else filename
-        transform_data = FileIO.from_json(self.savepath, fname)
+        file = self.savepath / (fname + '.json')
+        transform_data = FileIO.from_json(file=file)
 
         for transform_name in self.transforms:
             transform = getattr(self, transform_name)
@@ -328,7 +329,8 @@ class ImgSeriesBase:
             transform = getattr(self, transform_name)
             transform_data[transform_name] = transform.data
 
-        FileIO.to_json(transform_data, self.savepath, fname)
+        file = self.savepath / (fname + '.json')
+        FileIO.to_json(transform_data, file=file)
 
     def load_display(self, filename=None):
         """Load display parameters (contrast, colormapn etc.) from json file.
@@ -349,7 +351,8 @@ class ImgSeriesBase:
             self.contrast, etc.
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        self.display.data = FileIO.from_json(self.savepath, fname)
+        file = self.savepath / (fname + '.json')
+        self.display.data = FileIO.from_json(file=file)
 
     def save_display(self, filename=None):
         """Save  display parameters (contrast, colormapn etc.) into json file.
@@ -368,7 +371,8 @@ class ImgSeriesBase:
         None
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        FileIO.to_json(self.display.data, self.savepath, fname)
+        file = self.savepath / (fname + '.json')
+        FileIO.to_json(self.display.data, file=file)
 
     # ==================== Interactive inspection methods ====================
 

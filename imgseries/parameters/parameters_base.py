@@ -128,10 +128,11 @@ class CorrectionParameter(Parameter):
         path = self.img_series.savepath
         fname = CONFIG['filenames'][self.parameter_name] if filename is None else filename
         try:  # if there is metadata, load it
-            self.data = FileIO.from_json(path, fname)
+            file = path / (fname + '.json')
+            self.data = FileIO.from_json(file)
         except FileNotFoundError:
             self.data = {}
-        self.data['correction'] = FileIO.from_tsv(path, fname)
+        self.data['correction'] = FileIO.from_tsv(file=path + (fname + '.tsv'))
 
 
 class AnalysisParameter(Parameter):
@@ -150,9 +151,9 @@ class AnalysisParameter(Parameter):
 
     def _load(self, filename=None):
         """Load parameter data from .json file."""
-        return self.analysis.results._load_metadata(filename=filename)
+        return self.analysis.results.load_metadata(filename=filename)
 
     def save(self, filename=None):
         """Save info about parameter in json file."""
         metadata = {self.parameter_name: self.data}
-        self.analysis.results._save_metadata(metadata, filename=filename)
+        self.analysis.results.save_metadata(metadata, filename=filename)

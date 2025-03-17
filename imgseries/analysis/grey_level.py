@@ -9,7 +9,7 @@ import imgbasics
 # Local imports
 from .analysis_base import Analysis
 from .formatters import PandasFormatter
-from .results import PandasTsvResults
+from .results import PandasTsvJsonResults
 from ..parameters.analysis import Zones
 from ..viewers import AnalysisViewer
 
@@ -123,7 +123,7 @@ class GreyLevelFormatter_Pandas(PandasFormatter):
         return data
 
 
-class GreyLevelResults_PandasTsv(PandasTsvResults):
+class GreyLevelResults_PandasTsv(PandasTsvJsonResults):
 
     measurement_type = 'glevel'
     default_filename = 'Img_GreyLevel'

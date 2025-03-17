@@ -291,7 +291,7 @@ Several customizations are possible :
 - numpy
 - importlib-metadata
 - tqdm (waitbars)
-- filo (file series management) >= 1.1
+- filo (file series management) >= 1.2
 - gittools (get git commit info) >= 0.5
 - imgbasics (basic image processing) >= 0.3.0
 - drapo (interactive tools for matplotlib figures) >= 1.2.1

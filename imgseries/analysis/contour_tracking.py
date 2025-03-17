@@ -10,7 +10,7 @@ import imgbasics
 # Local imports
 from .analysis_base import Analysis
 from .formatters import PandasFormatter
-from .results import PandasTsvResults
+from .results import PandasTsvJsonResults
 from ..fileio import FileIO
 from ..parameters.analysis import Contours, Threshold
 from ..viewers import AnalysisViewer
@@ -164,27 +164,22 @@ class ContourTrackingFormatter_Pandas(PandasFormatter):
         return data
 
 
-class ContourTrackingResults_PandasTsv(PandasTsvResults):
+class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
 
     measurement_type = 'ctrack'
     default_filename = 'Img_ContourTracking'
 
     def _save_raw_contour_data(self, filename=None):
         name = self._set_filename(filename)
-        raw_data_filename = name + '_RawContourData'
-        FileIO.to_json(
-            self.raw_contour_data,
-            self.savepath,
-            raw_data_filename,
-        )
+        raw_data_filename = name + '_RawContourData.json'
+        file = self.savepath / raw_data_filename
+        FileIO.to_json(self.raw_contour_data, file)
 
     def _load_raw_contour_data(self, filename=None):
-        name = self._set_filename(filename)
-        raw_data_filename = name + '_RawContourData'
-        return FileIO.from_json(
-            self.savepath,
-            raw_data_filename,
-        )
+        fname = self._set_filename(filename)
+        raw_data_filename = fname + '_RawContourData.json'
+        file = self.savepath / raw_data_filename
+        return FileIO.from_json(file=file)
 
     def load(self, filename=None):
         """Load data and metadata from tsv/json files."""

@@ -59,28 +59,24 @@ class FileIO:
         return skimage.io.imread(file, key=num)
 
     @staticmethod
-    def from_json(path, filename):
+    def from_json(file):
         """"Load json file as a dict.
 
         Parameters
         ----------
-        path : pathlib object
-            folder containing the file
-
-        filename : str
-            name of the file without extension
+        file : pathlib object
+            file to load the data from
 
         Returns
         -------
         dict
         """
-        file = path / (filename + '.json')
         with open(file, 'r', encoding='utf8') as f:
             data = json.load(f)
         return data
 
     @staticmethod
-    def to_json(data, path, filename):
+    def to_json(data, file):
         """"Save data (dict) to json file.
 
         Parameters
@@ -88,56 +84,45 @@ class FileIO:
         data : dict
             dictionary of data
 
-        path : pathlib object
-            folder containing the file
-
-        filename : str
-            name of the file without extension
+        file : pathlib object
+            file to write the data into
 
         Returns
         -------
         None
             (writes data to file)
         """
-        file = path / (filename + '.json')
         with open(file, 'w', encoding='utf8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
 
     @staticmethod
-    def from_tsv(path, filename):
+    def from_tsv(file):
         """"Load tsv data file as a dataframe.
 
         Parameters
         ----------
-        path : pathlib object
-            folder containing the file
-
-        filename : str
-            name of the file without extension
+        file : pathlib object
+            file to read the data from
 
         Returns
         -------
         pd.DataFrame
         """
-        file = path / (filename + '.tsv')
         return pd.read_csv(file, index_col='num', sep=CONFIG['csv separator'])
 
     @staticmethod
-    def to_tsv(data, path, filename):
+    def to_tsv(data, file):
         """"Save dataframe to tsv data file.
 
         Parameters
         ----------
         data : pd.DataFrame
-        path : pathlib object
-            folder containing the file
-        filename : str
-            name of the file without extension
+        file : pathlib object
+            file to write the data into
 
         Returns
         -------
         None
             (writes data to file)
         """
-        file = path / (filename + '.tsv')
         data.to_csv(file, sep=CONFIG['csv separator'])

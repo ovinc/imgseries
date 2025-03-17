@@ -6,7 +6,7 @@ from .flicker import Flicker
 from .front_1d import Front1D
 
 from .analysis_base import Analysis
-from .results import Results, PandasTsvResults
+from .results import Results, PandasTsvJsonResults
 from .formatters import Formatter, PandasFormatter
 
 

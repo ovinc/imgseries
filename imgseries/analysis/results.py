@@ -1,21 +1,91 @@
 """Analysis of image series (base class)"""
 
-# Standard library imports
-from pathlib import Path
-
 # Nonstandard
 import gittools
+from filo import ResultsBase
 
 # local imports
 from ..config import CONFIG
 from ..fileio import FileIO
 
 
-class Results:
-    """Base class for classes that stores results and interacts with files
+class Results(ResultsBase):
+    """Base class for results, can be used as is but won't be able to
+    interact with files.
+    In order to interact (save/load) with files, define the methods below.
+    """
 
-    Metadata is automatically stored in a JSON file with the same name as the
-    analysis results file.
+    def _load_data(self, file):
+        """Return analysis data from file.
+
+        Parameters
+        ----------
+        file : pathlib.Path object
+            file to load the data from
+
+        Returns
+        -------
+        Any
+            Data in the form specified by user in _load_data()
+            Typically a pandas dataframe.
+        """
+        pass
+
+    def _save_data(self, data, file):
+        """Write data to file
+
+        Parameters
+        ----------
+        data : Any
+            Data in the form specified by user in _load_data()
+            Typically a pandas dataframe.
+
+        file : pathlib.Path object
+            file to load the metadata from
+
+        Returns
+        -------
+        None
+        """
+        pass
+
+    def _load_metadata(self, file):
+        """Return analysis metadata from file as a dictionary.
+
+        Parameters
+        ----------
+        file : pathlib.Path object
+            file to load the metadata from
+
+        Returns
+        -------
+        dict
+            metadata
+        """
+        pass
+
+    def _save_metadata(self, metadata, file):
+        """Write metadata to file
+
+        Parameters
+        ----------
+        metadata : dict
+            Metadata as a dictionary
+
+        file : pathlib.Path object
+            file to load the metadata from
+
+        Returns
+        -------
+        None
+        """
+        pass
+
+
+class PandasTsvJsonResults(Results):
+    """"Store data as a pandas dataframe and saves it as a tsv file.
+
+    Metadata is saved as .json
     """
 
     # define in subclasses (e.g. 'glevel' or 'ctrack')
@@ -24,131 +94,79 @@ class Results:
     # define in subclass (e.g. 'Img_GreyLevel')
     # Note that the program will add .tsv or .json depending on context
     default_filename = 'Results'
+    data_extension = '.tsv'
+    metadata_extension = '.json'
 
-    def __init__(self, savepath='.'):
-        self.reset()  # creates self.data and self.metadata
-        self.savepath = Path(savepath)
-
-    def _set_filename(self, filename):
-        return self.default_filename if filename is None else filename
-
-    def reset(self):
-        """Erase data and metadata from the results."""
-        self.data = None
-        self.metadata = {}
-
-    # =============== Interacting with files (saving/loading) ================
-
-    def save(self, filename=None):
-        """Save analysis data and metadata into .tsv / .json files.
+    def _load_data(self, file):
+        """Return analysis data from file.
 
         Parameters
         ----------
-        filename : str
+        file : pathlib.Path object
+            file to load the data from
 
-            If filename is not specified, use default filenames.
-
-            If filename is specified, it must be an str without the extension
-            e.g. filename='Test' will create Test.tsv and Test.json files,
-            containing tab-separated data file and metadata file, respectively.
+        Returns
+        -------
+        Any
+            Data in the form specified by user in _load_data()
+            Typically a pandas dataframe.
         """
-        self._save_data(filename=filename)
-        self._save_metadata(metadata=self.metadata, filename=filename)
+        return FileIO.from_tsv(file)
 
-    def load(self, filename=None):
-        """Load analysis data and metadata and stores it in self.data/metadata.
+    def _save_data(self, data, file):
+        """Write data to file
 
         Parameters
         ----------
-        filename : str
+        data : Any
+            Data in the form specified by user in _load_data()
+            Typically a pandas dataframe.
 
-            If filename is not specified, use default filenames.
+        file : pathlib.Path object
+            file to load the metadata from
 
-            If filename is specified, it must be an str without the extension
-            e.g. filename='Test' will create Test.tsv and Test.json files,
-            containing tab-separated data file and metadata file, respectively.
+        Returns
+        -------
+        None
         """
-        self.data = self._load_data(filename=filename)
-        self.metadata = self._load_metadata(filename=filename)
+        FileIO.to_tsv(data=data, file=file)
 
-    def _load_metadata(self, filename=None):
-        """Return analysis metadata from json file as a dictionary.
+    def _load_metadata(self, file):
+        """Return analysis metadata from file as a dictionary.
 
         Parameters
         ----------
-        filename : str
+        file : pathlib.Path object
+            file to load the metadata from
 
-            If filename is not specified, use default filenames.
-
-            If filename is specified, it must be an str without the extension, e.g.
-            filename='Test' will load from Test.json.
+        Returns
+        -------
+        dict
+            metadata
         """
-        name = self._set_filename(filename)
-        return FileIO.from_json(self.savepath, name)
+        return FileIO.from_json(file)
 
-    def _save_metadata(self, metadata, filename=None):
-        """Inverse of _load_metadata"""
-        name = self._set_filename(filename)
-        metadata_file = self.savepath / (name + '.json')
+    def _save_metadata(self, metadata, file):
+        """Write metadata to file
 
+        Parameters
+        ----------
+        metadata : dict
+            Metadata as a dictionary
+
+        file : pathlib.Path object
+            file to load the metadata from
+
+        Returns
+        -------
+        None
+        """
         gittools.save_metadata(
-            file=metadata_file,
+            file=file,
             info=metadata,
             module=CONFIG['checked modules'],
             dirty_warning=True,
             notag_warning=True,
             nogit_ok=True,
             nogit_warning=True,
-        )
-
-    # ----------- To define in subclasses (how to save/load data) ------------
-
-    def _load_data(self, filename=None):
-        """Load analysis data from tsv file and return it as pandas DataFrame.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified, use default filenames.
-
-            If filename is specified, it must be an str without the extension, e.g.
-            filename='Test' will load from Test.tsv.
-        """
-        pass
-
-    def _save_data(self, filename=None):
-        """Inverse of _load_data()"""
-        pass
-
-
-class PandasTsvResults(Results):
-    """"Store data as a pandas dataframe and saves it as a tsv file.
-
-    Metadata is saved as .Json (see Results)
-    """
-
-    def _load_data(self, filename=None):
-        """Load analysis data from tsv file and return it as pandas DataFrame.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified, use default filenames.
-
-            If filename is specified, it must be an str without the extension, e.g.
-            filename='Test' will load from Test.tsv.
-        """
-        return FileIO.from_tsv(
-            path=self.savepath,
-            filename=self._set_filename(filename)
-        )
-
-    def _save_data(self, filename=None):
-        """Inverse of _load_data()"""
-        FileIO.to_tsv(
-            data=self.data,
-            path=self.savepath,
-            filename=self._set_filename(filename),
         )
