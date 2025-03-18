@@ -358,6 +358,8 @@ class Analysis:
         Define in subclasses."""
         pass
 
+    # ========================================================================
+
     def analyze(self, num, live=False):
         """Same as _analyze, but with num as input instead of img.
 
@@ -365,14 +367,16 @@ class Analysis:
 
         Parameters
         ----------
-        - num: file number identifier across the image file series
-        - live: if True, add image to data for live visualization
+        num : int
+            file number identifier across the image file series
+
+        live : bool
+            if True, add image to data for live visualization
 
         Returns
         -------
-        - dict of data, handled by formatter._store_data()
-
-        Define in subclasses."""
+        dict
+            data, handled by formatter._store_data()"""
         img = self.img_series.read(num=num)
         data = self._analyze(img=img)
         data['num'] = num

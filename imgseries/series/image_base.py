@@ -436,6 +436,9 @@ class ImgSeriesBase:
             if True (default), apply active transforms
             if False, use raw images.
 
+        blit : bool
+            use blitting for faster rendering (default False)
+
         **kwargs
             any keyword-argument to pass to imshow() (overrides default
             and preset display parameters such as contrast, colormap etc.)
