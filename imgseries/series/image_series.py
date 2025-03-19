@@ -92,15 +92,3 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         )
 
         self._get_initial_image_dims()
-
-    @property
-    def nums(self):
-        """Iterator (sliceable) of image identifiers.
-
-        Examples
-        --------
-        Allows the user to do e.g.
-        >>> for num in images.nums[::3]:
-        >>>     images.read(num)
-        """
-        return range(len(self.files))

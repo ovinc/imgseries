@@ -87,3 +87,17 @@ def test_read_stack():
     """Read data from ImgStack file"""
     img = img_stack.read(num=10)
     assert img.shape == (100, 112)
+
+
+def test_slicing_images():
+    """Test looping using slicing of nums"""
+    for num in images.nums[::20]:
+        val_max = images.read(num).max()
+    assert val_max > 0
+
+
+def test_slicing_stack():
+    """Test looping using slicing of nums"""
+    for num in img_stack.nums[::20]:
+        val_max = img_stack.read(num).max()
+    assert val_max > 0

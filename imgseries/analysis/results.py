@@ -15,12 +15,12 @@ class Results(ResultsBase):
     In order to interact (save/load) with files, define the methods below.
     """
 
-    def _load_data(self, file):
+    def _load_data(self, filepath):
         """Return analysis data from file.
 
         Parameters
         ----------
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the data from
 
         Returns
@@ -31,7 +31,7 @@ class Results(ResultsBase):
         """
         pass
 
-    def _save_data(self, data, file):
+    def _save_data(self, data, filepath):
         """Write data to file
 
         Parameters
@@ -40,7 +40,7 @@ class Results(ResultsBase):
             Data in the form specified by user in _load_data()
             Typically a pandas dataframe.
 
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
@@ -49,12 +49,12 @@ class Results(ResultsBase):
         """
         pass
 
-    def _load_metadata(self, file):
+    def _load_metadata(self, filepath):
         """Return analysis metadata from file as a dictionary.
 
         Parameters
         ----------
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
@@ -64,7 +64,7 @@ class Results(ResultsBase):
         """
         pass
 
-    def _save_metadata(self, metadata, file):
+    def _save_metadata(self, metadata, filepath):
         """Write metadata to file
 
         Parameters
@@ -72,7 +72,7 @@ class Results(ResultsBase):
         metadata : dict
             Metadata as a dictionary
 
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
@@ -97,12 +97,12 @@ class PandasTsvJsonResults(Results):
     data_extension = '.tsv'
     metadata_extension = '.json'
 
-    def _load_data(self, file):
+    def _load_data(self, filepath):
         """Return analysis data from file.
 
         Parameters
         ----------
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the data from
 
         Returns
@@ -111,9 +111,9 @@ class PandasTsvJsonResults(Results):
             Data in the form specified by user in _load_data()
             Typically a pandas dataframe.
         """
-        return FileIO.from_tsv(file)
+        return FileIO.from_tsv(filepath)
 
-    def _save_data(self, data, file):
+    def _save_data(self, data, filepath):
         """Write data to file
 
         Parameters
@@ -122,21 +122,21 @@ class PandasTsvJsonResults(Results):
             Data in the form specified by user in _load_data()
             Typically a pandas dataframe.
 
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
         -------
         None
         """
-        FileIO.to_tsv(data=data, file=file)
+        FileIO.to_tsv(data=data, filepath=filepath)
 
-    def _load_metadata(self, file):
+    def _load_metadata(self, filepath):
         """Return analysis metadata from file as a dictionary.
 
         Parameters
         ----------
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
@@ -144,9 +144,9 @@ class PandasTsvJsonResults(Results):
         dict
             metadata
         """
-        return FileIO.from_json(file)
+        return FileIO.from_json(filepath)
 
-    def _save_metadata(self, metadata, file):
+    def _save_metadata(self, metadata, filepath):
         """Write metadata to file
 
         Parameters
@@ -154,7 +154,7 @@ class PandasTsvJsonResults(Results):
         metadata : dict
             Metadata as a dictionary
 
-        file : pathlib.Path object
+        filepath : pathlib.Path object
             file to load the metadata from
 
         Returns
@@ -162,7 +162,7 @@ class PandasTsvJsonResults(Results):
         None
         """
         gittools.save_metadata(
-            file=file,
+            file=filepath,
             info=metadata,
             module=CONFIG['checked modules'],
             dirty_warning=True,

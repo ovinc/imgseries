@@ -59,13 +59,13 @@ class Export:
         """
         img = self.img_series.read(num=num)
         fname = f'{self.filename}{num:0{self.ndigits}}{self.extension}'
-        file = self.export_folder / fname
+        filepath = self.export_folder / fname
 
         if self.with_display:
             kwargs = self.img_series._get_imshow_kwargs()
-            plt.imsave(file, img, **kwargs)
+            plt.imsave(filepath, img, **kwargs)
         else:
-            io.imsave(file, img)
+            io.imsave(filepath, img)
 
     def run(
         self,

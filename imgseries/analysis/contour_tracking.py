@@ -172,14 +172,14 @@ class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
     def _save_raw_contour_data(self, filename=None):
         name = self._set_filename(filename)
         raw_data_filename = name + '_RawContourData.json'
-        file = self.savepath / raw_data_filename
-        FileIO.to_json(self.raw_contour_data, file)
+        filepath = self.savepath / raw_data_filename
+        FileIO.to_json(self.raw_contour_data, filepath)
 
     def _load_raw_contour_data(self, filename=None):
         fname = self._set_filename(filename)
         raw_data_filename = fname + '_RawContourData.json'
-        file = self.savepath / raw_data_filename
-        return FileIO.from_json(file=file)
+        filepath = self.savepath / raw_data_filename
+        return FileIO.from_json(filepath=filepath)
 
     def load(self, filename=None):
         """Load data and metadata from tsv/json files."""

@@ -129,11 +129,11 @@ class CorrectionParameter(Parameter):
         path = self.img_series.savepath
         fname = CONFIG['filenames'][self.parameter_name] if filename is None else filename
         try:  # if there is metadata, load it
-            file = path / (fname + '.json')
-            self.data = FileIO.from_json(file)
+            filepath = path / (fname + '.json')
+            self.data = FileIO.from_json(filepath)
         except FileNotFoundError:
             self.data = {}
-        self.data['correction'] = FileIO.from_tsv(file=path + (fname + '.tsv'))
+        self.data['correction'] = FileIO.from_tsv(filepath=path + (fname + '.tsv'))
 
 
 class AnalysisParameter(Parameter):

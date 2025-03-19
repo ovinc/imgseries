@@ -62,7 +62,7 @@ images.nums           # (sliceable iterator, see looping below)
 # Access individual images in the series -------------------------------------
 
 images.files[10]       # filo.File object of image number num=10
-images.files[10].file  # actual pathlib.Path file object
+images.files[10].path  # actual pathlib.Path file object
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 

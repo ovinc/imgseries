@@ -138,12 +138,12 @@ class ImageReaderBase(ABC):
 class SingleImageReader(ImageReaderBase):
 
     @staticmethod
-    def _read_image(file):
+    def _read_image(filepath):
         """Load image array from file
 
         Parameters
         ----------
-        file : str or pathlib.Path
+        filepath : str or pathlib.Path
             file to load the image data from
 
         Returns
@@ -156,28 +156,28 @@ class SingleImageReader(ImageReaderBase):
             This is here for customization
             (can be subclassed to use other reading method)
         """
-        return FileIO.read_single_image(file=file)
+        return FileIO.read_single_image(filepath=filepath)
 
     def _read(self, num):
         """read raw image from image series"""
-        file = self.img_series.files[num].file
-        return self._read_image(file)
+        filepath = self.img_series.files[num].path
+        return self._read_image(filepath=filepath)
 
 
 class TiffStackReader(ImageReaderBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.data = self._read_stack(file=self.img_series.path)
+        self.data = self._read_stack(filepath=self.img_series.path)
 
     @staticmethod
-    def _read_stack(file):
+    def _read_stack(filepath):
         """Read whole stack of images into memory (to be done on init)
 
         I do it this way so that it's easier to subclass
         (User can provide own stack reader)
         """
-        return FileIO.read_tiff_stack_whole(file=file)
+        return FileIO.read_tiff_stack_whole(filepath=filepath)
 
     def _read(self, num):
         """read single image (slice) from stack"""
@@ -193,7 +193,7 @@ class TiffStackReader(ImageReaderBase):
     # BUT it's more difficult to get total number of images
     # def _read(self, num):
     #     """read raw image from stack"""
-    #     return FileIO._read_tiff_stack_slice(file=self.img_series.path, num=num)
+    #     return FileIO._read_tiff_stack_slice(filepath=self.img_series.path, num=num)
 
 
 class HDF5Reader(ImageReaderBase):

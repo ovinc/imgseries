@@ -82,34 +82,6 @@ class ImgSeriesBase:
         self.initial_ndim = img.ndim
         self.ndim = self.initial_ndim
 
-    # =========================== Iteration tools ============================
-
-    @property
-    def nums(self):
-        """Iterator (sliceable) of image identifiers.
-
-        Define in subclasses.
-
-        Examples
-        --------
-        Allows the user to do e.g.
-        >>> for num in images.nums[::3]:
-        >>>     images.read(num)
-        """
-        pass
-
-    @property
-    def ntot(self):
-        """Total number of images in the image series.
-
-        Can be subclassed if necessary.
-
-        Returns
-        -------
-        int
-        """
-        return len(self.nums)
-
     # ===================== Corrections and  Transforms ======================
 
     @property
@@ -345,8 +317,8 @@ class ImgSeriesBase:
             self.rotation, self.crop, etc.
         """
         fname = CONFIG['filenames']['transform'] if filename is None else filename
-        file = self.savepath / (fname + '.json')
-        transform_data = FileIO.from_json(file=file)
+        filepath = self.savepath / (fname + '.json')
+        transform_data = FileIO.from_json(filepath=filepath)
 
         for transform_name in self.transforms:
             transform = getattr(self, transform_name)
@@ -377,8 +349,8 @@ class ImgSeriesBase:
             transform = getattr(self, transform_name)
             transform_data[transform_name] = transform.data
 
-        file = self.savepath / (fname + '.json')
-        FileIO.to_json(transform_data, file=file)
+        filepath = self.savepath / (fname + '.json')
+        FileIO.to_json(transform_data, filepath=filepath)
 
     def load_display(self, filename=None):
         """Load display parameters (contrast, colormapn etc.) from json file.
@@ -399,8 +371,8 @@ class ImgSeriesBase:
             self.contrast, etc.
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        file = self.savepath / (fname + '.json')
-        self.display.data = FileIO.from_json(file=file)
+        filepath = self.savepath / (fname + '.json')
+        self.display.data = FileIO.from_json(filepath=filepath)
 
     def save_display(self, filename=None):
         """Save  display parameters (contrast, colormapn etc.) into json file.
@@ -419,8 +391,8 @@ class ImgSeriesBase:
         None
         """
         fname = CONFIG['filenames']['display'] if filename is None else filename
-        file = self.savepath / (fname + '.json')
-        FileIO.to_json(self.display.data, file=file)
+        filepath = self.savepath / (fname + '.json')
+        FileIO.to_json(self.display.data, filepath=filepath)
 
     # ==================== Interactive inspection methods ====================
 
