@@ -1,8 +1,5 @@
 """Class ImgSeries for image series manipulation"""
 
-# Standard library imports
-from functools import lru_cache
-
 # Nonstandard
 import filo
 
@@ -33,6 +30,7 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         savepath='.',
         corrections=None,
         transforms=None,
+        cache=False,
         ImgViewer=ImgSeriesViewer,
         ImgReader=SingleImageReader,
     ):
@@ -62,6 +60,12 @@ class ImgSeries(ImgSeriesBase, filo.Series):
             e.g. transforms=('rotation', 'crop', 'filter');
             if None, use default order.
 
+        cache : bool
+            if True, use caching for speed improvement
+            (both for loading files and transforms)
+            this is useful when calling read() multiple times on the same
+            image (e.g. when inspecting series/stacks)
+
         ImgViewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
             if None, use default viewer class
@@ -82,6 +86,7 @@ class ImgSeries(ImgSeriesBase, filo.Series):
             self,
             corrections=corrections,
             transforms=transforms,
+            cache=cache,
             ImgViewer=ImgViewer,
             ImgReader=ImgReader,
         )
@@ -99,40 +104,3 @@ class ImgSeries(ImgSeriesBase, filo.Series):
         >>>     images.read(num)
         """
         return range(len(self.files))
-
-
-# ----------------------------------------------------------------------------
-# ============== Factory function to generate ImgSeries objects ==============
-# ----------------------------------------------------------------------------
-
-
-def series(*args, cache=False, cache_size=516, **kwargs):
-    """Generator of ImgSeries object with a caching option.
-
-    Parameters
-    ----------
-    cache : bool
-        If True, use caching to keep images in memory once loaded.
-
-    cache_size : int
-        Maximum number of images kept in memory by the cache if used.
-
-    *args
-    **kwargs
-        Any arrguments and keyword arguments accepted by ImgSeries.
-    """
-    if not cache:
-
-        return ImgSeries(*args, **kwargs)
-
-    else:
-
-        class ImgSeriesCached(ImgSeries):
-
-            cache = True
-
-            @lru_cache(maxsize=cache_size)
-            def read(self, num=0, transform=True, **kwargs):
-                return super().read(num, transform=transform, **kwargs)
-
-        return ImgSeriesCached(*args, **kwargs)

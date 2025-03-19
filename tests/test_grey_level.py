@@ -1,7 +1,7 @@
 """Tests for the imgseries module (pytest), image series analysis programs.
 
-Note: This does not test the interactive options. See ExamplesSeries.ipynb
-Jupyter notebook for more details and interactive modes.
+Note: This does not test the interactive options. See example
+Jupyter notebooks for more details and interactive modes.
 """
 
 # Standard library
@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import series, stack
+from imgseries import ImgSeries, ImgStack
 from imgseries import GreyLevel, GreyLevelResults
 
 
@@ -23,7 +23,7 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 
 # =============== Test avg gray level analysis on image series ===============
 
-images = series(folders, savepath=basefolder)
+images = ImgSeries(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 gl = GreyLevel(images)
@@ -46,9 +46,9 @@ def test_glevel_results_load():
     assert round(glresults.data.at[4, 'zone 3']) == 89
 
 
-# =============== Test avg gray level analysis on image stacks ===============
+# =============== Test avg gray level analysis on image stack ================
 
-img_stack = stack(tiff_stack)
+img_stack = ImgStack(tiff_stack)
 
 glstack = GreyLevel(img_stack, savepath=basefolder / 'stack')
 glstack.zones.load('Img_GreyLevel_Saved')

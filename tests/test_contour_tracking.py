@@ -1,7 +1,7 @@
 """Tests for the imgseries module (pytest), image series analysis programs.
 
-Note: This does not test the interactive options. See ExamplesSeries.ipynb
-Jupyter notebook for more details and interactive modes.
+Note: This does not test the interactive options. See example
+Jupyter notebooks for more details and interactive modes.
 """
 
 # Standard library
@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import series, stack
+from imgseries import ImgSeries, ImgStack
 from imgseries import ContourTracking, ContourTrackingResults
 
 
@@ -21,9 +21,9 @@ folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
 tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 
-# ================== Test contour tracking on image series ===================
+# ================== Test contour tracking on ImgSeries ===================
 
-images = series(folders, savepath=basefolder)
+images = ImgSeries(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 ct = ContourTracking(images)
@@ -46,9 +46,9 @@ def test_contour_tracking_load():
     assert round(ctresults.data.at[4, 'x3']) == 418
 
 
-# ================== Test contour tracking on image stacks ===================
+# ================== Test contour tracking on image stack ===================
 
-img_stack = stack(tiff_stack)
+img_stack = ImgStack(tiff_stack)
 
 ctstack = ContourTracking(img_stack, savepath=basefolder / 'stack')
 ctstack.contours.load('Img_ContourTracking_Saved')

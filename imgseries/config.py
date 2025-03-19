@@ -10,22 +10,22 @@ import filo
 import matplotlib
 import numpy
 
-checked_modules = skimage, imgseries, imgbasics, filo, matplotlib, numpy
+CHECKED_MODULES = skimage, imgseries, imgbasics, filo, matplotlib, numpy
 
-csv_separator = '\t'
+CSV_SEPARATOR = '\t'
 
-filenames = {
+FILENAMES = {
     'files': 'Img_Files',          # for file info (timing etc.)
     'transform': 'Img_Transform',  # this is to store rotation angle etc.
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
 }
 
-default_corrections = (
+DEFAULT_CORRECTIONS = (
     'flicker',
     'shaking',
 )
 
-default_transforms = (
+DEFAULT_TRANSFORMS = (
     'grayscale',
     'rotation',
     'crop',
@@ -34,10 +34,19 @@ default_transforms = (
     'threshold',
 )
 
+# How many files can be loaded in the cache
+# (files are read only once and stored in memory unless they exceed this limit)
+FILE_CACHE_SIZE = 1024
+
+# The calculation from loaded data into transformed data can also be cached
+TRANSFORM_CACHE_SIZE = 1024
+
 CONFIG = {
-    'csv separator': csv_separator,
-    'filenames': filenames,
-    'checked modules': checked_modules,
-    'correction order': default_corrections,
-    'transform order': default_transforms,
+    'csv separator': CSV_SEPARATOR,
+    'filenames': FILENAMES,
+    'checked modules': CHECKED_MODULES,
+    'correction order': DEFAULT_CORRECTIONS,
+    'transform order': DEFAULT_TRANSFORMS,
+    'file cache size': FILE_CACHE_SIZE,
+    'transform cache size': TRANSFORM_CACHE_SIZE,
 }

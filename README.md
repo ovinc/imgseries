@@ -6,7 +6,6 @@ Image inspection and analysis tools for image series, based on the following cla
 *Representation of image sequences:*
 - `ImgSeries` (sequence stored in multiple files),
 - `ImgStack` (sequence stored in a stack, e.g. tiff or HDF5).
-Objects from these classes can also be generated with the `series()` and `stack()` functions, respectively;
 
 *Analysis of image sequences:*
 - `GreyLevel`: evolution of average gray level of selected zone(s),
@@ -53,10 +52,6 @@ from imgseries import ImgSeries, series
 
 # EITHER:
 images = ImgSeries(paths=['img1', 'img2'])  # implicitly, savepath is current directory
-# OR:
-images = series(paths=['img1', 'img2'])
-# (the series() function is a bit more powerful than the ImgSeries class, as it
-# allows the user to select caching options for speed improvements, see below)
 
 # Images info
 images.nx, images.ny  # image dimensions in x and y
@@ -107,7 +102,7 @@ images.load_display()  # load rotation and crop parameters from json file
 # Note: the transforms to be considered and the order with which they are
 # applied on the images can be modified by passing the argument
 # transforms= in ImgSeries. For example:
-# images = series(transforms=('rotation', 'crop', 'filter'))
+# images = ImgSeries(transforms=('rotation', 'crop', 'filter'))
 
 # Interactive:
 images.rotation.define()
@@ -161,10 +156,10 @@ images = ImgSeries(stack='ImgStack.tif')
 ### Caching images for speed improvement
 
 ```python
-images = series(paths=['img1', 'img2'], cache=True)
+images = ImgSeries(paths=['img1', 'img2'], cache=True)
 images.inspect()  # inspection should be significantly faster
 ```
-See *ImgSeries_Caching.ipynb* for examples, details and options (cache size etc.).
+See *ImgSeries_Caching.ipynb* for examples, details and options.
 By default, caching is disabled because it can lead to significant memory usage for large files.
 
 

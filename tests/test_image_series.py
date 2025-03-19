@@ -1,7 +1,7 @@
 """Tests for the imgseries module (pytest), image series analysis programs.
 
-Note: This does not test the interactive options. See ExamplesSeries.ipynb
-Jupyter notebook for more details and interactive modes.
+Note: This does not test the interactive options. See example
+Jupyter notebooks for more details and interactive modes.
 """
 
 # Standard library
@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import series, stack
+from imgseries import ImgSeries, ImgStack
 
 
 # =============================== Misc. config ===============================
@@ -18,17 +18,17 @@ modulefolder = Path(imgseries.__file__).parent / '..'
 basefolder = modulefolder / 'examples/data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
-images = series(folders, savepath=basefolder)
+images = ImgSeries(folders, savepath=basefolder)
 images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
-img_stack = stack(tiff_stack)
+img_stack = ImgStack(tiff_stack)
 
 # ======================== Test general image series =========================
 
 
 def test_set_global_transform():
-    """Setting a global transform (rotation, crop) on image series"""
+    """Setting a global transform (rotation, crop) on image ImgSeries"""
     n = 22
 
     images.rotation.reset()
@@ -84,6 +84,6 @@ def test_img_time_update():
 
 
 def test_read_stack():
-    """Read data from stack file"""
+    """Read data from ImgStack file"""
     img = img_stack.read(num=10)
     assert img.shape == (100, 112)

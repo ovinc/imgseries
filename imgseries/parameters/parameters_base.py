@@ -83,7 +83,7 @@ class TransformParameter(Parameter):
         """If images are stored in a cache, clear it so that the new transform
         parameter can be taken into account upon read()"""
         if self.img_series.cache:
-            self.img_series.read.cache_clear()
+            self.img_series.img_reader._read_and_transform_cached.cache_clear()
 
     def _update_parameters(self):
         """What to do when a parameter is updated"""

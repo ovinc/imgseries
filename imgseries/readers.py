@@ -1,10 +1,16 @@
 """Class ImgSeries for image series manipulation"""
 
+# Standard library
+from abc import ABC, abstractmethod
+from functools import lru_cache
+
 # local imports
+from .config import CONFIG
 from .fileio import FileIO
 
 
-class ImageReaderBase:
+
+class ImageReaderBase(ABC):
     """Base class for reading images.
 
     (for reading images and applying transforms/corrections on them).
@@ -49,7 +55,7 @@ class ImageReaderBase:
     def apply_transforms(self, img, **kwargs):
         """Apply stored transforms on the image (crop, rotation, etc.)"""
         for transform_name in self.img_series.transforms:
-            # Do not consider any transform specifically marked as false
+            # Do not consider any transform specifically marked as False
             if kwargs.get(transform_name, True):
                 img = self.apply_transform(
                     img=img,
@@ -57,9 +63,29 @@ class ImageReaderBase:
                 )
         return img
 
-    def _read(self, num):
-        """How to read image from series/stack. To be defined in subclasses"""
-        pass
+    @lru_cache(maxsize=CONFIG['file cache size'])
+    def _read_raw_cached(self, num):
+        return self._read(num=num)
+
+    @lru_cache(maxsize=CONFIG['transform cache size'])
+    def _read_and_transform_cached(self, *args, **kwargs):
+        return self.read_and_transform(*args, **kwargs)
+
+    def read_and_transform(self, num, correction=True, transform=True, **kwargs):
+        """Read image #num in image series and apply transforms if requested.
+
+        Kwargs can be rotation=True or threshold=False to switch on/off
+        transforms during the processing of the image
+        """
+        if self.img_series.cache:
+            img = self._read_raw_cached(num=num)
+        else:
+            img = self._read(num=num)
+
+        img = self.apply_corrections(img, num, **kwargs) if correction else img
+        img = self.apply_transforms(img, **kwargs) if transform else img
+
+        return img
 
     def read(self, num, correction=True, transform=True, **kwargs):
         """Read image #num in image series and apply transforms if requested.
@@ -67,10 +93,40 @@ class ImageReaderBase:
         Kwargs can be rotation=True or threshold=False to switch on/off
         transforms during the processing of the image
         """
-        img = self._read(num=num)
-        img = self.apply_corrections(img, num, **kwargs) if correction else img
-        img = self.apply_transforms(img, **kwargs) if transform else img
-        return img
+        if self.img_series.cache:
+            read_func = self._read_and_transform_cached
+        else:
+            read_func = self.read_and_transform
+
+        return read_func(
+            num=num,
+            correction=correction,
+            transform=transform,
+            **kwargs,
+        )
+
+    # ============================= To subclass ==============================
+
+    @abstractmethod
+    def _read(self, num):
+        """How to read image from series/stack. To be defined in subclasses.
+
+        Parameters
+        ----------
+        num : int
+            image identifier
+
+        Returns
+        -------
+        array-like
+            image as an array (typically np.array)
+
+        Notes
+        -----
+            Here it takes num and not file, because in certain cases (stacks)
+            the files do not exist.
+        """
+        pass
 
 
 # ============================= Children classes =============================
@@ -80,6 +136,23 @@ class SingleImageReader(ImageReaderBase):
 
     @staticmethod
     def _read_image(file):
+        """Load image array from file
+
+        Parameters
+        ----------
+        file : str or pathlib.Path
+            file to load the image data from
+
+        Returns
+        -------
+        array-like
+            image as an array (typically np.array)
+
+        Notes
+        -----
+            This is here for customization
+            (can be subclassed to use other reading method)
+        """
         return FileIO.read_single_image(file=file)
 
     def _read(self, num):

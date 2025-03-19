@@ -1,7 +1,7 @@
 """Tests for the imgseries module (pytest), image series analysis programs.
 
-Note: This does not test the interactive options. See ExamplesSeries.ipynb
-Jupyter notebook for more details and interactive modes.
+Note: This does not test the interactive options. See example
+Jupyter notebooks for more details and interactive modes.
 """
 
 # Standard library

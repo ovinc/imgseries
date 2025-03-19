@@ -17,13 +17,11 @@ from .export import Export
 class ImgSeriesBase:
     """Base class for series of images (or stacks)"""
 
-    # cache images during read() or not
-    cache = False
-
     def __init__(
         self,
         corrections=None,
         transforms=None,
+        cache=False,
         ImgViewer=None,
         ImgReader=None,
     ):
@@ -43,6 +41,12 @@ class ImgSeriesBase:
             e.g. transforms=('rotation', 'crop', 'filter');
             if None, use default order.
 
+        cache : bool
+            if True, use caching for speed improvement
+            (both for loading files and transforms)
+            this is useful when calling read() multiple times on the same
+            image (e.g. when inspecting series/stacks)
+
         ImgViewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
             if None, use default viewer class
@@ -50,6 +54,8 @@ class ImgSeriesBase:
         ImgReader : subclass of ImageReaderBase
             class (or object) that defines how to read images
         """
+        self.cache = cache
+
         self.ImgViewer = ImgViewer
         self.img_reader = ImgReader(self)
 
