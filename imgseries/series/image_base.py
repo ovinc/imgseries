@@ -243,6 +243,47 @@ class ImgSeriesBase:
         kwargs = {**default_kwargs, **kwargs}
         return ax.imshow(img, **kwargs)
 
+    # =========================== Cache management ===========================
+
+    def cache_info(self):
+        """cache info of the various caches in place.
+
+        Returns
+        -------
+        dict
+            with the cache info corresponding to 'files' and 'transforms'
+        """
+        if not self.cache:
+            return None
+        return {
+            name: method.cache_info()
+            for name, method in self.img_reader.cached_methods.items()
+        }
+
+    def clear_cache(self, which=None):
+        """Clear specified cache.
+
+        Parameters
+        ----------
+        which : str or None
+            can be 'files' or 'transforms'
+            (default: None, i.e. clear both)
+
+        Returns
+        -------
+        None
+        """
+        if not self.cache:
+            return
+
+        if which in ('files', 'transforms'):
+            self.img_reader.cached_methods[which].cache_clear()
+        elif which is None:
+            for method in self.img_reader.cached_methods.values():
+                method.cache_clear()
+        else:
+            raise ValueError(f'{which} not a valid cache name.')
+
     # ============================ Public methods ============================
 
     def read(self, num=0, correction=True, transform=True, **kwargs):
@@ -310,7 +351,8 @@ class ImgSeriesBase:
         for transform_name in self.transforms:
             transform = getattr(self, transform_name)
             transform.data = transform_data.get(transform_name, {})
-            transform._update_parameters()
+            transform._update_parameter()  # if not, subtraction reference is not updated
+            transform._update_others()
 
     def save_transforms(self, filename=None):
         """Save transform parameters (crop, rotation etc.) into json file.

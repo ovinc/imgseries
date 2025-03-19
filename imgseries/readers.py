@@ -9,7 +9,6 @@ from .config import CONFIG
 from .fileio import FileIO
 
 
-
 class ImageReaderBase(ABC):
     """Base class for reading images.
 
@@ -25,6 +24,10 @@ class ImageReaderBase(ABC):
         img_series : ImgSeries object
         """
         self.img_series = img_series
+        self.cached_methods = {
+            'files': self._read_raw_cached,
+            'transforms': self._read_and_transform_cached,
+        }
 
     def apply_correction(self, img, num, correction_name):
         """Apply specific correction (str) to image and return new img array"""

@@ -41,7 +41,7 @@ class Grayscale(TransformParameter):
         else:
             self.img_series.ndim = self.img_series.initial_ndim
         self.data['active'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array
@@ -138,7 +138,7 @@ class Rotation(TransformParameter):
     @angle.setter
     def angle(self, value):
         self.data['angle'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array
@@ -238,7 +238,7 @@ class Crop(TransformParameter):
     @zone.setter
     def zone(self, value):
         self.data['zone'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array
@@ -328,7 +328,7 @@ class Filter(TransformParameter):
     @size.setter
     def size(self, value):
         self.data['size'] = value
-        self._update_parameters()
+        self._update_others()
 
     @property
     def type(self):
@@ -337,7 +337,7 @@ class Filter(TransformParameter):
     @type.setter
     def type(self, value):
         self.data['type'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array
@@ -378,6 +378,10 @@ class Subtraction(TransformParameter):
     def _update_reference_image(self):
         self.reference_image = self._calculate_reference(self.reference)
 
+    def _update_parameter(self):
+        if not self.is_empty:
+            self._update_reference_image()
+
     @property
     def reference(self):
         return self.data.get('reference')
@@ -385,8 +389,8 @@ class Subtraction(TransformParameter):
     @reference.setter
     def reference(self, value):
         self.data['reference'] = tuple(value)
-        self.reference_image = self._calculate_reference(ref_nums=value)
-        self._clear_cache()
+        self._update_reference_image()
+        self._update_others()
 
     @property
     def relative(self):
@@ -395,7 +399,7 @@ class Subtraction(TransformParameter):
     @relative.setter
     def relative(self, value):
         self.data['relative'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array
@@ -446,7 +450,7 @@ class Threshold(TransformParameter):
     @vmin.setter
     def vmin(self, value):
         self.data['vmin'] = value
-        self._update_parameters()
+        self._update_others()
 
     @property
     def vmax(self):
@@ -455,7 +459,7 @@ class Threshold(TransformParameter):
     @vmax.setter
     def vmax(self, value):
         self.data['vmax'] = value
-        self._update_parameters()
+        self._update_others()
 
     def apply(self, img):
         """How to apply the transform on an image array

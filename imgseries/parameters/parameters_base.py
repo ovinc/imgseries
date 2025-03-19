@@ -64,7 +64,6 @@ class TransformParameter(Parameter):
 
     These parameters DO impact analysis and are stored in metadata.
     """
-
     @property
     def order(self):
         # Order in which transform is applied if several transforms defined
@@ -77,25 +76,27 @@ class TransformParameter(Parameter):
     def reset(self):
         """Reset parameter data (e.g. rotation angle zero, ROI = total image, etc.)"""
         self.data = {}
-        self._update_parameters()
+        self._update_others()
 
-    def _clear_cache(self):
-        """If images are stored in a cache, clear it so that the new transform
-        parameter can be taken into account upon read()"""
-        if self.img_series.cache:
-            self.img_series.img_reader._read_and_transform_cached.cache_clear()
+    def _update_others(self):
+        """What to do to all other parameters and caches when the current
+        parameter is updated"""
+        self.img_series.clear_cache('transforms')
+        for transform_name in self.img_series.active_transforms:
+            transform = getattr(self.img_series, transform_name)
+            if not transform.is_empty and self.order < transform.order:
+                transform._update_parameter()
 
-    def _update_parameters(self):
-        """What to do when a parameter is updated"""
-        self._clear_cache()
+    # ============================= To subclass ==============================
 
-        try:
-            subtraction = self.img_series.subtraction
-        except AttributeError:
-            return
+    def _update_parameter(self):
+        """What to do to current parameter if another parameter is updated.
 
-        if not subtraction.is_empty and self.order <= subtraction.order:
-            subtraction._update_reference_image()
+        (only other parameters earlier in the order of transforms will be
+        considered, see self._update_others())
+        [optional]
+        """
+        pass
 
     def apply(self, img):
         """How to apply the transform on an image array
