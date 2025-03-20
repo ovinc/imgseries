@@ -11,7 +11,7 @@ from ..viewers import ImgSeriesViewer
 from .image_base import ImgSeriesBase
 
 
-class ImgSeries(ImgSeriesBase, filo.Series):
+class ImgSeries(ImgSeriesBase):
     """Class to manage series of images, possibly in several folders."""
 
     # Only for __repr__ (str representation of class object, see filo.Series)
@@ -25,14 +25,14 @@ class ImgSeries(ImgSeriesBase, filo.Series):
 
     def __init__(
         self,
-        paths='.',
+        folders='.',
         extension='.png',
         savepath='.',
         corrections=None,
         transforms=None,
         cache=False,
-        ImgViewer=ImgSeriesViewer,
-        ImgReader=SingleImageReader,
+        Viewer=ImgSeriesViewer,
+        Reader=SingleImageReader,
     ):
         """Init image series object.
 
@@ -66,29 +66,68 @@ class ImgSeries(ImgSeriesBase, filo.Series):
             this is useful when calling read() multiple times on the same
             image (e.g. when inspecting series/stacks)
 
-        ImgViewer : subclass of ImageViewerBase
+        Viewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
             if None, use default viewer class
 
-        ImgReader : subclass of ImageReaderBase
+        Reader : subclass of ImageReaderBase
             class (or object) that defines how to read images
         """
-        # Inherit useful methods and attributes for file series
-        # (including self.savepath)
-        filo.Series.__init__(
-            self,
-            paths=paths,
+        self.files = filo.FileSeries.auto(
+            folders=folders,
             extension=extension,
-            savepath=savepath,
+            refpath=savepath,
         )
 
-        ImgSeriesBase.__init__(
-            self,
+        super().__init__(
+            savepath=savepath,
             corrections=corrections,
             transforms=transforms,
             cache=cache,
-            ImgViewer=ImgViewer,
-            ImgReader=ImgReader,
+            Viewer=Viewer,
+            Reader=Reader,
         )
 
         self._get_initial_image_dims()
+
+    @property
+    def info(self):
+        return self.files.info
+
+    def _get_info_filepath(self, filename):
+        filename = CONFIG['filenames']['files'] if filename is None else filename
+        return self.savepath / filename
+
+    def load_times(self, filename=None):
+        self.files.update_times(
+            filepath=self._get_info_filepath(filename),
+            sep=CONFIG['csv separator'],
+        )
+
+    def save_info(self, filename=None):
+        self.files.to_csv(
+            filepath=self._get_info_filepath(filename),
+            sep=CONFIG['csv separator'],
+        )
+
+    @property
+    def nums(self):
+        """Iterator (sliceable) of image identifiers.
+
+        Examples
+        --------
+        Allows the user to do e.g.
+        >>> for num in images.nums[::3]:
+        >>>     images.read(num)
+        """
+        return range(self.ntot)
+
+    @property
+    def ntot(self):
+        """Total number of image files in the series.
+
+        Returns
+        -------
+        int
+        """
+        return len(list(self.files))

@@ -36,7 +36,7 @@ DEFAULT_TRANSFORMS = (
 
 # How many files can be loaded in the cache
 # (files are read only once and stored in memory unless they exceed this limit)
-FILE_CACHE_SIZE = 1024
+READ_CACHE_SIZE = 1024
 
 # The calculation from loaded data into transformed data can also be cached
 TRANSFORM_CACHE_SIZE = 1024
@@ -47,6 +47,6 @@ CONFIG = {
     'checked modules': CHECKED_MODULES,
     'correction order': DEFAULT_CORRECTIONS,
     'transform order': DEFAULT_TRANSFORMS,
-    'file cache size': FILE_CACHE_SIZE,
+    'read cache size': READ_CACHE_SIZE,
     'transform cache size': TRANSFORM_CACHE_SIZE,
 }

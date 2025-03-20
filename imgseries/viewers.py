@@ -16,7 +16,7 @@ class ImgSeriesViewer(DataViewerBase):
     See DataViewerBase for details.
     """
 
-    def __init__(self, img_series, transform=True, **kwargs):
+    def __init__(self, img_series):
         """Init Image series viewer
 
         Parameters
@@ -31,10 +31,12 @@ class ImgSeriesViewer(DataViewerBase):
         **kwargs
             any keyword-argument to pass to imshow().
         """
-        self.img_series = img_series
-        self.transform = transform
-        self.kwargs = kwargs
         super().__init__()
+        self.img_series = img_series
+
+        # The parameters below are changed if necessary when methods are called
+        self.kwargs = {}
+        self.transform = True
 
     def _create_figure(self):
         self.fig, self.ax = plt.subplots()

@@ -24,7 +24,7 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 # =============== Test avg gray level analysis on image series ===============
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_times('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 gl = GreyLevel(images)
 gl.zones.load('Img_GreyLevel_Saved')

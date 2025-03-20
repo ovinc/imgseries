@@ -2,6 +2,7 @@
 
 # Nonstandard
 import matplotlib.pyplot as plt
+from filo import DataSeries
 
 # local imports
 from ..config import CONFIG
@@ -14,16 +15,17 @@ from .line_profile import Profile
 from .export import Export
 
 
-class ImgSeriesBase:
+class ImgSeriesBase(DataSeries):
     """Base class for series of images (or stacks)"""
 
     def __init__(
         self,
+        savepath='.',
         corrections=None,
         transforms=None,
         cache=False,
-        ImgViewer=None,
-        ImgReader=None,
+        Reader=None,
+        Viewer=None,
     ):
         """Init image series object.
 
@@ -47,30 +49,36 @@ class ImgSeriesBase:
             this is useful when calling read() multiple times on the same
             image (e.g. when inspecting series/stacks)
 
-        ImgViewer : subclass of ImageViewerBase
+        Viewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
             if None, use default viewer class
 
-        ImgReader : subclass of ImageReaderBase
+        Reader : subclass of ImageReaderBase
             class (or object) that defines how to read images
         """
-        self.cache = cache
+        corrs = CONFIG['correction order'] if corrections is None else corrections
+        trans = CONFIG['transform order'] if transforms is None else transforms
 
-        self.ImgViewer = ImgViewer
-        self.img_reader = ImgReader(self)
+        corrections_list = []
+        for correction_name in corrs:
+            cor = CORRECTIONS[correction_name](img_series=self)
+            corrections_list.append(cor)
 
-        self.corrections = CONFIG['correction order'] if corrections is None else corrections
-        self.transforms = CONFIG['transform order'] if transforms is None else transforms
+        transforms_list = []
+        for transform_name in trans:
+            tran = TRANSFORMS[transform_name](img_series=self)
+            transforms_list.append(tran)
 
-        for correction_name in self.corrections:
-            correction = CORRECTIONS[correction_name](img_series=self)
-            # e.g. self.flicker = Flicker(self)
-            setattr(self, correction_name, correction)
+        reader = Reader(img_series=self, cache=cache)
+        viewer = Viewer(img_series=self)
 
-        for transform_name in self.transforms:
-            transform = TRANSFORMS[transform_name](img_series=self)
-            # e.g. self.rotation = Rotation(self)
-            setattr(self, transform_name, transform)
+        super().__init__(
+            savepath=savepath,
+            corrections=corrections_list,
+            transforms=transforms_list,
+            reader=reader,
+            viewer=viewer,
+        )
 
         # Display options (do not impact analysis)
         self.display = Display(self)
@@ -84,36 +92,6 @@ class ImgSeriesBase:
 
     # ===================== Corrections and  Transforms ======================
 
-    @property
-    def active_corrections(self):
-        active_corrs = []
-        for correction_name in self.corrections:
-            correction = getattr(self, correction_name)
-            if not correction.is_empty:
-                active_corrs.append(correction_name)
-        return active_corrs
-
-    def reset_corrections(self):
-        """Reset all active corrections."""
-        for correction_name in self.active_corrections:
-            correction = getattr(self, correction_name)
-            correction.reset()
-
-    @property
-    def active_transforms(self):
-        active_trnsfms = []
-        for transform_name in self.transforms:
-            transform = getattr(self, transform_name)
-            if not transform.is_empty:
-                active_trnsfms.append(transform_name)
-        return active_trnsfms
-
-    def reset_transforms(self):
-        """Reset all active transforms."""
-        for transform_name in self.active_transforms:
-            transform = getattr(self, transform_name)
-            transform.reset()
-
     @staticmethod
     def add_transform(Transform, order=None):
         """Add custom transform to the available transforms
@@ -126,7 +104,7 @@ class ImgSeriesBase:
             at which position in the transform sequence to apply transform
             if None (default), add at the end of the transform list.
         """
-        name = Transform.parameter_name
+        name = Transform.name
 
         try:
             TRANSFORMS[name]
@@ -157,7 +135,7 @@ class ImgSeriesBase:
         Transform : subclass of TransformParameter
             transform class created by user.
         """
-        name = Transform.parameter_name
+        name = Transform.name
         current_order = CONFIG['transform order']
 
         try:
@@ -215,83 +193,7 @@ class ImgSeriesBase:
         kwargs = {**default_kwargs, **kwargs}
         return ax.imshow(img, **kwargs)
 
-    # =========================== Cache management ===========================
-
-    def cache_info(self):
-        """cache info of the various caches in place.
-
-        Returns
-        -------
-        dict
-            with the cache info corresponding to 'files' and 'transforms'
-        """
-        if not self.cache:
-            return None
-        return {
-            name: method.cache_info()
-            for name, method in self.img_reader.cached_methods.items()
-        }
-
-    def clear_cache(self, which=None):
-        """Clear specified cache.
-
-        Parameters
-        ----------
-        which : str or None
-            can be 'files' or 'transforms'
-            (default: None, i.e. clear both)
-
-        Returns
-        -------
-        None
-        """
-        if not self.cache:
-            return
-
-        if which in ('files', 'transforms'):
-            self.img_reader.cached_methods[which].cache_clear()
-        elif which is None:
-            for method in self.img_reader.cached_methods.values():
-                method.cache_clear()
-        else:
-            raise ValueError(f'{which} not a valid cache name.')
-
     # ============================ Public methods ============================
-
-    def read(self, num=0, correction=True, transform=True, **kwargs):
-        """Load image data as an array.
-
-        Parameters
-        ----------
-        num : int
-            image identifier
-
-        correction : bool
-            By default, if corrections are defined on the image
-            (flicker, shaking etc.), then they are applied here.
-            Put correction=False to only load the raw image in the stack.
-
-        transform : bool
-            By default, if transforms are defined on the image
-            (rotation, crop etc.), then they are applied here.
-            Put transform=False to only load the raw image in the stack.
-
-        **kwargs
-            by default if transform=True, all active transforms are applied.
-            Set any transform name to False to not apply this transform.
-            e.g. images.read(subtraction=False).
-
-        Returns
-        -------
-        array_like
-            Image data as an array
-        """
-        return self.img_reader.read(
-            num=num,
-            correction=correction,
-            transform=transform,
-            **kwargs,
-        )
 
     def profile(self, npts=100, radius=2, **kwargs):
         """Interactively get intensity profile by drawing a line on image."""
@@ -413,8 +315,9 @@ class ImgSeriesBase:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
-        viewer = self.ImgViewer(self, transform=transform, **kwargs)
-        return viewer.show(num=num)
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
+        return self.viewer.show(num=num)
 
     def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
         """Interactively inspect image series.
@@ -437,8 +340,9 @@ class ImgSeriesBase:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
-        viewer = self.ImgViewer(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=self.nums[start:end:skip])
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
+        return self.viewer.inspect(nums=self.nums[start:end:skip])
 
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
         """Interactively inspect image stack.
@@ -464,8 +368,10 @@ class ImgSeriesBase:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
-        viewer = self.ImgViewer(self, transform=transform, **kwargs)
-        return viewer.animate(nums=self.nums[start:end:skip], blit=blit)
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
+        return self.viewer.animate(nums=self.nums[start:end:skip], blit=blit)
+
 
     # =========================== Export to files ============================
 

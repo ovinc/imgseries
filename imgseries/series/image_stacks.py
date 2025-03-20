@@ -22,8 +22,8 @@ class ImgStack(ImgSeriesBase):
         corrections=None,
         transforms=None,
         cache=False,
-        ImgViewer=ImgSeriesViewer,
-        ImgReader=None,
+        Viewer=ImgSeriesViewer,
+        Reader=None,
     ):
         """Init image series object.
 
@@ -63,24 +63,24 @@ class ImgStack(ImgSeriesBase):
             class (or object) that defines how to read images
         """
         self.path = Path(path)
-        self.savepath = Path(savepath)
         extension = self.path.suffix.lower()
 
-        if ImgReader is None:
+        if Reader is None:
             if extension in ('.tif', '.tiff'):
-                ImgReader = TiffStackReader
+                Reader = TiffStackReader
             elif extension == 'hdf5':
-                ImgReader = HDF5Reader
+                Reader = HDF5Reader
 
         super().__init__(
+            savepath=savepath,
             corrections=corrections,
             transforms=transforms,
             cache=cache,
-            ImgViewer=ImgViewer,
-            ImgReader=ImgReader,
+            Viewer=Viewer,
+            Reader=Reader,
         )
 
-        self.data = self.img_reader.data
+        self.data = self.reader.data
         self._get_initial_image_dims()
 
     @property
@@ -93,7 +93,7 @@ class ImgStack(ImgSeriesBase):
         >>> for num in images.nums[::3]:
         >>>     images.read(num)
         """
-        npts = self.img_reader.number_of_images
+        npts = self.reader.number_of_images
         return range(npts)
 
     @property
@@ -106,4 +106,4 @@ class ImgStack(ImgSeriesBase):
         -------
         int
         """
-        return self.img_reader.number_of_images
+        return self.reader.number_of_images

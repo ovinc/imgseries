@@ -24,7 +24,7 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 # ================== Test contour tracking on ImgSeries ===================
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_time('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_times('Img_Files_Saved.tsv')  # in case files have changed creation time
 
 ct = ContourTracking(images)
 ct.contours.load('Img_ContourTracking_Saved')

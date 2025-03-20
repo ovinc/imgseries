@@ -17,7 +17,7 @@ from ..process import max_pixel_range
 class Zones(AnalysisParameter):
     """Class to store and manage areas of interest on series of images."""
 
-    parameter_name = 'zones'
+    name = 'zones'
 
     def define(self, n=1, num=0, draggable=False, **kwargs):
         """Interactively define n zones in image.
@@ -116,7 +116,7 @@ class Zones(AnalysisParameter):
 class Contours(AnalysisParameter):
     """Class to store and manage reference contours param in image series."""
 
-    parameter_name = 'contours'
+    name = 'contours'
 
     def define(self, n=1, num=0, **kwargs):
         """Interactively define n contours on an image at level level.
@@ -233,14 +233,14 @@ class Contours(AnalysisParameter):
         """
         self.reset()  # useful when using caching
         all_data = self._load(filename=filename)
-        self.data = all_data[self.parameter_name]
+        self.data = all_data[self.name]
         self.analysis.threshold.value = self.data['level']
 
 
 class Threshold(AnalysisParameter):
     """Class to store and manage grey level thresholds (e.g. to define contours.)"""
 
-    parameter_name = 'threshold'
+    name = 'threshold'
 
     def define(self, num=0, **kwargs):
         """Interactively define threshold
@@ -322,7 +322,7 @@ class Threshold(AnalysisParameter):
         self.reset()  # useful when using caching
         all_data = self._load(filename=filename)
         try:
-            self.data = all_data[self.parameter_name]
+            self.data = all_data[self.name]
         except KeyError:
             self.value = all_data['contours']['level']
 

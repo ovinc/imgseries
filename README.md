@@ -142,7 +142,7 @@ images.export()  # see examples/Export.ipynb for examples
 images.info  # see correspondence num / file info + automatically extracted image time
 images.save_info()  # save above info in a csv file
 images.load_info()  # Load info from previously saved csv data (overwrites images.files)
-images.load_time('Time_File.txt')  # Keep images.files but update its time information with data from an external csv file.
+images.load_times('Time_File.txt')  # Keep images.files but update its time information with data from an external csv file.
 
 # ----------------------------------------------------------------------------
 # ===================== WORKING WITH A .TIFF IMAGE STACK =====================

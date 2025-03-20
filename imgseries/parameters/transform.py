@@ -28,7 +28,7 @@ class Grayscale(TransformParameter):
     grayscale.active can be True or False
     """
 
-    parameter_name = 'grayscale'
+    name = 'grayscale'
 
     @property
     def active(self):
@@ -62,7 +62,7 @@ class Grayscale(TransformParameter):
 class Rotation(TransformParameter):
     """Class to store and manage rotation on series of images."""
 
-    parameter_name = 'rotation'
+    name = 'rotation'
 
     def define(self, num=0, vertical=False, **kwargs):
         """Interactively define rotation angle by drawing a line.
@@ -168,7 +168,7 @@ class Crop(TransformParameter):
     because they are applied on the coordinates of the rotated image.
     """
 
-    parameter_name = 'crop'
+    name = 'crop'
 
     def define(self, num=0, draggable=False, **kwargs):
         """Interactively define ROI
@@ -259,7 +259,7 @@ class Crop(TransformParameter):
 class Filter(TransformParameter):
     """Class to store and manage filters (gaussian smoothing, etc.)"""
 
-    parameter_name = 'filter'
+    name = 'filter'
 
     def define(self, num=0, max_size=10, **kwargs):
         """Interactively define filter.
@@ -366,7 +366,7 @@ class Subtraction(TransformParameter):
     i.e. I_final = (I - I_ref) / I_ref.
     """
 
-    parameter_name = 'subtraction'
+    name = 'subtraction'
 
     def _calculate_reference(self, ref_nums):
         imgs = []
@@ -423,7 +423,7 @@ class Subtraction(TransformParameter):
 class Threshold(TransformParameter):
     """Class to store and manage image thresholding."""
 
-    parameter_name = 'threshold'
+    name = 'threshold'
 
     def define(self, num=0, **kwargs):
         """Interactively define threshold
@@ -487,5 +487,5 @@ All_Transforms = (
 )
 
 TRANSFORMS = {
-    Transform.parameter_name: Transform for Transform in All_Transforms
+    Transform.name: Transform for Transform in All_Transforms
 }
