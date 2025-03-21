@@ -29,43 +29,63 @@ class GreyLevelViewer(AnalysisViewer):
         self.axs = self.ax_img, self.ax_analysis
         self.ax_img.axis('off')
 
-    def _first_plot(self, data):
-        """What to do the first time data arrives on the plot."""
-        print(data)
-        img = data['image']
-        num = data['num']
-        glevels = data['glevels']
-
-        # image
-        self.ax_img.set_title(f'img #{num}')
+    def _create_image(self, data):
+        self.ax_img.set_title(f"img #{data['num']}")
         self.imshow = self.analysis.img_series._imshow(
-            img,
+            data["image"],
             ax=self.ax_img,
             **self.kwargs,
         )
-        # curves
+
+    def _update_image(self, data):
+        self.ax_img.set_title(f"img #{data['num']}")
+        self.imshow.set_array(data['image'])
+
+    def _autoscale(self):
+        self.ax_analysis.relim()  # without this, axes limits change don't work
+        self.ax_analysis.autoscale(axis='both')
+
+    def _first_plot(self, data):
+        """What to do the first time data arrives on the plot."""
+        glevels = data.get('glevels', None)
+
+        self._create_image(data)
+
+        self.analysis_results_available = (self.analysis.results.data is not None)
+
         self.curves = []
         self.pts = []
+        self.bar = self.ax_analysis.axvline(x=data['num'], c='gray')
+        self.zone_names = list(self.analysis.zones.data)
 
-        for zone_name, glevel in zip(self.analysis.zones.data, glevels):
+        for i, zone_name in enumerate(self.zone_names):
 
-            if self.analysis.results.data is not None:
-                # Existing or re-generated full data from analysis
-                full_data = self.analysis.results.data[zone_name]
-
-                curve, = self.ax_analysis.plot(full_data, label=zone_name)
-                self.curves.append(curve)
-
-                self.full_data_available = True
-
-                color = curve.get_color()
-                pt, = self.ax_analysis.plot(num, glevel, 'o', c=color)
-
+            if self.analysis_results_available:  # existing or re-generated
+                analysis_nums = self.analysis.results.data.index
+                analysis_data = self.analysis.results.data[zone_name]
             else:
-                self.full_data_available = False
-                pt, = self.ax_analysis.plot(num, glevel, 'o', label=zone_name)
-                color = pt.get_color()
+                analysis_nums = []
+                analysis_data = []
 
+            curve, = self.ax_analysis.plot(
+                analysis_nums,
+                analysis_data,
+                '.',
+                label=zone_name,
+                alpha=0.5,
+            )
+            color = curve.get_color()
+
+            if glevels is not None:
+                pt_num = data['num']
+                pt_glevel = glevels[i]
+            else:
+                pt_num = []
+                pt_glevel = []
+
+            pt, = self.ax_analysis.plot(pt_num, pt_glevel, 'o', c=color)
+
+            self.curves.append(curve)
             self.pts.append(pt)
 
             zone = self.analysis.zones.data[zone_name]
@@ -74,54 +94,80 @@ class GreyLevelViewer(AnalysisViewer):
         self.ax_analysis.legend()
         self.ax_analysis.grid()
 
-        self.updated_artists = self.pts + [self.imshow]
+        self.updated_artists = self.pts + [self.imshow, self.bar]
 
     def _update_plot(self, data):
         """What to do upon iterations of the plot after the first time."""
-        img = data['image']
         num = data['num']
-        glevels = data['glevels']
+        glevels = data.get('glevels', None)
 
-        self.ax_img.set_title(f'img #{num}')
+        self._update_image(data)
+        self.bar.set_xdata(num)
 
-        self.imshow.set_array(img)
+        if glevels is None:
+            return
 
-        for pt, glevel in zip(self.pts, glevels):
-            if self.full_data_available:
-                pt.set_data((num, glevel))
-            else:
-                x, y = pt.get_data()
-                new_x = np.append(x, num)
-                new_y = np.append(y, glevel)
-                pt.set_data((new_x, new_y))
+        for zname, pt, curve, glevel in zip(
+            self.zone_names,
+            self.pts,
+            self.curves,
+            glevels,
+        ):
+            pt.set_data((num, glevel))
 
-        self.ax_analysis.relim()  # without this, axes limits change don't work
-        self.ax_analysis.autoscale(axis='both')
+            if self.analysis_results_available:
+                continue
+
+            # If results data not available (e.g. during live analysis)
+            # then use the data from the current analysis
+            analysis_data = self.analysis.formatter.data
+            curve.set_data(analysis_data['num'], analysis_data[zname])
+
+        self._autoscale()
 
 
 class GreyLevelFormatter_Pandas(PandasFormatter):
 
     def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data."""
-        self.glevel_data = []
+        # 'zone 1', 'zone 2', etc.
+        self.zone_names = list(self.analysis.zones.data)
+
+        # Init dictionary with column names as keys, empty lists will be filled
+        self.data = {'num': []}
+        for zone_name in self.zone_names:
+            self.data[zone_name] = []
 
     def _store_data(self, data):
         """How to store data generated by analysis on a single image."""
-        self.glevel_data.append(data['glevels'])
+        num = data['num']
+
+        # Doing two times the same analysis (e.g. when using inspect(live=True)
+        # Should return the same result, so this case is simply ignored)
+        if num in self.data['num']:
+            return
+
+        self.data['num'].append(num)
+        for zone_name, glevel in zip(self.zone_names, data['glevels']):
+            self.data[zone_name].append(glevel)
 
     def _to_pandas(self):
         """How to convert data generated by _store_data() into a pandas table."""
-        zone_names = self.analysis.zones.data.keys()  # 'zone 1', 'zone 2', etc.
-        return pd.DataFrame(self.glevel_data, columns=zone_names)
+        return pd.DataFrame(self.data).sort_values('num')
 
     def _regenerate_data(self, num):
-        """How to go back to raw dict of data from self.data."""
-        data = {}
+        """How to go back to raw dict of data from results.data ('num' added later)"""
+        if self.analysis.results.data is None:  # analysis not run or reset
+            return {}
+
+        glevel_data = self.analysis.results.data.filter(like='zone')
+
         try:
-            data['glevels'] = list(self.analysis.results.data.filter(like='zone').loc[num])
-        except AttributeError:  # if self.data not defined (analysis not made)
-            pass
-        return data
+            glevels = glevel_data.loc[num]
+        except KeyError:    # Analysis not made for the specific num
+            return {}
+
+        return {'glevels': list(glevels)}
 
 
 class GreyLevelResults_PandasTsv(PandasTsvJsonResults):

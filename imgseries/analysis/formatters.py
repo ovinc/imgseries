@@ -63,9 +63,7 @@ class PandasFormatter(Formatter):
         which is not the case if img data is in a stack).
         """
         data_table = self._to_pandas()
-
-        data_table.index = self.analysis.nums
-        data_table.index.name = 'num'
+        data_table.set_index('num')
 
         if self.analysis.img_series.is_stack:
             self.analysis.results.data = data_table

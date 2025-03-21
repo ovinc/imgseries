@@ -1,11 +1,10 @@
 """Image / File managers"""
 
-# Standard library imports
-import json
 
 # Nonstandard
 import pandas as pd
 import skimage
+from filo import to_json, load_json
 
 # local imports
 from .config import CONFIG
@@ -71,9 +70,7 @@ class FileIO:
         -------
         dict
         """
-        with open(filepath, 'r', encoding='utf8') as f:
-            data = json.load(f)
-        return data
+        return load_json(filepath=filepath)
 
     @staticmethod
     def to_json(data, filepath):
@@ -92,8 +89,7 @@ class FileIO:
         None
             (writes data to file)
         """
-        with open(filepath, 'w', encoding='utf8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+        return to_json(data=data, filepath=filepath)
 
     @staticmethod
     def from_tsv(filepath):

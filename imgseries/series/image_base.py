@@ -92,6 +92,89 @@ class ImgSeriesBase(DataSeries):
 
     # ===================== Corrections and  Transforms ======================
 
+
+    def load_transforms(self, filename=None):
+        """Load transform parameters (crop, rotation, etc.) from json file.
+
+        Parameters
+        ----------
+        filename : str
+
+            If filename is not specified (None), use default filenames.
+
+            If filename is specified, it must be an str without the extension,
+            e.g. filename='Test' will load from Test.json.
+
+        Returns
+        -------
+        None
+            But transforms are applied and stored in attributes, e.g.
+            self.rotation, self.crop, etc.
+        """
+        fname = CONFIG['filenames']['transform'] if filename is None else filename
+        return super().load_transforms(filepath=self.savepath / (fname + '.json'))
+
+    def save_transforms(self, filename=None):
+        """Save transform parameters (crop, rotation etc.) into json file.
+
+        Parameters
+        ----------
+        filename : str
+
+            If filename is not specified (None), use default filenames.
+
+            If filename is specified, it must be an str without the extension,
+            e.g. filename='Test' will save to Test.json.
+
+        Returns
+        -------
+        None
+        """
+        fname = CONFIG['filenames']['transform'] if filename is None else filename
+        return super().save_transforms(filepath=self.savepath / (fname + '.json'))
+
+    def load_display(self, filename=None):
+        """Load display parameters (contrast, colormapn etc.) from json file.
+
+        Parameters
+        ----------
+        filename : str
+
+            If filename is not specified (None), use default filenames.
+
+            If filename is specified, it must be an str without the extension,
+            e.g. filename='Test' will load from Test.json.
+
+        Returns
+        -------
+        None
+            But display option are applied and stored in attributes, e.g.
+            self.contrast, etc.
+        """
+        fname = CONFIG['filenames']['display'] if filename is None else filename
+        filepath = self.savepath / (fname + '.json')
+        self.display.data = FileIO.from_json(filepath=filepath)
+
+    def save_display(self, filename=None):
+        """Save  display parameters (contrast, colormapn etc.) into json file.
+
+        Parameters
+        ----------
+        filename : str
+
+            If filename is not specified (None), use default filenames.
+
+            If filename is specified, it must be an str without the extension,
+            e.g. filename='Test' will save to Test.json.
+
+        Returns
+        -------
+        None
+        """
+        fname = CONFIG['filenames']['display'] if filename is None else filename
+        filepath = self.savepath / (fname + '.json')
+        FileIO.to_json(self.display.data, filepath=filepath)
+
     @staticmethod
     def add_transform(Transform, order=None):
         """Add custom transform to the available transforms
@@ -199,193 +282,6 @@ class ImgSeriesBase(DataSeries):
         """Interactively get intensity profile by drawing a line on image."""
         profile = Profile(self, npts=npts, radius=radius, **kwargs)
         return profile
-
-    def load_transforms(self, filename=None):
-        """Load transform parameters (crop, rotation, etc.) from json file.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified (None), use default filenames.
-
-            If filename is specified, it must be an str without the extension,
-            e.g. filename='Test' will load from Test.json.
-
-        Returns
-        -------
-        None
-            But transforms are applied and stored in attributes, e.g.
-            self.rotation, self.crop, etc.
-        """
-        fname = CONFIG['filenames']['transform'] if filename is None else filename
-        filepath = self.savepath / (fname + '.json')
-        transform_data = FileIO.from_json(filepath=filepath)
-
-        for transform_name in self.transforms:
-            transform = getattr(self, transform_name)
-            transform.data = transform_data.get(transform_name, {})
-            transform._update_parameter()  # if not, subtraction reference is not updated
-            transform._update_others()
-
-    def save_transforms(self, filename=None):
-        """Save transform parameters (crop, rotation etc.) into json file.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified (None), use default filenames.
-
-            If filename is specified, it must be an str without the extension,
-            e.g. filename='Test' will save to Test.json.
-
-        Returns
-        -------
-        None
-        """
-        fname = CONFIG['filenames']['transform'] if filename is None else filename
-        transform_data = {}
-
-        for transform_name in self.active_transforms:
-            transform = getattr(self, transform_name)
-            transform_data[transform_name] = transform.data
-
-        filepath = self.savepath / (fname + '.json')
-        FileIO.to_json(transform_data, filepath=filepath)
-
-    def load_display(self, filename=None):
-        """Load display parameters (contrast, colormapn etc.) from json file.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified (None), use default filenames.
-
-            If filename is specified, it must be an str without the extension,
-            e.g. filename='Test' will load from Test.json.
-
-        Returns
-        -------
-        None
-            But display option are applied and stored in attributes, e.g.
-            self.contrast, etc.
-        """
-        fname = CONFIG['filenames']['display'] if filename is None else filename
-        filepath = self.savepath / (fname + '.json')
-        self.display.data = FileIO.from_json(filepath=filepath)
-
-    def save_display(self, filename=None):
-        """Save  display parameters (contrast, colormapn etc.) into json file.
-
-        Parameters
-        ----------
-        filename : str
-
-            If filename is not specified (None), use default filenames.
-
-            If filename is specified, it must be an str without the extension,
-            e.g. filename='Test' will save to Test.json.
-
-        Returns
-        -------
-        None
-        """
-        fname = CONFIG['filenames']['display'] if filename is None else filename
-        filepath = self.savepath / (fname + '.json')
-        FileIO.to_json(self.display.data, filepath=filepath)
-
-    # ==================== Interactive inspection methods ====================
-
-    def show(
-        self,
-        num=0,
-        transform=True,
-        **kwargs,
-    ):
-        """Show image in a matplotlib window.
-
-        Parameters
-        ----------
-        num : int
-            image identifier in the file series
-
-        transform : bool
-            if True (default), apply active transforms
-            if False, load raw image.
-
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        self.viewer.transform = transform
-        self.viewer.kwargs = kwargs
-        return self.viewer.show(num=num)
-
-    def inspect(
-        self,
-        start=0,
-        end=None,
-        skip=1,
-        transform=True,
-        **kwargs,
-    ):
-        """Interactively inspect image series.
-
-        Parameters
-        ----------
-        start : int
-        end : int
-        skip : int
-            images to consider. These numbers refer to 'num' identifier which
-            starts at 0 in the first folder and can thus be different from the
-            actual number in the image filename
-
-        transform : bool
-            if True (default), apply active transforms
-            if False, use raw images.
-
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        self.viewer.transform = transform
-        self.viewer.kwargs = kwargs
-        return self.viewer.inspect(nums=self.nums[start:end:skip])
-
-    def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
-        """Interactively inspect image stack.
-
-        Parameters
-        ----------
-        start : int
-        end : int
-        skip : int
-            images to consider. These numbers refer to 'num' identifier which
-            starts at 0 in the first folder and can thus be different from the
-            actual number in the image filename
-
-        transform : bool
-            if True (default), apply active transforms
-            if False, use raw images.
-
-        blit : bool
-            use blitting for faster rendering (default False)
-
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        self.viewer.transform = transform
-        self.viewer.kwargs = kwargs
-        return self.viewer.animate(
-            nums=self.nums[start:end:skip],
-            blit=blit,
-        )
 
     # =========================== Export to files ============================
 
