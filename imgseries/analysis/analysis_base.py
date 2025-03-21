@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Nonstandard
 from tqdm import tqdm
+from filo import AnalysisBase
 
 # local imports
 from .formatters import Formatter
@@ -14,7 +15,7 @@ from .results import Results
 from ..viewers import AnalysisViewer
 
 
-class Analysis:
+class Analysis(AnalysisBase):
     """Base class for analysis subclasses (GreyLevel, ContourTracking, etc.)."""
 
     measurement_type = None  # define in subclasses (e.g. 'glevel', 'ctrack', etc.)
@@ -57,12 +58,14 @@ class Analysis:
             Results class/subclasses that is used to store, save and load
             analysis data and metadata.
         """
+        super().__init__(data_series=img_series)
+
         Viewer = self.DefaultViewer if Viewer is None else Viewer
         Formatter = self.DefaultFormatter if Formatter is None else Formatter
         Results = self.DefaultResults if Results is None else Results
 
         self.img_series = img_series
-        self.Viewer = Viewer
+        self.viewer = Viewer(self)
         self.formatter = Formatter(self)
 
         savepath = Path(savepath) if savepath else img_series.savepath
@@ -75,125 +78,13 @@ class Analysis:
             stack_path = os.path.relpath(self.img_series.path, savepath)
             self.results.metadata['stack'] = stack_path
         else:
-            folders = [os.path.relpath(f, savepath) for f in self.img_series.folders]
+            folders = [
+                os.path.relpath(f, savepath) for f in self.img_series.files.folders
+            ]
             self.results.metadata['path'] = str(savepath.resolve()),
             self.results.metadata['folders'] = folders
 
-    # ========================= Misc. internal tools =========================
-
-    def _add_transform_to_metadata(self):
-        """Add information about image transforms (rotation, crop etc.) to metadata."""
-        for transform_name in self.img_series.transforms:
-            transform_data = getattr(self.img_series, transform_name).data
-            self.results.metadata[transform_name] = transform_data
-
-    def _analyze_live(self, num):
-        data = self.analyze(num=num, live=True)
-        self.formatter._store_data(data)
-        return data
-
     # ============================ Public methods ============================
-
-    def run(
-        self,
-        start=0,
-        end=None,
-        skip=1,
-        parallel=False,
-        nprocess=None,
-        live=False,
-        blit=False
-    ):
-        """Start analysis of image sequence.
-
-        Parameters
-        ----------
-        start : int
-        end : int
-        skip : int
-            images to consider. These numbers refer to 'num' identifier which
-            starts at 0 in the first folder and can thus be different from the
-            actual number in the image filename
-
-        parallel : bool
-            if True, distribute computation across different processes.
-            (only available if calculations on each image is independent of
-            calculations on the other images)
-
-        nprocess : int
-            number of process workers; if None (default), use default
-            in ProcessPoolExecutor, depends on the number of cores of computer)
-
-        live : bool
-            if True, plot analysis results in real time.
-
-        blit : bool
-            if True, use blitting to speed up live display
-
-        Returns
-        -------
-        pd.DataFrame
-            Pandas dataframe with image numbers as the index, and with columns
-            containing timestamps and the calculated data.
-
-        Warning
-        -------
-            If running on a Windows machine and using the parallel option,
-            the function call must not be run during import of the file
-            containing the script (i.e. the function must be in a
-            `if __name__ == '__main__'` block).
-            This is because apparently multiprocessing imports the main
-            program initially, which causes recursive problems.
-        """
-        self.nums = self.img_series.nums[start:end:skip]
-        self.nimg = len(self.nums)
-
-        self._initialize()
-        self._add_metadata()
-        self._add_transform_to_metadata()
-
-        self.formatter._prepare_data_storage()
-
-        if parallel:  # ================================= Multiprocessing mode
-
-            futures = {}
-
-            with ProcessPoolExecutor(max_workers=nprocess) as executor:
-
-                for num in self.nums:
-                    future = executor.submit(self.analyze, num, live=False)
-                    futures[num] = future
-
-                # Waitbar ----------------------------------------------------
-                futures_list = list(futures.values())
-                for future in tqdm(as_completed(futures_list), total=self.nimg):
-                    pass
-
-                # Get results ------------------------------------------------
-                for num, future in futures.items():
-                    data = future.result()
-                    self.formatter._store_data(data)
-
-        else:  # ============================================= Sequential mode
-
-            if not live:
-                for num in tqdm(self.nums):
-                    data = self.analyze(num=num, live=False)
-                    self.formatter._store_data(data)
-            else:
-                # plot uses self._analyze_live to calculate and store data
-                live_plot = self.Viewer(self, live=True)
-                # without self.animation, the animation is garbage collected
-                self.animation = live_plot.animate(nums=self.nums, blit=blit)
-
-        # Finalize and format data -------------------------------------------
-
-        # if live, it's the _on_fig_close() method of the viewer which takes
-        # care of saving the data, because if not, save_results() is called
-        # at the beginning of the FuncAnimation (i.e., analysis in this case,
-        # and no data is saved)
-        if not live:
-            self.formatter._to_results()
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.
@@ -218,122 +109,71 @@ class Analysis:
         # load data from files
         self.results.load(filename=filename)
 
-        # re-apply transforms (rotation, crop etc.)
+        # re-apply transforms and corrections (rotation, crop etc.)
+        for name, correction in self.img_series.corrections.items():
+            correction.reset()
+            correction.data = self.results.metadata.get(name, {})
 
-        for transform_name in self.img_series.transforms:
+        for name, transform in self.img_series.transforms.items():
+            transform.reset()
+            transform.data = self.results.metadata.get(name, {})
 
-            # e.g. self.img_series.crop.reset()
-            getattr(self.img_series, transform_name).reset()
+    # ======================= Methods of AnalysisBase ========================
 
-            # e.g. self.img_series.crop.data = self.results.metadata['crop']
-            data = self.results.metadata.get(transform_name, {})
-            setattr(getattr(self.img_series, transform_name), 'data', data)
+    def _initialize(self):
+        """Check everything OK before starting analysis & initialize params."""
+        self._init_analysis()
+        self._add_metadata()
+        self._add_transforms_to_metadata()
+        self.formatter._prepare_data_storage()
 
-    # ==================== Interactive inspection methods ====================
+    def _store_data(self, data):
+        """How to handle results spit out by analysis"""
+        self.formatter._store_data(data)
 
-    # Note: Initially, these were in a ViewerTools subclass to avoid code
-    # repetition, but I eventually preferred to repeat code to avoid
-    # multiple inheritance and weird couplings.
+    def analyze(self, num, details=False):
+        """Same as _analyze, but with num as input instead of img.
 
-    def show(
-        self,
-        num=0,
-        transform=True,
-        **kwargs,
-    ):
-        """Show image in a matplotlib window.
+        Can be subclassed if necessary.
 
         Parameters
         ----------
         num : int
-            image identifier in the file series
+            file number identifier across the image file series
 
-        transform : bool
-            if True (default), apply active transforms
-            if False, load raw image.
+        details : bool
+            whether to include more details (e.g. for debugging or live view)
 
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.show(num=num)
+        Returns
+        -------
+        dict
+            data, handled by formatter._store_data()"""
+        img = self.img_series.read(num=num)
+        data = self._analyze(img=img)
+        data['num'] = num
+        if details:
+            data['image'] = img
+        return data
 
-    def inspect(
-        self,
-        start=0,
-        end=None,
-        skip=1,
-        transform=True,
-        **kwargs,
-    ):
-        """Interactively inspect image series.
+    def _finalize(self):
+        """What to do at the end of analysis"""
+        self.formatter._to_results()
 
-        Parameters
-        ----------
-        start : int
-        end : int
-        skip : int
-            images to consider. These numbers refer to 'num' identifier which
-            starts at 0 in the first folder and can thus be different from the
-            actual number in the image filename
+    # ========================= Other useful methods =========================
 
-        transform : bool
-            if True (default), apply active transforms
-            if False, use raw images.
+    def _add_transforms_to_metadata(self):
+        """Add information about image transforms (rotation, crop etc.) to metadata."""
+        for name, correction in self.img_series.corrections.items():
+            self.results.metadata[name] = correction.data
 
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        nums = self.img_series.nums[start:end:skip]
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=nums)
-
-    def animate(
-        self,
-        start=0,
-        end=None,
-        skip=1,
-        transform=True,
-        blit=False,
-        **kwargs,
-    ):
-        """Interactively inspect image stack.
-
-        Parameters
-        ----------
-
-        start : int
-        end : int
-        skip : int
-            images to consider. These numbers refer to 'num' identifier which
-            starts at 0 in the first folder and can thus be different from the
-            actual number in the image filename
-
-        transform : bool
-            if True (default), apply active transforms
-            if False, use raw images.
-
-        blit : bool
-            if True, use blitting for faster animation.
-
-        **kwargs
-            any keyword-argument to pass to imshow() (overrides default
-            and preset display parameters such as contrast, colormap etc.)
-            (note: cmap is grey by default for 2D images)
-        """
-        nums = self.img_series.nums[start:end:skip]
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.animate(nums=nums, blit=blit)
+        for name, transform in self.img_series.transforms.items():
+            self.results.metadata[name] = transform.data
 
     # =================== Methods to define in subclasses ====================
 
-    def _initialize(self):
-        """Check everything OK before starting analysis & initialize params.
-
+    def _init_analysis(self):
+        """Any initialization steps necessary in the analysis in addition
+        to metadata saving and formatter init.
         Define in subclasses."""
         pass
 
@@ -344,42 +184,21 @@ class Analysis:
         Define in subclasses."""
         pass
 
-    def _analyze(self, img):
+    def _analyze(self, img, details=False):
         """Analysis process on single image. Must return a dict.
 
         Parameters
         ----------
-        - img: image array to be analyzed (e.g. numpy array).
+        img : array-like
+            image array to be analyzed (e.g. numpy array).
 
-        Returns
-        -------
-        - dict of data, handled by formatter._store_data()
-
-        Define in subclasses."""
-        pass
-
-    # ========================================================================
-
-    def analyze(self, num, live=False):
-        """Same as _analyze, but with num as input instead of img.
-
-        Can be subclassed if necessary.
-
-        Parameters
-        ----------
-        num : int
-            file number identifier across the image file series
-
-        live : bool
-            if True, add image to data for live visualization
+        details : bool
+            whether to include more details (e.g. for debugging or live view)
 
         Returns
         -------
         dict
-            data, handled by formatter._store_data()"""
-        img = self.img_series.read(num=num)
-        data = self._analyze(img=img)
-        data['num'] = num
-        if live:
-            data['image'] = img
-        return data
+            dict of data, handled by formatter._store_data()
+
+        Define in subclasses."""
+        pass

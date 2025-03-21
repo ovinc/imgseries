@@ -340,7 +340,7 @@ class ContourTracking(Analysis):
 
         return data
 
-    def _initialize(self):
+    def _init_analysis(self):
         """Check everything OK before starting analysis & initialize params."""
 
         if self.contours.is_empty:

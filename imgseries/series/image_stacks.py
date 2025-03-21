@@ -83,6 +83,9 @@ class ImgStack(ImgSeriesBase):
         self.data = self.reader.data
         self._get_initial_image_dims()
 
+    def __repr__(self):
+        return f"{super().__repr__()}\nfrom {self.path}"
+
     @property
     def nums(self):
         """Iterator (sliceable) of image identifiers.

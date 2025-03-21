@@ -298,7 +298,12 @@ class ImgSeriesBase(DataSeries):
 
     # ==================== Interactive inspection methods ====================
 
-    def show(self, num=0, transform=True, **kwargs):
+    def show(
+        self,
+        num=0,
+        transform=True,
+        **kwargs,
+    ):
         """Show image in a matplotlib window.
 
         Parameters
@@ -319,7 +324,14 @@ class ImgSeriesBase(DataSeries):
         self.viewer.kwargs = kwargs
         return self.viewer.show(num=num)
 
-    def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
+    def inspect(
+        self,
+        start=0,
+        end=None,
+        skip=1,
+        transform=True,
+        **kwargs,
+    ):
         """Interactively inspect image series.
 
         Parameters
@@ -370,8 +382,10 @@ class ImgSeriesBase(DataSeries):
         """
         self.viewer.transform = transform
         self.viewer.kwargs = kwargs
-        return self.viewer.animate(nums=self.nums[start:end:skip], blit=blit)
-
+        return self.viewer.animate(
+            nums=self.nums[start:end:skip],
+            blit=blit,
+        )
 
     # =========================== Export to files ============================
 

@@ -31,6 +31,7 @@ class GreyLevelViewer(AnalysisViewer):
 
     def _first_plot(self, data):
         """What to do the first time data arrives on the plot."""
+        print(data)
         img = data['image']
         num = data['num']
         glevels = data['glevels']
@@ -193,13 +194,17 @@ class GreyLevel(Analysis):
         self.zones = Zones(self)
         self.func = func
 
-    def _analyze(self, img):
+    def _analyze(self, img, details=False):
         """Analysis process on single image. Must return a dict.
 
         Parameters
         ----------
         img : array_like
             image array to be analyzed (e.g. numpy array).
+
+        details : bool
+            whether to include more details (e.g. for debugging or live view)
+
 
         Returns
         -------
@@ -217,7 +222,7 @@ class GreyLevel(Analysis):
 
         return data
 
-    def _initialize(self):
+    def _init_analysis(self):
         """Check everything OK before starting analysis & initialize params."""
         if self.zones.is_empty:
             self._set_default_zone()

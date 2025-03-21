@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
-from filo import DataViewerBase
+from filo import DataViewerBase, AnalysisViewerBase
 
 # Local imports
 from .process import max_pixel_range, double_threshold
@@ -33,10 +33,6 @@ class ImgSeriesViewer(DataViewerBase):
         """
         super().__init__()
         self.img_series = img_series
-
-        # The parameters below are changed if necessary when methods are called
-        self.kwargs = {}
-        self.transform = True
 
     def _create_figure(self):
         self.fig, self.ax = plt.subplots()
@@ -71,55 +67,11 @@ class ImgSeriesViewer(DataViewerBase):
         self.ax.set_title(f'{title} (#{num}){raw_info}')
 
 
-class AnalysisViewer(DataViewerBase):
+class AnalysisViewer(AnalysisViewerBase):
     """Matplotlib viewer to display analysis results alongside images."""
 
-    def __init__(self, analysis, live=False, **kwargs):
-        """Init analysis viewer
-
-        Parameters
-        ----------
-        analysis : Analysis object
-            e.g. GreyLevel(), ContourTracking(), etc.
-
-        live : bool
-            if True, get data in real time from analysis being made.
-
-        **kwargs
-            any keyword-argument to pass to imshow().
-
-        Notes
-        -----
-            transform=False not available here because analysis classes use
-            transformed images.
-        """
-        self.analysis = analysis
-        self.live = live
-        self.kwargs = kwargs
-        super().__init__()
-
-    def _get_data(self, num):
-        """Analyses classes should define adequate methods if needed:
-
-        - Analysis.__analyze_live() to get real time data from analysis
-        - Analysis._generate_data() to get usable data from stored data."""
-        if self.live:
-            return self.analysis._analyze_live(num)
-        else:
-            return self.analysis.formatter._generate_data(num)
-
-    def _connect_events(self):
-        """Connect figure events"""
-        self.cid_close = self.fig.canvas.mpl_connect(
-            'close_event',
-            self._on_fig_close,
-        )
-
-    def _on_fig_close(self, event):
-        """This is because we want the analysis (i.e. animation) to finish
-        before saving the data in live mode."""
-        if self.live:
-            self.analysis.formatter._to_results()
+    def _generate_data_from_results(self, num):
+        return self.analysis.formatter._generate_data(num)
 
 
 # ==================== Interactive setting of parameters =====================

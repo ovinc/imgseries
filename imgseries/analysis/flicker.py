@@ -94,9 +94,9 @@ class Flicker(GreyLevel):
         )
         self.reference = reference
 
-    def _initialize(self):
+    def _init_analysis(self):
         """Check everything OK before starting analysis & initialize params."""
-        super()._initialize()
+        super()._init_analysis()
         self.ref_values = None
         data = self.analyze(num=self.reference, live=False)
         self.ref_values = data['glevels']

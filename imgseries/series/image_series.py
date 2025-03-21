@@ -14,9 +14,6 @@ from .image_base import ImgSeriesBase
 class ImgSeries(ImgSeriesBase):
     """Class to manage series of images, possibly in several folders."""
 
-    # Only for __repr__ (str representation of class object, see filo.Series)
-    name = 'Image Series'
-
     # Default filename to save file info with save_info (see filo.Series)
     info_filename = CONFIG['filenames']['files'] + '.tsv'
 
@@ -89,6 +86,9 @@ class ImgSeries(ImgSeriesBase):
         )
 
         self._get_initial_image_dims()
+
+    def __repr__(self):
+        return f"{super().__repr__()}\nfrom {self.files}"
 
     @property
     def info(self):
