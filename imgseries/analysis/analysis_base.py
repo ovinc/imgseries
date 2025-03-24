@@ -109,11 +109,10 @@ class Analysis(AnalysisBase):
         # load data from files
         self.results.load(filename=filename)
 
-        # re-apply transforms and corrections (rotation, crop etc.)
-        for name, correction in self.img_series.corrections.items():
-            correction.reset()
-            correction.data = self.results.metadata.get(name, {})
-
+        # re-apply transforms (rotation, crop etc.)
+        # Note: if there are corrections, they need to be loaded manually
+        # because typically all corrections parameters and data are
+        # not stored in metadata.
         for name, transform in self.img_series.transforms.items():
             transform.reset()
             transform.data = self.results.metadata.get(name, {})
@@ -185,7 +184,7 @@ class Analysis(AnalysisBase):
         Define in subclasses."""
         pass
 
-    def _analyze(self, img, details=False):
+    def _analyze(self, img):
         """Analysis process on single image. Must return a dict.
 
         Parameters

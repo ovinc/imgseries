@@ -98,8 +98,8 @@ class Flicker(GreyLevel):
         """Check everything OK before starting analysis & initialize params."""
         super()._init_analysis()
         self.ref_values = None
-        data = self.analyze(num=self.reference, live=False)
-        self.ref_values = data['glevels']
+        ref_data = self.analyze(num=self.reference)
+        self.ref_values = ref_data['glevels']
 
     def _analyze(self, img):
         """Basic analysis function, to be threaded or multiprocessed.

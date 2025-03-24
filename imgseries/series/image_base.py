@@ -92,7 +92,6 @@ class ImgSeriesBase(DataSeries):
 
     # ===================== Corrections and  Transforms ======================
 
-
     def load_transforms(self, filename=None):
         """Load transform parameters (crop, rotation, etc.) from json file.
 

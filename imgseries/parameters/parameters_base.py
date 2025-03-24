@@ -95,10 +95,12 @@ class CorrectionParameter(CorrectionParameterBase):
         try:  # if there is metadata, load it
             filepath = path / (fname + '.json')
         except FileNotFoundError:
-            self.data = {}
+            self.metadata = {}
         else:
-            self.data = FileIO.from_json(filepath)
-        self.data['correction'] = FileIO.from_tsv(filepath=path / (fname + '.tsv'))
+            self.metadata = FileIO.from_json(filepath)
+        self.data = {
+            'correction': FileIO.from_tsv(filepath=path / (fname + '.tsv'))
+        }
 
 
 class AnalysisParameter(Parameter):

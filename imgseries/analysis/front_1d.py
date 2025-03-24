@@ -1,6 +1,7 @@
 """Analysis of wetting / drying fronts."""
 
 # Non-standard modules
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -26,9 +27,17 @@ class Front1DViewer(AnalysisViewer):
     def _first_plot(self, data):
         """What to do the first time data arrives on the plot."""
         self.ax_img.set_title(f"img #{data['num']}")
-        self.imshow = self.analysis.img_series._imshow(data['image'],
-                                                       ax=self.ax_img,
-                                                       **self.kwargs)
+        self.imshow = self.analysis.img_series._imshow(
+            data['image'],
+            ax=self.ax_img,
+            **self.kwargs,
+        )
+
+        if data['analysis'] is None:  # e.g. start num not analyzed
+            ny, nx = data['image'].shape
+            self.analysis_line, = self.ax_analysis.plot(np.zeros(nx))
+            self.analysis_line.set_visible(False)
+            return
 
         self.analysis_line, = self.ax_analysis.plot(data['analysis'])
         self.updated_artists = [self.analysis_line, self.imshow]
@@ -37,10 +46,14 @@ class Front1DViewer(AnalysisViewer):
         """What to do upon iterations of the plot after the first time."""
         self.ax_img.set_title(f"img #{data['num']}")
         self.imshow.set_array(data['image'])
-        self.analysis_line.set_ydata(data['analysis'])
 
-        self.ax_analysis.relim()  # without this, axes limits change don't work
-        self.ax_analysis.autoscale(axis='both')
+        if data['analysis'] is None:  # e.g. start num not analyzed
+            self.analysis_line.set_visible(False)
+            return
+
+        self.analysis_line.set_visible(True)
+        self.analysis_line.set_ydata(data['analysis'])
+        self._autoscale(ax=self.ax_analysis)
 
 
 class Front1DFormatter_Pandas(PandasFormatter):
@@ -52,6 +65,7 @@ class Front1DFormatter_Pandas(PandasFormatter):
         self.dataframe_created = False
 
     def _create_dataframe(self, data):
+
         self.data = pd.DataFrame(columns=range(data['analysis'].size))
         self.data.index.name = 'num'
         self.dataframe_created = True
@@ -70,8 +84,8 @@ class Front1DFormatter_Pandas(PandasFormatter):
         """How to go back to raw dict of data from self.data."""
         try:  # This is because the df indexes vary whether from load_csv or not
             data = self.analysis.results.data.loc[num, 0:]
-        except TypeError:
-            data = self.analysis.results.data.loc[num, '0':]
+        except KeyError:  # this num has not been analyzed yet
+            data = None
         return {'analysis': data}
 
 
@@ -79,6 +93,19 @@ class Front1DResults_PandasTsv(PandasTsvJsonResults):
 
     measurement_type = 'front1d'
     default_filename = 'Img_Front1D'
+
+    @staticmethod
+    def _integrify_columns(name):
+        try:
+            return int(name)
+        except ValueError:
+            return name
+
+    def _load_data(self, filepath):
+        """load_csv returns the indices as str, but we need to convert the
+        x positions as intergers"""
+        data = super()._load_data(filepath)
+        return data.rename(columns=self._integrify_columns)
 
 
 # =========================== Main ANALYSIS class ============================

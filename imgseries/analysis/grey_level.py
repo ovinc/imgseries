@@ -232,7 +232,7 @@ class GreyLevel(Analysis):
         self.zones = Zones(self)
         self.func = func
 
-    def _analyze(self, img, details=False):
+    def _analyze(self, img):
         """Analysis process on single image. Must return a dict.
 
         Parameters
