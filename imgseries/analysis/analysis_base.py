@@ -164,7 +164,8 @@ class Analysis(AnalysisBase):
     def _add_transforms_to_metadata(self):
         """Add information about image transforms (rotation, crop etc.) to metadata."""
         for name, correction in self.img_series.corrections.items():
-            self.results.metadata[name] = correction.data
+            # Because correction data typically cannot be saved to JSON
+            self.results.metadata[name] = bool(correction.data)
 
         for name, transform in self.img_series.transforms.items():
             self.results.metadata[name] = transform.data

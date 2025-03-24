@@ -94,10 +94,11 @@ class CorrectionParameter(CorrectionParameterBase):
         fname = CONFIG['filenames'][self.name] if filename is None else filename
         try:  # if there is metadata, load it
             filepath = path / (fname + '.json')
-            self.data = FileIO.from_json(filepath)
         except FileNotFoundError:
             self.data = {}
-        self.data['correction'] = FileIO.from_tsv(filepath=path + (fname + '.tsv'))
+        else:
+            self.data = FileIO.from_json(filepath)
+        self.data['correction'] = FileIO.from_tsv(filepath=path / (fname + '.tsv'))
 
 
 class AnalysisParameter(Parameter):

@@ -15,10 +15,10 @@ class Flicker(CorrectionParameter):
 
     name = 'flicker'
 
-    def apply(self, img, num):
+    def apply(self, data, num):
         """Flicker correction by dividing image by factor"""
         return divide(
-            img=img,
+            img=data,
             value=self.img_series.flicker.data['correction']['ratio'].loc[num]
         )
 
@@ -28,9 +28,9 @@ class Shaking(CorrectionParameter):
 
     name = 'shaking'
 
-    def apply(self, img, num):
+    def apply(self, data, num):
         """NOT IMPLEMENTED YET // TODO"""
-        return img
+        return data
 
 
 All_Corrections = (
