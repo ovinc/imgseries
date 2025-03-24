@@ -63,14 +63,12 @@ class PandasFormatter(Formatter):
         which is not the case if img data is in a stack).
         """
         data_table = self._to_pandas()
-        data_table.set_index('num')
 
         if self.analysis.img_series.is_stack:
             self.analysis.results.data = data_table
         else:
-            info = self.analysis.img_series.info
             self.analysis.results.data = pd.concat(
-                [info, data_table],
+                [self.analysis.img_series.info, data_table],
                 axis=1,
                 join='inner',
             )
