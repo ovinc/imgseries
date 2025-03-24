@@ -28,7 +28,7 @@ Quick start
 ===========
 
 Below is some information to use the functions available in **imgseries**.
-For more details and examples, please also consult docstrings and the Jupyter notebooks in the `examples` folder: *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *Analysis_GreyLevel.ipynb* and *Analysis_ContourTracking.ipynb*.
+For more details and examples, please also consult docstrings and the Jupyter notebooks in the `examples` folder: *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *GreyLevel.ipynb* and *ContourTracking.ipynb*.
 
 
 The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.Series`.
@@ -141,7 +141,6 @@ images.export()  # see examples/Export.ipynb for examples
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
 images.save_info()  # save above info in a csv file
-images.load_info()  # Load info from previously saved csv data (overwrites images.files)
 images.load_times('Time_File.txt')  # Keep images.files but update its time information with data from an external csv file.
 
 # ----------------------------------------------------------------------------
@@ -167,7 +166,7 @@ By default, caching is disabled because it can lead to significant memory usage 
 --------------------------------------------------------
 
 Follow the average grey level (brightness) of one or more selected zones (default: whole image) on the image sequence.
-The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_GreyLevel.ipynb* in the `examples` folder.
+The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *GreyLevel.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import GreyLevel, GreyLevelResults
@@ -202,7 +201,7 @@ results.data, results.metadata  # useful attributes
 `ContourTracking`: object tracking using contours in image series
 -----------------------------------------------------------------
 
-Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *Analysis_ContourTracking.ipynb* in the `examples` folder.
+Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *ContourTracking.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import ContourTracking, ContourTrackingResults
@@ -236,7 +235,7 @@ results.data, results.raw_contour_data, results.metadata  # useful attributes
 `Front1D`: Analyze 1D propagating fronts with grey level analysis
 -----------------------------------------------------------------
 
-Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Analysis_Front1D.ipynb* in the `examples` folder.
+Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Front1D.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import Front1D, Front1DResults
@@ -248,7 +247,7 @@ f1d.run()
 `Flicker`: Get image flicker from grey level variations on a zone
 -----------------------------------------------------------------
 
-Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Analysis_Flicker.ipynb* in the `examples` folder.
+Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Flicker.ipynb* in the `examples` folder.
 
 ```python
 from imgseries import Flicker, FlickerResults
@@ -286,7 +285,7 @@ Several customizations are possible :
 - numpy
 - importlib-metadata
 - tqdm (waitbars)
-- filo (file series management) >= 1.3
+- filo (file series management) >= 2.0
 - gittools (get git commit info) >= 0.5
 - imgbasics (basic image processing) >= 0.3.0
 - drapo (interactive tools for matplotlib figures) >= 1.2.1
