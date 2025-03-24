@@ -122,3 +122,7 @@ class Flicker(GreyLevel):
                 glevel / ref_val for glevel, ref_val in zip(glevels, self.ref_values)
             ]
         return data
+
+    def _add_metadata(self):
+        super()._add_metadata()
+        self.results.metadata['reference'] = self.reference
