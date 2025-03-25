@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
-from filo import DataViewerBase, AnalysisViewerBase
+from filo import DataViewerBase, FormattedAnalysisViewerBase
 
 # Local imports
 from .process import max_pixel_range, double_threshold
@@ -67,11 +67,9 @@ class ImgSeriesViewer(DataViewerBase):
         self.ax.set_title(f'{title} (#{num}){raw_info}')
 
 
-class AnalysisViewer(AnalysisViewerBase):
+class AnalysisViewer(FormattedAnalysisViewerBase):
     """Matplotlib viewer to display analysis results alongside images."""
-
-    def _generate_data_from_results(self, num):
-        return self.analysis.formatter._generate_data(num)
+    pass
 
 
 # ==================== Interactive setting of parameters =====================

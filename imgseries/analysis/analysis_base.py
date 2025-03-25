@@ -1,36 +1,41 @@
 """Analysis of image series (base class)"""
 
 # Standard library imports
-import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from abc import abstractmethod
 from pathlib import Path
 
 # Nonstandard
-from tqdm import tqdm
-from filo import AnalysisBase
-
-# local imports
-from .formatters import Formatter
-from .results import Results
-from ..viewers import AnalysisViewer
+from filo import FormattedAnalysisBase
 
 
-class Analysis(AnalysisBase):
-    """Base class for analysis subclasses (GreyLevel, ContourTracking, etc.)."""
+class Analysis(FormattedAnalysisBase):
+    """Base class for analysis subclasses (GreyLevel, ContourTracking, etc.).
 
-    measurement_type = None  # define in subclasses (e.g. 'glevel', 'ctrack', etc.)
+    Class attributes (to redefine in subclasses)
+    --------------------------------------------
 
-    DefaultViewer = AnalysisViewer     # redefine in subclasses
-    DefaultFormatter = Formatter       # redefine in subclasses
-    DefaultResults = Results           # redefine in subclasses
+    Viewer : class
+        (subclass of AnalysisViewer)
+        Viewer class/subclasses that is used to display and inspect analysis data
+
+    Formatter: class
+        (subclass of Formatter)
+        class used to format results spit out by the raw analysis into
+        something storable/saveable by the Results class.
+
+    Results : class
+        (subclass of Results)
+        Results class/subclasses that is used to store, save and load
+        analysis data and metadata.
+    """
+    Viewer = None
+    Formatter = None
+    Results = None
 
     def __init__(
         self,
         img_series,
         savepath=None,
-        Viewer=None,
-        Formatter=None,
-        Results=None,
     ):
         """Initialize Analysis object
 
@@ -42,47 +47,16 @@ class Analysis(AnalysisBase):
         savepath : str or Path object
             folder in which to save analysis data & metadata
                     (if not specified, the img_series savepath is used)
-
-        Viewer : class
-            (subclass of AnalysisViewer)
-            Viewer class/subclasses that is used to display and inspect
-            analysis data (is used by ViewerTools)
-
-        Formatter: class
-            (subclass of Formatter)
-            class used to format results spit out by the raw analysis into
-            something storable/saveable by the Results class.
-
-        Results : class
-            (subclass of Results)
-            Results class/subclasses that is used to store, save and load
-            analysis data and metadata.
         """
-        super().__init__(data_series=img_series)
-
-        Viewer = self.DefaultViewer if Viewer is None else Viewer
-        Formatter = self.DefaultFormatter if Formatter is None else Formatter
-        Results = self.DefaultResults if Results is None else Results
-
         self.img_series = img_series
-        self.viewer = Viewer(self)
-        self.formatter = Formatter(self)
-
         savepath = Path(savepath) if savepath else img_series.savepath
-        self.results = Results(savepath=savepath)
 
-        if self.img_series.is_stack:
-            # Below, pre-populate parameters to be saved as metadata.
-            # Other metadata will be added to this dict before saving
-            # into metadata file
-            stack_path = os.path.relpath(self.img_series.path, savepath)
-            self.results.metadata['stack'] = stack_path
-        else:
-            folders = [
-                os.path.relpath(f, savepath) for f in self.img_series.files.folders
-            ]
-            self.results.metadata['path'] = str(savepath.resolve()),
-            self.results.metadata['folders'] = folders
+        super().__init__(
+            data_series=img_series,
+            results=self.Results(savepath=savepath),
+            formatter=self.Formatter(self),
+            viewer=self.Viewer(self)
+        )
 
     # ============================ Public methods ============================
 
@@ -119,17 +93,6 @@ class Analysis(AnalysisBase):
 
     # ======================= Methods of AnalysisBase ========================
 
-    def _initialize(self):
-        """Check everything OK before starting analysis & initialize params."""
-        self._init_analysis()
-        self._add_metadata()
-        self._add_transforms_to_metadata()
-        self.formatter._prepare_data_storage()
-
-    def _store_data(self, data):
-        """How to handle results spit out by analysis"""
-        self.formatter._store_data(data)
-
     def analyze(self, num, details=False):
         """Same as _analyze, but with num as input instead of img.
 
@@ -158,32 +121,23 @@ class Analysis(AnalysisBase):
         """What to do at the end of analysis"""
         self.formatter._to_results()
 
-    # ========================= Other useful methods =========================
-
-    def _add_transforms_to_metadata(self):
-        """Add information about image transforms (rotation, crop etc.) to metadata."""
-        for name, correction in self.img_series.corrections.items():
-            # Because correction data typically cannot be saved to JSON
-            self.results.metadata[name] = bool(correction.data)
-
-        for name, transform in self.img_series.transforms.items():
-            self.results.metadata[name] = transform.data
-
     # =================== Methods to define in subclasses ====================
 
     def _init_analysis(self):
-        """Any initialization steps necessary in the analysis in addition
-        to metadata saving and formatter init.
-        Define in subclasses."""
+        """Any necessary initialization outside of data storage preparation
+
+        [OPTIONAL]
+        """
         pass
 
-    def _add_metadata(self):
-        """Add useful analysis parameters etc. to the self.metadata dict.
+    def _end_analysis(self):
+        """Any necessary initialization outside of data storage preparation
 
-        (later saved in the metadata json file)
-        Define in subclasses."""
+        [OPTIONAL]
+        """
         pass
 
+    @abstractmethod
     def _analyze(self, img):
         """Analysis process on single image. Must return a dict.
 

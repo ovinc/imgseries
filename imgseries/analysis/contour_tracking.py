@@ -166,7 +166,6 @@ class ContourTrackingFormatter_Pandas(PandasFormatter):
 
 class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
 
-    measurement_type = 'ctrack'
     default_filename = 'Img_ContourTracking'
 
     def _save_raw_contour_data(self, filename=None):
@@ -207,8 +206,6 @@ class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
 
 class ContourTracking(Analysis):
     """Class to track contours on image series."""
-
-    measurement_type = 'ctrack'
 
     DefaultViewer = ContourTrackingViewer
     DefaultFormatter = ContourTrackingFormatter_Pandas

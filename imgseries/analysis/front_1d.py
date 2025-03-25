@@ -91,7 +91,6 @@ class Front1DFormatter_Pandas(PandasFormatter):
 
 class Front1DResults_PandasTsv(PandasTsvJsonResults):
 
-    measurement_type = 'front1d'
     default_filename = 'Img_Front1D'
 
     @staticmethod
@@ -113,8 +112,6 @@ class Front1DResults_PandasTsv(PandasTsvJsonResults):
 
 class Front1D(Analysis):
     """Class to perform analysis of average grey level on image series."""
-
-    measurement_type = 'front1d'
 
     DefaultViewer = Front1DViewer
     DefaultFormatter = Front1DFormatter_Pandas

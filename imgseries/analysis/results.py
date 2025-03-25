@@ -1,5 +1,6 @@
 """Analysis of image series (base class)"""
 
+
 # Nonstandard
 import gittools
 from filo import ResultsBase
@@ -14,6 +15,8 @@ class Results(ResultsBase):
     interact with files.
     In order to interact (save/load) with files, define the methods below.
     """
+
+    # ======================= To define in subclasses ========================
 
     def _load_data(self, filepath):
         """Return analysis data from file.
@@ -87,10 +90,6 @@ class PandasTsvJsonResults(Results):
 
     Metadata is saved as .json
     """
-
-    # define in subclasses (e.g. 'glevel' or 'ctrack')
-    measurement_type = None
-
     # define in subclass (e.g. 'Img_GreyLevel')
     # Note that the program will add .tsv or .json depending on context
     default_filename = 'Results'
