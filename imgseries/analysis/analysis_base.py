@@ -7,6 +7,9 @@ from pathlib import Path
 # Nonstandard
 from filo import FormattedAnalysisBase
 
+# Local imports
+from .results import Results
+
 
 class Analysis(FormattedAnalysisBase):
     """Base class for analysis subclasses (GreyLevel, ContourTracking, etc.).
@@ -30,7 +33,7 @@ class Analysis(FormattedAnalysisBase):
     """
     Viewer = None
     Formatter = None
-    Results = None
+    Results = Results
 
     def __init__(
         self,
@@ -51,11 +54,21 @@ class Analysis(FormattedAnalysisBase):
         self.img_series = img_series
         savepath = Path(savepath) if savepath else img_series.savepath
 
+        if self.Formatter is not None:
+            formatter = self.Formatter(analysis=self)
+        else:
+            formatter = None
+
+        if self.Viewer is not None:
+            viewer = self.Viewer(analysis=self)
+        else:
+            viewer = None
+
         super().__init__(
             data_series=img_series,
             results=self.Results(savepath=savepath),
-            formatter=self.Formatter(self),
-            viewer=self.Viewer(self)
+            formatter=formatter,
+            viewer=viewer,
         )
 
     # ============================ Public methods ============================

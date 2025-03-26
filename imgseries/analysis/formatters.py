@@ -100,12 +100,18 @@ class Formatter(FormatterBase):
     # ================= New methods to define in subclasses ==================
 
     def _recreate_data_from_results(self, num):
-        """Recreate dict of raw data from results, excluding 'num' and 'image'"""
+        """Recreate dict of raw data from results, excluding 'num' and 'image'
+
+        [Optional], only if one wants to use interactive inspection tools
+        """
         pass
 
     def _get_results_metadata(self):
-        """Get analysis metadata excluding paths and transforms"""
-        pass
+        """Get analysis metadata excluding paths and transforms
+
+        [Optional], only if one wants to store metadata as a form of dict
+        """
+        return {}
 
 
 class PandasFormatter(Formatter):

@@ -1,7 +1,5 @@
 """Analysis of image series (base class)"""
 
-# Standard library
-from abc import abstractmethod
 
 # Nonstandard
 import gittools
@@ -15,80 +13,13 @@ from ..fileio import FileIO
 class Results(ResultsBase):
     """Base class for results, can be used as is but won't be able to
     interact with files.
-    In order to interact (save/load) with files, define the methods below.
+    In order to interact (save/load) with files, define the following methods:
+    - _load_data()
+    - _save_data()
+    - _load_metadata()
+    - _save_metadata()
     """
-
-    # ======================= To define in subclasses ========================
-
-    @abstractmethod
-    def _load_data(self, filepath):
-        """Return analysis data from file.
-
-        Parameters
-        ----------
-        filepath : pathlib.Path object
-            file to load the data from
-
-        Returns
-        -------
-        Any
-            Data in the form specified by user in _load_data()
-            Typically a pandas dataframe.
-        """
-        pass
-
-    @abstractmethod
-    def _save_data(self, data, filepath):
-        """Write data to file
-
-        Parameters
-        ----------
-        data : Any
-            Data in the form specified by user in _load_data()
-            Typically a pandas dataframe.
-
-        filepath : pathlib.Path object
-            file to load the metadata from
-
-        Returns
-        -------
-        None
-        """
-        pass
-
-    @abstractmethod
-    def _load_metadata(self, filepath):
-        """Return analysis metadata from file as a dictionary.
-
-        Parameters
-        ----------
-        filepath : pathlib.Path object
-            file to load the metadata from
-
-        Returns
-        -------
-        dict
-            metadata
-        """
-        pass
-
-    @abstractmethod
-    def _save_metadata(self, metadata, filepath):
-        """Write metadata to file
-
-        Parameters
-        ----------
-        metadata : dict
-            Metadata as a dictionary
-
-        filepath : pathlib.Path object
-            file to load the metadata from
-
-        Returns
-        -------
-        None
-        """
-        pass
+    pass
 
 
 class PandasTsvJsonResults(Results):

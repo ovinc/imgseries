@@ -162,8 +162,11 @@ See *ImgSeries_Caching.ipynb* for examples, details and options.
 By default, caching is disabled because it can lead to significant memory usage for large files.
 
 
-`GreyLevel`: average grey level analysis in image series
---------------------------------------------------------
+
+Analysis tools on image series
+------------------------------
+
+### `GreyLevel`: average grey level analysis in image series
 
 Follow the average grey level (brightness) of one or more selected zones (default: whole image) on the image sequence.
 The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *GreyLevel.ipynb* in the `examples` folder.
@@ -198,8 +201,7 @@ results.data, results.metadata  # useful attributes
 ```
 
 
-`ContourTracking`: object tracking using contours in image series
------------------------------------------------------------------
+### `ContourTracking`: object tracking using contours in image series
 
 Follow contours of iso-grey-level on image sequence. The `GreyLevel` class accepts an image sequence (`ImgSeries` type, see above) as an input parameter. See also docstrings and the notebook with examples and details: *ContourTracking.ipynb* in the `examples` folder.
 
@@ -232,8 +234,7 @@ results.load()   # load analysis results (data + metadata)
 results.data, results.raw_contour_data, results.metadata  # useful attributes
 ```
 
-`Front1D`: Analyze 1D propagating fronts with grey level analysis
------------------------------------------------------------------
+### `Front1D`: Analyze 1D propagating fronts with grey level analysis
 
 Analyze fronts propagating in one direction (e.g., *x*), by averaging grey levels in the other direction (*y*). The program returns a line of pixel values along *x* as a function of time (i.e., a reslice of the data), where each pixel is an average of all other pixels along *y*. The operation and methods are similar to `GreyLevel` or ``ContourTracking` (see above). See also docstrings and the notebook with examples and details: *Front1D.ipynb* in the `examples` folder.
 
@@ -244,8 +245,7 @@ f1d.run()
 ```
 
 
-`Flicker`: Get image flicker from grey level variations on a zone
------------------------------------------------------------------
+### `Flicker`: Get image flicker from grey level variations on a zone
 
 Analyze flicker on images based on the average gray level variation in a reference zone in the image. The operation and methods are very similar to `GreyLevel`, including reference zone definition (see above). See also docstrings and the notebook with examples and details: *Flicker.ipynb* in the `examples` folder.
 
