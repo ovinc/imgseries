@@ -193,6 +193,13 @@ class GreyLevel(Analysis):
         self.zones = Zones(self)
         self.func = func
 
+    # ------------------- Subclassed methods from Analysis -------------------
+
+    def _init_analysis(self):
+        """Check everything OK before starting analysis & initialize params."""
+        if self.zones.is_empty:
+            self._set_default_zone()
+
     def _analyze(self, img):
         """Analysis process on single image. Must return a dict.
 
@@ -221,15 +228,14 @@ class GreyLevel(Analysis):
 
         return data
 
-    def _init_analysis(self):
-        """Check everything OK before starting analysis & initialize params."""
-        if self.zones.is_empty:
-            self._set_default_zone()
+    # ---------------------------- Other methods -----------------------------
 
     def _set_default_zone(self):
         print('Warning: no zones defined; taking full image as default.')
         default_crop = 0, 0, self.img_series.nx, self.img_series.ny
         self.zones.data = {'zone 1': default_crop}
+
+    # ------------------ Redefinitions of Analysis methods -------------------
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.

@@ -2,7 +2,6 @@
 
 # Misc. package imports
 from skimage import measure
-import pandas as pd
 from numpy import nan as NaN
 import matplotlib.pyplot as plt
 import imgbasics
@@ -11,160 +10,138 @@ import imgbasics
 from .analysis_base import Analysis
 from .formatters import PandasFormatter
 from .results import PandasTsvJsonResults
+from ..process import rgb_to_grey
 from ..fileio import FileIO
 from ..parameters.analysis import Contours, Threshold
 from ..viewers import AnalysisViewer
 
 
-# ======================= Plotting / Animation classes =======================
+# ============================ Results formatting ============================
 
 
-class ContourTrackingViewer(AnalysisViewer):
-
-    def _create_figure(self):
-        self.fig, self.ax = plt.subplots()
-        self.axs = self.ax,
-
-    def _first_plot(self, data):
-        """What to do the first time data arrives on the plot."""
-        img = data['image']
-        num = data['num']
-
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.threshold.value}')
-        self.imshow = self.analysis.img_series._imshow(img, ax=self.ax, **self.kwargs)
-
-        self.ax.axis('off')
-        self.fig.tight_layout()
-
-        # Plot full contour lines if data is present -------------------------
-
-        try:
-            raw_contours = data['raw contours']
-        except KeyError:
-            pass
-        else:
-            self.contour_lines = []
-            for raw_contour in raw_contours:
-                contour_line, = self.ax.plot(*raw_contour, '-r')
-                self.contour_lines.append(contour_line)
-
-        # Plot position of centroids of contours -----------------------------
-
-        self.centroid_pts = []
-        for contour_ppty in data['contour properties']:
-            centroid_pt, = self.ax.plot(*contour_ppty[:2], '+b')
-            self.centroid_pts.append(centroid_pt)
-
-        self.updated_artists = self.contour_lines + self.centroid_pts + [self.imshow]
-
-    def _update_plot(self, data):
-        """What to do upon iterations of the plot after the first time."""
-        img = data['image']
-        num = data['num']
-
-        self.ax.set_title(f'img #{num}, grey level {self.analysis.threshold.value}')
-
-        self.imshow.set_array(img)
-
-        for contour, analysis, line, pt in zip(data['raw contours'],
-                                               data['contour properties'],
-                                               self.contour_lines,
-                                               self.centroid_pts):
-
-            if contour is not None:
-                line.set_data(*contour)
-                pt.set_data(*analysis[:2])
-            else:
-                line.set_data(None, None)
-                pt.set_data(None, None)
-
-
-class ContourTrackingFormatter_Pandas(PandasFormatter):
+class ContourTrackingFormatter(PandasFormatter):
     """Formatting of results spit out by analysis methods"""
+
+    @property
+    def n_contours(self):
+        return len(self.analysis.contours.data['position'])
+
+    @property
+    def results_have_raw_contours(self):
+        try:
+            self.analysis.results.raw_contour_data
+        except AttributeError:
+            return False
+        else:
+            return True
+
+    # ----------------- Methods required by PandasFormatter ------------------
+
+    def _column_names(self):
+        """Prepare structure(s) that will hold the analyzed data."""
+        names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
+        return [
+            name + str(k + 1)
+            for k in range(self.n_contours)
+            for name in names
+        ]
+
+    def _format_data(self, data):
+        """Generate iterable of data that fits in the defined columns."""
+        return sum(data['contour properties'], start=())  # "Flatten" list of tuples
+
+    def _results_row_to_data(self, row):
+        """Go from row of data to raw data"""
+        data = {'contour properties': []}
+
+        for k in range(self.n_contours):
+            lim1 = 'x' + str(k + 1)  # contour positions and perimeters
+            lim2 = 'a' + str(k + 1)
+            xc, yc, perimeter, area = row.loc[lim1:lim2]
+            data['contour properties'].append((xc, yc, perimeter, area))
+
+        return data
+
+    def _get_results_metadata(self):
+        """Get analysis metadata excluding paths and transforms"""
+        return {'contours': self.analysis.contours.data}
+
+    # -------- Redefinition of Formatter methods to add raw contours ---------
 
     def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data."""
-        n = len(self.analysis.reference_positions)
-
-        # Initiate dict to store all contour data (for json saving later) ----
+        super()._prepare_data_storage()
         if self.analysis.save_raw_contours:
-            self._raw_contour_data = {str(k + 1): {} for k in range(n)}
-
-        # Initiate pandas table to store data (for tsv saving later) ---------
-        names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
-        cols = [name + str(k + 1) for k in range(n) for name in names]
-
-        self.data = pd.DataFrame(columns=cols)
-        self.data.index.name = 'num'
-
-    def _store_raw_contours(self, data):
-        """ # Save raw contour data into dict """
-        num = data['num']
-        n = len(data['contour properties'])
-        for k in range(n):
-            contour = data['raw contours'][k]
-            if contour is not None:
-                x, y = contour
-                coords = {'x': list(x), 'y': list(y)}
-                # The str is because JSON converts to str, and so this makes
-                # live data compatible with reloaded data from JSON
-            else:
-                coords = None
-            self._raw_contour_data[str(k + 1)][str(num)] = coords
+            self._prepare_raw_contours_storage()
 
     def _store_data(self, data):
         """How to store data generated by analysis on a single image."""
-        line = sum(data['contour properties'], start=())  # "Flatten" list of tuples
-        self.data.loc[data['num']] = line
+        super()._store_data(data)
         if self.analysis.save_raw_contours:
             self._store_raw_contours(data)
 
-    def _to_pandas(self):
-        """How to convert data generated by _store_data() into a pandas table."""
-        return self.data.sort_index()
+    def _to_results_data(self):
+        if self.analysis.save_raw_contours:
+            self._to_results_raw_contours()
+        return super()._to_results_data()
 
-    def _to_results(self):
-        super()._to_results()
-        self.analysis.results.raw_contour_data = self._raw_contour_data
-
-    def _regenerate_data(self, num):
+    def _recreate_data_from_results(self, num):
         """How to go back to raw dict of data from self.data.
 
         Useful for plotting / animating results again after analysis, among
         other things.
         """
-        data = {}
-        data['contour properties'] = []
-        data['raw contours'] = []
+        data = super()._recreate_data_from_results(num=num)
+        if not self.results_have_raw_contours:
+            return data
+        return {**data, **self._recreate_raw_contours_from_results(num)}
 
-        n = len(self.analysis.contours.data['position'])
+    # ----------------- Methods used above for raw contours ------------------
 
-        for k in range(n):
+    def _prepare_raw_contours_storage(self):
+        """Addition to _prepare_data_storage()"""
+        self._raw_contour_data = {str(k + 1): {} for k in range(self.n_contours)}
 
-            # contour positions and perimeters
-            lim1 = 'x' + str(k + 1)
-            lim2 = 'a' + str(k + 1)
-            xc, yc, perimeter, area = self.analysis.results.data.loc[num, lim1:lim2]
-            data['contour properties'].append((xc, yc, perimeter, area))
-
-            # full contour data
-            try:
-                raw_contour_data = self.analysis.results.raw_contour_data
-            except AttributeError:
-                data['raw contours'].append(None)
+    def _store_raw_contours(self, data):
+        """Addition to _store_data()"""
+        num = data['num']
+        for k in range(self.n_contours):
+            contour = data['raw contours'][k]
+            if contour is not None:
+                x, y = contour
+                coords = {'x': list(x), 'y': list(y)}
             else:
-                contour = raw_contour_data[str(k + 1)][str(num)]
-                if contour is not None:
-                    x = raw_contour_data[str(k + 1)][str(num)]['x']
-                    y = raw_contour_data[str(k + 1)][str(num)]['y']
-                    data['raw contours'].append((x, y))
-                else:
-                    data['raw contours'].append(None)
+                coords = None
+            # The str is because JSON converts to str, and so this makes
+            # live data compatible with reloaded data from JSON
+            self._raw_contour_data[str(k + 1)][str(num)] = coords
 
+    def _to_results_raw_contours(self):
+        """Addition to _to_results_data()"""
+        self.analysis.results.raw_contour_data = self._raw_contour_data
+
+    def _recreate_raw_contours_from_results(self, num):
+        """Addition to _recreate_raw_contours_from_results()"""
+        raw_contour_data = self.analysis.results.raw_contour_data
+
+        try:
+            raw_contour_data['1'][str(num)]
+        except KeyError:  # this particular num not analyzed
+            return {}
+
+        data = {'raw contours': []}
+
+        for k in range(self.n_contours):
+            contour_data = raw_contour_data[str(k + 1)][str(num)]
+            if contour_data is not None:
+                contour = (contour_data['x'], contour_data['y'])
+            else:
+                contour = None
+            data['raw contours'].append(contour)
         return data
 
 
-class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
+class ContourTrackingResults(PandasTsvJsonResults):
 
     default_filename = 'Img_ContourTracking'
 
@@ -201,24 +178,125 @@ class ContourTrackingResults_PandasTsv(PandasTsvJsonResults):
             self._save_raw_contour_data(filename=filename)
 
 
+# ======================= Plotting / Animation classes =======================
+
+
+class ContourTrackingViewer(AnalysisViewer):
+
+    @property
+    def n_contours(self):
+        return len(self.analysis.contours.data['position'])
+
+    def _contains_contour_properties(self, data):
+        try:
+            data['contour properties']
+        except KeyError:
+            return False
+        else:
+            return True
+
+    def _contains_raw_contours(self, data):
+        try:
+            data['raw contours']
+        except KeyError:
+            return False
+        else:
+            return True
+
+    def _plot_contours_centroids(self, data):
+        self.centroid_pts = []
+        for _ in range(self.n_contours):
+            centroid_pt, = self.ax_img.plot([], [], '+b')
+            self.centroid_pts.append(centroid_pt)
+        self._update_contours_centroids(data)
+
+    def _plot_raw_contours(self, data):
+        self.contour_lines = []
+        for _ in range(self.n_contours):
+            contour_line, = self.ax_img.plot([], [], '-r')
+            self.contour_lines.append(contour_line)
+        self._update_raw_contours(data)
+
+    def _update_contours_centroids(self, data):
+        if not self._contains_contour_properties(data):
+            for pt in self.centroid_pts:
+                pt.set_visible(False)
+            return
+
+        for analysis, pt in zip(data['contour properties'], self.centroid_pts):
+            pt.set_visible(True)
+            pt.set_data(*analysis[:2])
+
+    def _update_raw_contours(self, data):
+        if not self._contains_raw_contours(data):
+            for line in self.contour_lines:
+                line.set_visible(False)
+            return
+
+        for contour, line in zip(data['raw contours'], self.contour_lines):
+            if contour is not None:
+                line.set_visible(True)
+                line.set_data(*contour)
+            else:
+                line.set_visible(False)
+
+    # ---------------- Methods subclassed from AnalysisViewer ----------------
+
+    def _create_figure(self):
+        self.fig, self.ax_img = plt.subplots()
+        self.ax_img.axis('off')
+        self.axs = self.ax_img,
+
+    def _first_plot(self, data):
+        """What to do the first time data arrives on the plot."""
+        self._create_image(data)
+        self.fig.tight_layout()
+
+        self._plot_contours_centroids(data)
+        self._plot_raw_contours(data)
+
+        self.updated_artists = self.centroid_pts + self.contour_lines + [self.imshow]
+
+    def _update_plot(self, data):
+        """What to do upon iterations of the plot after the first time."""
+        self._update_image(data)
+        self._update_contours_centroids(data)
+        self._update_raw_contours(data)
+
+
 # =========================== Main ANALYSIS class ============================
 
 
 class ContourTracking(Analysis):
-    """Class to track contours on image series."""
+    """Class to track contours on image series.
 
-    DefaultViewer = ContourTrackingViewer
-    DefaultFormatter = ContourTrackingFormatter_Pandas
-    DefaultResults = ContourTrackingResults_PandasTsv
+    Class attributes
+    ----------------
+    Viewer : class
+        (subclass of AnalysisViewer)
+        Viewer class/subclasses that is used to display and inspect
+        analysis data (is used by ViewerTools)
+
+    Formatter: class
+        (subclass of Formatter)
+        class used to format results spit out by the raw analysis into
+        something storable/saveable by the Results class.
+
+    Results : class
+        (subclass of Results)
+        Results class/subclasses that is used to store, save and load
+        analysis data and metadata.
+    """
+
+    Viewer = ContourTrackingViewer
+    Formatter = ContourTrackingFormatter
+    Results = ContourTrackingResults
 
     def __init__(
         self,
         img_series,
         savepath=None,
         save_raw_contours=True,
-        Viewer=None,
-        Formatter=None,
-        Results=None,
     ):
         """Analysis of iso-grey-level contours and their evolution in series.
 
@@ -234,31 +312,9 @@ class ContourTracking(Analysis):
         save_raw_contours : bool
             if True (default), all coordinates of contour lines are saved in
             addition to contour positions, centroids and areas.
-
-        Viewer : class
-            (subclass of AnalysisViewer)
-            Viewer class/subclasses that is used to display and inspect
-            analysis data (is used by ViewerTools)
-
-        Formatter: class
-            (subclass of Formatter)
-            class used to format results spit out by the raw analysis into
-            something storable/saveable by the Results class.
-
-        Results : class
-            (subclass of Results)
-            Results class/subclasses that is used to store, save and load
-            analysis data and metadata.
         """
+        super().__init__(img_series=img_series, savepath=savepath)
         self.save_raw_contours = save_raw_contours
-
-        super().__init__(
-            img_series=img_series,
-            Viewer=Viewer,
-            Formatter=Formatter,
-            Results=Results,
-            savepath=savepath,
-        )
 
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
@@ -270,7 +326,7 @@ class ContourTracking(Analysis):
         if img.ndim == 2:
             image = img
         else:
-            image = self.img_series.imge_processor.grayscale(img)
+            image = rgb_to_grey(img)
         return measure.find_contours(image, level)
 
     def _update_reference_positions(self, data):
@@ -283,6 +339,20 @@ class ContourTracking(Analysis):
                 # if position correctly detected, update where to look next
                 xc, yc, *_ = contour_analysis
                 self.reference_positions[i] = (xc, yc)
+
+    # ------------------- Subclassed methods from Analysis -------------------
+
+    def _init_analysis(self):
+        """Check everything OK before starting analysis & initialize params."""
+
+        if self.contours.is_empty:
+            msg = (
+                "Contours not defined yet. Use self.contours.define(), or "
+                "self.contours.load() if contours have been previously saved."
+            )
+            raise AttributeError(msg)
+
+        self.reference_positions = list(self.contours.data['position'].values())
 
     def _analyze(self, img):
         """Find contours at level in file i closest to the reference positions.
@@ -337,23 +407,7 @@ class ContourTracking(Analysis):
 
         return data
 
-    def _init_analysis(self):
-        """Check everything OK before starting analysis & initialize params."""
-
-        if self.contours.is_empty:
-            msg = "Contours not defined yet. Use self.contours.define(), "\
-                  "or self.contours.load() if contours have been previously saved."
-            raise AttributeError(msg)
-
-        self.reference_positions = list(self.contours.data['position'].values())
-
-    def _add_metadata(self):
-        """Add useful analysis parameters etc. to the self.metadata dict.
-
-        (later saved in the metadata json file)
-        Define in subclasses
-        """
-        self.results.metadata['contours'] = self.contours.data
+    # ------------------ Redefinitions of Analysis methods -------------------
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.

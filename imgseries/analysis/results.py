@@ -1,5 +1,7 @@
 """Analysis of image series (base class)"""
 
+# Standard library
+from abc import abstractmethod
 
 # Nonstandard
 import gittools
@@ -18,6 +20,7 @@ class Results(ResultsBase):
 
     # ======================= To define in subclasses ========================
 
+    @abstractmethod
     def _load_data(self, filepath):
         """Return analysis data from file.
 
@@ -34,6 +37,7 @@ class Results(ResultsBase):
         """
         pass
 
+    @abstractmethod
     def _save_data(self, data, filepath):
         """Write data to file
 
@@ -52,6 +56,7 @@ class Results(ResultsBase):
         """
         pass
 
+    @abstractmethod
     def _load_metadata(self, filepath):
         """Return analysis metadata from file as a dictionary.
 
@@ -67,6 +72,7 @@ class Results(ResultsBase):
         """
         pass
 
+    @abstractmethod
     def _save_metadata(self, metadata, filepath):
         """Write metadata to file
 
