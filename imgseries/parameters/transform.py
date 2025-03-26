@@ -36,10 +36,6 @@ class Grayscale(TransformParameter):
 
     @active.setter
     def active(self, value):
-        if value:
-            self.img_series.ndim = 2
-        else:
-            self.img_series.ndim = self.img_series.initial_ndim
         self.data['active'] = value
         self._update_others()
 

@@ -86,9 +86,35 @@ class ImgSeriesBase(DataSeries):
     def _get_initial_image_dims(self):
         """Remember which type (B&W or color) and shape the raw images are"""
         img = self.read()
-        self.ny, self.nx, *_ = img.shape
+        self.initial_ny, self.initial_nx, *_ = img.shape
         self.initial_ndim = img.ndim
-        self.ndim = self.initial_ndim
+
+    @property
+    def nx(self):
+        """Image dimensions in the x-direction"""
+        try:
+            crop = self.crop
+        except AttributeError:
+            return self.initial_nx
+        return self.initial_nx if crop.is_empty else self.crop.zone[2]
+
+    @property
+    def ny(self):
+        """Image dimensions in the y-direction"""
+        try:
+            crop = self.crop
+        except AttributeError:
+            return self.initial_ny
+        return self.initial_ny if crop.is_empty else self.crop.zone[3]
+
+    @property
+    def ndim(self):
+        """Number of dimensions of the images (2 for gray level, 3 for color)"""
+        try:
+            grayscale = self.grayscale
+        except AttributeError:
+            return self.initial_ndim
+        return self.initial_ndim if grayscale.is_empty else 2
 
     # ===================== Corrections and  Transforms ======================
 

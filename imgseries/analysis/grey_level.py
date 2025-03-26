@@ -2,7 +2,6 @@
 
 # Non-standard modules
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import imgbasics
 
@@ -48,6 +47,8 @@ class GreyLevelResults(PandasTsvJsonResults):
 
 class GreyLevelViewer(AnalysisViewer):
 
+    # ---------------- Methods subclassed from AnalysisViewer ----------------
+
     def _create_figure(self):
         self.fig = plt.figure(figsize=(5, 7))
         xmin = 0.1
@@ -57,23 +58,6 @@ class GreyLevelViewer(AnalysisViewer):
         self.ax_analysis = self.fig.add_axes([xmin, 0.09, w, 0.25])
         self.axs = self.ax_img, self.ax_analysis
         self.ax_img.axis('off')
-
-    def _create_image(self, data):
-        self.ax_img.set_title(f"img #{data['num']}")
-        self.imshow = self.analysis.img_series._imshow(
-            data["image"],
-            ax=self.ax_img,
-            **self.kwargs,
-        )
-
-    def _update_image(self, data):
-        self.ax_img.set_title(f"img #{data['num']}")
-        self.imshow.set_array(data['image'])
-
-    def _get_color(self):
-        """This is a hack to get automatic colors"""
-        noline, = self.ax_analysis.plot([], [])
-        return noline.get_color()
 
     def _first_plot(self, data):
         """What to do the first time data arrives on the plot."""
@@ -194,7 +178,7 @@ class GreyLevel(Analysis):
 
         savepath : str or Path object
             folder in which to save analysis data & metadata
-                    (if not specified, the img_series savepath is used)
+            (if not specified, the img_series savepath is used)
 
         func : function
             function to be applied on the image pixels in the defined
