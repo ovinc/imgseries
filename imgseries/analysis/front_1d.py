@@ -20,7 +20,7 @@ class Front1DFormatter(PandasFormatter):
         """Prepare structure(s) that will hold the analyzed data."""
         return range(self.analysis.img_series.nx)
 
-    def _format_data(self, data):
+    def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns."""
         return data['analysis']
 
@@ -28,7 +28,7 @@ class Front1DFormatter(PandasFormatter):
         """Go from row of data to raw data"""
         return {'analysis': row.values}
 
-    def _get_results_metadata(self):
+    def _to_metadata(self):
         """Get analysis metadata excluding paths and transforms"""
         return {}
 
@@ -122,6 +122,11 @@ class Front1D(Analysis):
     Viewer = Front1DViewer
     Formatter = Front1DFormatter
     Results = Front1DResults
+
+    # If results are independent (results from one num do not depend from
+    # analysis on other nums), one do not need to re-do the analysis when
+    # asking for the same num twice, and parallel computing is possible
+    independent_results = True
 
     def __init__(
         self,

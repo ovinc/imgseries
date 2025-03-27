@@ -46,7 +46,7 @@ class ContourTrackingFormatter(PandasFormatter):
             for name in names
         ]
 
-    def _format_data(self, data):
+    def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns."""
         return sum(data['contour properties'], start=())  # "Flatten" list of tuples
 
@@ -62,7 +62,7 @@ class ContourTrackingFormatter(PandasFormatter):
 
         return data
 
-    def _get_results_metadata(self):
+    def _to_metadata(self):
         """Get analysis metadata excluding paths and transforms"""
         return {'contours': self.analysis.contours.data}
 
@@ -85,16 +85,16 @@ class ContourTrackingFormatter(PandasFormatter):
             self._to_results_raw_contours()
         return super()._to_results_data()
 
-    def _recreate_data_from_results(self, num):
+    def _regenerate_analysis_data(self, num):
         """How to go back to raw dict of data from self.data.
 
         Useful for plotting / animating results again after analysis, among
         other things.
         """
-        data = super()._recreate_data_from_results(num=num)
+        data = super()._regenerate_analysis_data(num=num)
         if not self.results_have_raw_contours:
             return data
-        return {**data, **self._recreate_raw_contours_from_results(num)}
+        return {**data, **self._regenerate_raw_contours_from_results(num)}
 
     # ----------------- Methods used above for raw contours ------------------
 
@@ -120,8 +120,8 @@ class ContourTrackingFormatter(PandasFormatter):
         """Addition to _to_results_data()"""
         self.analysis.results.raw_contour_data = self._raw_contour_data
 
-    def _recreate_raw_contours_from_results(self, num):
-        """Addition to _recreate_raw_contours_from_results()"""
+    def _regenerate_raw_contours_from_results(self, num):
+        """Addition to _regenerate_analysis_data()"""
         raw_contour_data = self.analysis.results.raw_contour_data
 
         try:
@@ -287,10 +287,14 @@ class ContourTracking(Analysis):
         Results class/subclasses that is used to store, save and load
         analysis data and metadata.
     """
-
     Viewer = ContourTrackingViewer
     Formatter = ContourTrackingFormatter
     Results = ContourTrackingResults
+
+    # If results are independent (results from one num do not depend from
+    # analysis on other nums), one do not need to re-do the analysis when
+    # asking for the same num twice, and parallel computing is possible
+    independent_results = False
 
     def __init__(
         self,

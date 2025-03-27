@@ -22,7 +22,7 @@ class GreyLevelFormatter(PandasFormatter):
         """Prepare structure(s) that will hold the analyzed data."""
         return self.analysis.zones.data
 
-    def _format_data(self, data):
+    def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns."""
         return data['glevels']
 
@@ -30,7 +30,7 @@ class GreyLevelFormatter(PandasFormatter):
         """Go from row of data to raw data"""
         return {'glevels': list(row)}
 
-    def _get_results_metadata(self):
+    def _to_metadata(self):
         """Get analysis metadata excluding paths and transforms"""
         return {
             'zones': self.analysis.zones.data,
@@ -164,6 +164,11 @@ class GreyLevel(Analysis):
     Viewer = GreyLevelViewer
     Formatter = GreyLevelFormatter
     Results = GreyLevelResults
+
+    # If results are independent (results from one num do not depend from
+    # analysis on other nums), one do not need to re-do the analysis when
+    # asking for the same num twice, and parallel computing is possible
+    independent_results = True
 
     def __init__(
         self,

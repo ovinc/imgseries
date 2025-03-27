@@ -6,66 +6,41 @@ from abc import abstractmethod
 
 # Nonstandard
 import pandas as pd
-from filo import FormatterBase
+from filo import FormatterBase, PandasFormatterBase
+
+
+def _get_path_metadata(analysis):
+    """Return dict about image path(s)."""
+    savepath = analysis.results.savepath
+    if analysis.img_series.is_stack:
+        stack_path = os.path.relpath(
+            path=analysis.img_series.path,
+            start=savepath,
+        )
+        return {'stack': stack_path}
+    else:
+        folders = [
+            os.path.relpath(path=f, start=savepath)
+            for f in analysis.img_series.files.folders
+        ]
+        return {'path': str(savepath.resolve()), 'folders': folders}
 
 
 class Formatter(FormatterBase):
     """Base class for formatting of results spit out by analysis methods"""
 
-    def _get_path_metadata(self):
-        """Return dict about image path(s)."""
-        savepath = self.analysis.results.savepath
-        if self.analysis.img_series.is_stack:
-            stack_path = os.path.relpath(
-                path=self.analysis.img_series.path,
-                start=savepath,
-            )
-            return {'stack': stack_path}
-        else:
-            folders = [
-                os.path.relpath(path=f, start=savepath)
-                for f in self.analysis.img_series.files.folders
-            ]
-            return {'path': str(savepath.resolve()), 'folders': folders}
-
-    def _get_transform_metadata(self):
-        """Metadata about image transforms (rotation, crop etc.) """
-        info = {}
-
-        for name, correction in self.analysis.img_series.corrections.items():
-            # Because correction data typically cannot be saved to JSON
-            info[name] = bool(correction.data)
-
-        for name, transform in self.analysis.img_series.transforms.items():
-            info[name] = transform.data
-
-        return info
-
-    @property
-    def columns(self):
-        return list(self._column_names())
-
-    # ============ Redefinition of FormatterBase abstract methods ============
+    # ================ Redefinition of FormatterBase methods =================
 
     def _to_results_metadata(self):
-        path_metadata = self._get_path_metadata()
-        transform_metadata = self._get_transform_metadata()
-        other_metadata = self._get_results_metadata()
-        return {**path_metadata, **transform_metadata, **other_metadata}
+        metadata = super()._to_results_metadata()
+        path_metadata = _get_path_metadata(self.analysis)
+        return {**path_metadata, **metadata}
 
-    def _generate_data_from_results(self, num):
-        """How to go back to raw data (as spit out by the analysis methods
-        during analysis) from data saved in results or files.
+    # ================= Subclassing of FormatterBase methods =================
 
-        [OPTIONAL]
-
-        Useful for plotting / animating results again after analysis, among
-        other things.
-        """
-        data = self._recreate_data_from_results(num=num)
-        data['num'] = num
-        data['image'] = self.analysis.img_series.read(num=num)
-        return data
+    def _regenerate_additional_data(self, num):
+        """How to go back to raw data from data stored in results"""
+        return {'image': self.analysis.img_series.read(num=num)}
 
     # ================== FormatterBase methods to subclass ===================
 
@@ -80,7 +55,8 @@ class Formatter(FormatterBase):
 
         Input
         -----
-        data is a dictionary, output of Analysis.analyze()
+        data : dict
+            Dictionary of data, output of Analysis.analyze()
         """
         pass
 
@@ -95,34 +71,64 @@ class Formatter(FormatterBase):
         Any
             data in the format that will be stored in results.data
         """
-        return {}
+        return None
 
-    # ================= New methods to define in subclasses ==================
+    def _to_metadata(self):
+        """What metadata to save in the Results class/subclass.
 
-    def _recreate_data_from_results(self, num):
-        """Recreate dict of raw data from results, excluding 'num' and 'image'
+        [OPTIONAL]
+        (is executed at the end of analysis)
 
-        [Optional], only if one wants to use interactive inspection tools
-        """
-        pass
-
-    def _get_results_metadata(self):
-        """Get analysis metadata excluding paths and transforms
-
-        [Optional], only if one wants to store metadata as a form of dict
+        Returns
+        ------
+        dict
+            metadata dictionary that will be stored in results.metadata
+            (note: transform metadata added automatically)
         """
         return {}
 
+    def _regenerate_analysis_data(self, num):
+        """How to go back to raw data (as spit out by the analysis methods
+        during analysis) from data saved in results or files.
 
-class PandasFormatter(Formatter):
+        [OPTIONAL]
+
+        Useful for plotting / animating results again after analysis, among
+        other things.
+
+        Parameters
+        ----------
+        num : int
+            data identifier in the data series
+
+        Returns
+        -------
+        dict
+            data in the format generated by analysis.analyze()
+
+        Notes
+        -----
+            'num' key is added automatically by _regenerate_data_from_results()
+            in the output dict.
+        """
+        return {}
+
+
+class PandasFormatter(PandasFormatterBase):
     """Base class for formatting results as a pandas DataFrame"""
 
-    # ================== Redefinition of Formatter methods ===================
+    # ================ Redefinition of FormatterBase methods =================
 
-    def _prepare_data_storage(self):
-        """Prepare structure(s) that will hold the analyzed data"""
-        self.data = pd.DataFrame(columns=self.columns)
-        self.data.index.name = 'num'
+    def _to_results_metadata(self):
+        metadata = super()._to_results_metadata()
+        path_metadata = _get_path_metadata(self.analysis)
+        return {**path_metadata, **metadata}
+
+    # ================= Subclassing of FormatterBase methods =================
+
+    def _regenerate_additional_data(self, num):
+        """How to go back to raw data from data stored in results"""
+        return {'image': self.analysis.img_series.read(num=num)}
 
     def _to_results_data(self):
         """Add file info (name, time, etc.) to analysis results if possible.
@@ -137,38 +143,23 @@ class PandasFormatter(Formatter):
             info = self.analysis.img_series.info
             return pd.concat([info, data], axis=1, join='inner')
 
-    def _store_data(self, data):
-        """How to store data generated by analysis on a single image."""
-        num = data['num']
+    # ================== FormatterBase methods to subclass ===================
 
-        # Doing two times the same analysis (e.g. when using inspect(live=True)
-        # Should return the same result, so this case is simply ignored)
-        if num in self.data.index:
-            return
+    def _to_metadata(self):
+        """What metadata to save in the Results class/subclass.
 
-        self.data.loc[num] = self._format_data(data)
+        [OPTIONAL]
+        (is executed at the end of analysis)
 
-    def _recreate_data_from_results(self, num):
-        """Recreate dict of raw data from results, excluding 'num' and 'image'"""
-        if self.analysis.results.data is None:  # analysis not run or reset
-            return {}
+        Returns
+        ------
+        dict
+            metadata dictionary that will be stored in results.metadata
+            (note: transform metadata added automatically)
+        """
+        return {}
 
-        data = self.analysis.results.data[self.columns]
-
-        try:
-            row = data.loc[num]
-        except KeyError:    # Analysis not made for the specific num
-            return {}
-
-        return self._results_row_to_data(row)
-
-    # ============= FormatterBase/Formatter methods to subclass ==============
-
-    def _get_results_metadata(self):
-        """Get analysis metadata excluding paths and transforms"""
-        pass
-
-    # ================= New methods to define in subclasses ==================
+    # =============== PandasFormatterBase methods to subclass ================
 
     @abstractmethod
     def _column_names(self):
@@ -176,7 +167,7 @@ class PandasFormatter(Formatter):
         pass
 
     @abstractmethod
-    def _format_data(self, data):
+    def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns.
 
         Input
@@ -191,5 +182,8 @@ class PandasFormatter(Formatter):
         pass
 
     def _results_row_to_data(self, row):
-        """Go from row of data to raw data"""
+        """Go from row of data to raw data
+
+        [Optional]
+        """
         pass

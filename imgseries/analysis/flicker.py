@@ -8,7 +8,7 @@ import numpy as np
 from .formatters import PandasFormatter
 from .results import PandasTsvJsonResults
 from .grey_level import GreyLevel, GreyLevelViewer
-from .grey_level import GreyLevelFormatter, GreyLevelResults
+from .grey_level import GreyLevelFormatter
 
 
 # ============================ Results formatting ============================
@@ -16,11 +16,16 @@ from .grey_level import GreyLevelFormatter, GreyLevelResults
 
 class FlickerFormatter(PandasFormatter):
 
+    # If results are independent (results from one num do not depend from
+    # analysis on other nums), one do not need to re-do the analysis when
+    # asking for the same num twice.
+    independent_results = True
+
     def _column_names(self):
         """Prepare structure(s) that will hold the analyzed data."""
         return list(self.analysis.zones.data) + ['ratio']
 
-    def _format_data(self, data):
+    def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns."""
         # Note that glevels in this case is actually already a ratio
         # (it is the ratio for every defined zone, while 'ratio' is the average)
@@ -32,9 +37,9 @@ class FlickerFormatter(PandasFormatter):
         """Go from row of data to raw data"""
         return {'glevels': list(row.iloc[:-1]), 'ratio': row.iloc[-1]}
 
-    def _get_results_metadata(self):
+    def _to_metadata(self):
         """Get analysis metadata excluding paths and transforms"""
-        info = GreyLevelFormatter._get_results_metadata(self)
+        info = GreyLevelFormatter._to_metadata(self)
         info['reference'] = self.analysis.reference
         return info
 
@@ -78,6 +83,11 @@ class Flicker(GreyLevel):
     Viewer = FlickerViewer
     Formatter = FlickerFormatter
     Results = FlickerResults
+
+    # If results are independent (results from one num do not depend from
+    # analysis on other nums), one do not need to re-do the analysis when
+    # asking for the same num twice, and parallel computing is possible
+    independent_results = True
 
     def __init__(
         self,
