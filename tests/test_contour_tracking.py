@@ -24,10 +24,10 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 # ================== Test contour tracking on ImgSeries ===================
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_times('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_times('Img_Files.tsv')  # in case files have changed creation time
 
 ct = ContourTracking(images)
-ct.contours.load('Img_ContourTracking_Saved')
+ct.contours.load('Img_ContourTracking')
 
 
 def test_contour_tracking_basic():
@@ -42,8 +42,8 @@ def test_contour_tracking_range():
 
 def test_contour_tracking_load():
     ctresults = ContourTrackingResults(savepath=basefolder)
-    ctresults.load('Img_ContourTracking_Saved')
-    assert round(ctresults.data.at[4, 'x3']) == 418
+    ctresults.load('Img_ContourTracking')
+    assert round(ctresults.data.at[4, 'x3']) == 322
 
 
 # ================== Test contour tracking on image stack ===================
@@ -51,7 +51,7 @@ def test_contour_tracking_load():
 img_stack = ImgStack(tiff_stack)
 
 ctstack = ContourTracking(img_stack, savepath=basefolder / 'stack')
-ctstack.contours.load('Img_ContourTracking_Saved')
+ctstack.contours.load('Img_ContourTracking')
 
 
 def test_contourstack_tracking_basic():

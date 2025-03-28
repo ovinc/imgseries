@@ -86,6 +86,11 @@ class AnalysisViewer(FormattedAnalysisViewerBase):
 
     # ========================= Misc. useful methods =========================
 
+    @staticmethod
+    def _autoscale(ax):
+        ax.relim()  # without this, axes limits change don't work
+        ax.autoscale(axis='both')
+
     def _create_image(self, data):
         """Necessitates that self.ax_img is defined by self._create_figure()"""
         self.ax_img.set_title(f"img #{data['num']}")

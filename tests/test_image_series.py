@@ -19,7 +19,7 @@ basefolder = modulefolder / 'examples/data/for-tests-do-not-modify'
 folders = [basefolder / '..' / folder for folder in ('img1', 'img2')]
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_times('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_times('Img_Files.tsv')  # in case files have changed creation time
 
 tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 img_stack = ImgStack(tiff_stack)
@@ -80,7 +80,7 @@ def test_img_time_update():
     n = 40
     images.load_times('Img_Files_Rounded.tsv')
     assert images.info.loc[n, 'time (unix)'] == 1599832477
-    images.load_times('Img_Files_Saved.tsv')  # resset to previous state
+    images.load_times('Img_Files.tsv')  # resset to previous state
 
 
 def test_read_stack():

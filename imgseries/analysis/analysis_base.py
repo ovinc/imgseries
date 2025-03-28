@@ -54,24 +54,84 @@ class Analysis(FormattedAnalysisBase):
         self.img_series = img_series
         savepath = Path(savepath) if savepath else img_series.savepath
 
-        if self.Formatter is not None:
-            formatter = self.Formatter(analysis=self)
-        else:
-            formatter = None
-
-        if self.Viewer is not None:
-            viewer = self.Viewer(analysis=self)
-        else:
-            viewer = None
+        results = self.Results(savepath=savepath)
+        formatter = self.Formatter(analysis=self) if self.Formatter else None
+        viewer = self.Viewer(analysis=self) if self.Viewer else None
 
         super().__init__(
             data_series=img_series,
-            results=self.Results(savepath=savepath),
+            results=results,
             formatter=formatter,
             viewer=viewer,
         )
 
-    # ============================ Public methods ============================
+    # ================= Subclassed Methods of AnalysisBase ===================
+
+    def analyze(self, num, details=False):
+        """Same as _analyze, but with num as input instead of img.
+
+        Can be subclassed if necessary.
+
+        Parameters
+        ----------
+        num : int
+            file number identifier across the image file series
+
+        details : bool
+            whether to include more details (e.g. for debugging or live view)
+
+        Returns
+        -------
+        dict
+            data that can be used by formatter._store_data(), with at least
+            the key 'num' indicating the data series identifier
+        """
+        img = self.img_series.read(num=num)
+        data = self._analyze(img=img)
+        data['num'] = num
+        if details:
+            data['image'] = img
+        return data
+
+    # ================== AnalysisBase methods to subclass ====================
+
+    def _init_analysis(self):
+        """Any necessary initialization outside of data storage preparation
+
+        [OPTIONAL]
+        """
+        pass
+
+    def _end_analysis(self):
+        """Any necessary initialization outside of data storage preparation
+
+        [OPTIONAL]
+        """
+        pass
+
+    # ======================= New methods to subclass ========================
+
+    @abstractmethod
+    def _analyze(self, img):
+        """Analysis process on single image. Must return a dict.
+
+        Parameters
+        ----------
+        img : array-like
+            image array to be analyzed (e.g. numpy array).
+
+        details : bool
+            whether to include more details (e.g. for debugging or live view)
+
+        Returns
+        -------
+        dict
+            dict of data, handled by formatter._store_data()
+
+        Define in subclasses."""
+        pass
+
+    # ========================== New public methods ==========================
 
     def regenerate(self, filename=None):
         """Load saved data, metadata and regenerate objects from them.
@@ -102,70 +162,5 @@ class Analysis(FormattedAnalysisBase):
         # not stored in metadata.
         for name, transform in self.img_series.transforms.items():
             transform.reset()
-            transform.data = self.results.metadata.get(name, {})
-
-    # ======================= Methods of AnalysisBase ========================
-
-    def analyze(self, num, details=False):
-        """Same as _analyze, but with num as input instead of img.
-
-        Can be subclassed if necessary.
-
-        Parameters
-        ----------
-        num : int
-            file number identifier across the image file series
-
-        details : bool
-            whether to include more details (e.g. for debugging or live view)
-
-        Returns
-        -------
-        dict
-            data, handled by formatter._store_data()"""
-        img = self.img_series.read(num=num)
-        data = self._analyze(img=img)
-        data['num'] = num
-        if details:
-            data['image'] = img
-        return data
-
-    def _finalize(self):
-        """What to do at the end of analysis"""
-        self.formatter._to_results()
-
-    # =================== Methods to define in subclasses ====================
-
-    def _init_analysis(self):
-        """Any necessary initialization outside of data storage preparation
-
-        [OPTIONAL]
-        """
-        pass
-
-    def _end_analysis(self):
-        """Any necessary initialization outside of data storage preparation
-
-        [OPTIONAL]
-        """
-        pass
-
-    @abstractmethod
-    def _analyze(self, img):
-        """Analysis process on single image. Must return a dict.
-
-        Parameters
-        ----------
-        img : array-like
-            image array to be analyzed (e.g. numpy array).
-
-        details : bool
-            whether to include more details (e.g. for debugging or live view)
-
-        Returns
-        -------
-        dict
-            dict of data, handled by formatter._store_data()
-
-        Define in subclasses."""
-        pass
+            transform_data = self.results.metadata.get('transforms', {})
+            transform.data = transform_data.get(name, {})

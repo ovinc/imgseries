@@ -15,7 +15,7 @@ CHECKED_MODULES = skimage, imgseries, imgbasics, filo, matplotlib, numpy
 CSV_SEPARATOR = '\t'
 
 FILENAMES = {
-    'files': 'Img_Files',          # for file info (timing etc.)
+    'files': 'Img_Files.tsv',          # for file info (timing etc.)
     'transform': 'Img_Transform',  # this is to store rotation angle etc.
     'display': 'Img_Display',      # store display options (contrast, cmap etc.)
 }

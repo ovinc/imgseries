@@ -14,6 +14,9 @@ Image inspection and analysis tools for image series, based on the following cla
 - `Flicker`: analyze image flicker with reference zone(s).
 These classes act on `ImgSeries` or `ImgStack` objects.
 
+*Legacy*
+- The *legacy* module contains tools to fix compatibility with older versions of **imgseries**, see *Legacy.ipynb* notebook.
+
 The package is customizable and designed to easily incorporate modifications and additional, user-defined plugins (e.g. different type of analysis methods); see the *Customization* section below, and the notebooks situated in the `examples/examples_customize/` folder.
 
 How to install:

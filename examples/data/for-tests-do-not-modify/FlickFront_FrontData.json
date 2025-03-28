@@ -5,22 +5,24 @@
     "folders": [
         "../front-flick"
     ],
-    "grayscale": {},
-    "rotation": {
-        "angle": 0.278583442478391
-    },
-    "crop": {
-        "zone": [
-            26,
-            2,
-            219,
-            145
-        ]
-    },
-    "filter": {},
-    "subtraction": {},
-    "threshold": {},
     "time (utc)": "2024-02-19 10:41:38",
+    "transforms": {
+        "grayscale": {},
+        "rotation": {
+            "angle": 0.278583442478391
+        },
+        "crop": {
+            "zone": [
+                26,
+                2,
+                219,
+                145
+            ]
+        },
+        "filter": {},
+        "subtraction": {},
+        "threshold": {}
+    },
     "code version": {
         "skimage": {
             "status": "not a git repository",

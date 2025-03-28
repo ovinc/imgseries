@@ -24,10 +24,10 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 # =============== Test avg gray level analysis on image series ===============
 
 images = ImgSeries(folders, savepath=basefolder)
-images.load_times('Img_Files_Saved.tsv')  # in case files have changed creation time
+images.load_times('Img_Files.tsv')  # in case files have changed creation time
 
 gl = GreyLevel(images)
-gl.zones.load('Img_GreyLevel_Saved')
+gl.zones.load('Img_GreyLevel')
 
 
 def test_glevel_analysis_basic():
@@ -42,8 +42,8 @@ def test_glevel_analysis_range():
 
 def test_glevel_results_load():
     glresults = GreyLevelResults(savepath=basefolder)
-    glresults.load('Img_GreyLevel_Saved')
-    assert round(glresults.data.at[4, 'zone 3']) == 89
+    glresults.load('Img_GreyLevel')
+    assert round(glresults.data.at[4, 'zone 3']) == 86
 
 
 # =============== Test avg gray level analysis on image stack ================
@@ -51,7 +51,7 @@ def test_glevel_results_load():
 img_stack = ImgStack(tiff_stack)
 
 glstack = GreyLevel(img_stack, savepath=basefolder / 'stack')
-glstack.zones.load('Img_GreyLevel_Saved')
+glstack.zones.load('Img_GreyLevel')
 
 
 def test_glevelstack_analysis_basic():

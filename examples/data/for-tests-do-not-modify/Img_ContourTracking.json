@@ -24,22 +24,24 @@
         "level": 182,
         "image": 0
     },
-    "grayscale": {},
-    "rotation": {
-        "angle": 22.765009107511496
-    },
-    "crop": {
-        "zone": [
-            159,
-            171,
-            467,
-            380
-        ]
-    },
-    "filter": {},
-    "subtraction": {},
-    "threshold": {},
     "time (utc)": "2024-02-19 11:38:36",
+    "transforms": {
+        "grayscale": {},
+        "rotation": {
+            "angle": 22.765009107511496
+        },
+        "crop": {
+            "zone": [
+                159,
+                171,
+                467,
+                380
+            ]
+        },
+        "filter": {},
+        "subtraction": {},
+        "threshold": {}
+    },
     "code version": {
         "skimage": {
             "status": "not a git repository",

@@ -140,13 +140,12 @@ class Profile:
         self,
         img_series,
         radius=1,
-        viewer=ProfileViewer,
         **kwargs,
     ):
-        self.Viewer = viewer
         self.img_series = img_series
         self.radius = radius
         self.kwargs = kwargs
+        self.viewer = ProfileViewer(self)
 
     @staticmethod
     def _generate_profiles(img, line_position, radius):
@@ -186,8 +185,9 @@ class Profile:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.show(num=num)
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
+        return self.viewer.show(num=num)
 
     def inspect(self, start=0, end=None, skip=1, transform=True, **kwargs):
         """Interactively inspect image series.
@@ -210,9 +210,9 @@ class Profile:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
-        nums = self.img_series.nums[start:end:skip]
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.inspect(nums=nums)
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
+        return self.viewer.inspect(nums=self.img_series.nums[start:end:skip])
 
     def animate(self, start=0, end=None, skip=1, transform=True, blit=False, **kwargs):
         """Interactively inspect image stack.
@@ -238,6 +238,7 @@ class Profile:
             and preset display parameters such as contrast, colormap etc.)
             (note: cmap is grey by default for 2D images)
         """
+        self.viewer.transform = transform
+        self.viewer.kwargs = kwargs
         nums = self.img_series.nums[start:end:skip]
-        viewer = self.Viewer(self, transform=transform, **kwargs)
-        return viewer.animate(nums=nums, blit=blit)
+        return self.viewer.animate(nums=nums, blit=blit)
