@@ -35,7 +35,9 @@ def update_analysis_metadata(old_file, new_file=None):
     data['transforms'] = {}
     for transform in TRANSFORMS:
         data['transforms'][transform] = data.pop(transform)
-        data['code version'] = data.pop('code version')  # This is to put back code versions at the end of the file
+        # This is to put back time info and code versions at the end of the file
+        data['time (utc)'] = data.pop('time (utc)')
+        data['code version'] = data.pop('code version')
 
     if new_file is None:
         new_file = file.with_name(f"{file.stem}_new{file.suffix}")
