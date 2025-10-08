@@ -3,6 +3,7 @@ recursive-include examples *.jpg
 recursive-include examples *.json
 recursive-include examples *.png
 recursive-include examples *.tif
+recursive-include examples *.avi
 recursive-include examples *.tsv
 recursive-include tests *.py
 prune examples/.ipynb_checkpoints

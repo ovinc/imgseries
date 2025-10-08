@@ -4,8 +4,8 @@ About
 Image inspection and analysis tools for image series, based on the following classes.
 
 *Representation of image sequences:*
-- `ImgSeries` (sequence stored in multiple files),
-- `ImgStack` (sequence stored in a stack, e.g. tiff or HDF5).
+- `ImgSeries` (sequence stored in multiple individual files, e.g. PNG, JPG etc.),
+- `ImgStack` (sequence stored in a stack, e.g. TIF, TIFF, AVI, HDF5 etc.).
 
 *Analysis of image sequences:*
 - `GreyLevel`: evolution of average gray level of selected zone(s),
@@ -47,7 +47,7 @@ If running on a Windows machine and using the parallel option in some of the ana
 See also the notebooks with examples and details in the `examples/` folder.
 
 ```python
-from imgseries import ImgSeries, series
+from imgseries import ImgSeries, ImgStack
 
 # ----------------------------------------------------------------------------
 # ======= WORKING WITH IMAGE SERIES (distinct, individual image files) =======
@@ -147,10 +147,11 @@ images.save_info()  # save above info in a csv file
 images.load_times('Time_File.txt')  # Keep images.files but update its time information with data from an external csv file.
 
 # ----------------------------------------------------------------------------
-# ===================== WORKING WITH A .TIFF IMAGE STACK =====================
+# ================== WORKING WITH IMAGE STACKS (TIFF / AVI) ==================
 # ----------------------------------------------------------------------------
 
-images = ImgSeries(stack='ImgStack.tif')
+images = ImgStack('video.avi')
+images = ImgSeries('ImgStack.tif')
 
 # All methods/attributes above available, except those associated with timestamps
 ```
@@ -315,7 +316,7 @@ Copyright Olivier Vincent (2021-2024)
 
 This software is a computer program whose purpose is to provide tools for
 inspection and analysis of image sequences
-(either as individual files or as stacks).
+(either as individual files or as stacks including videos).
 
 This software is governed by the CeCILL license under French law and
 abiding by the rules of distribution of free software. You can  use,

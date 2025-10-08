@@ -20,6 +20,8 @@ keywords = [
     "grey",
     "level",
     "gray",
+    'stack',
+    'video',
 ]
 license = {text = "CeCILL-2.1"}
 classifiers = [

@@ -4,10 +4,18 @@
 from pathlib import Path
 
 # local imports
-from ..readers import HDF5Reader, TiffStackReader
+from ..readers import HDF5Reader, TiffStackReader, AviReader
 from ..viewers import ImgSeriesViewer
 
 from .image_base import ImgSeriesBase
+
+
+DEFAULT_READERS = {
+    '.tif': TiffStackReader,
+    '.tiff': TiffStackReader,
+    '.avi': AviReader,
+    '.hdf5': HDF5Reader,
+}
 
 
 class ImgStack(ImgSeriesBase):
@@ -66,10 +74,10 @@ class ImgStack(ImgSeriesBase):
         extension = self.path.suffix.lower()
 
         if Reader is None:
-            if extension in ('.tif', '.tiff'):
-                Reader = TiffStackReader
-            elif extension == 'hdf5':
-                Reader = HDF5Reader
+            try:
+                Reader = DEFAULT_READERS[extension.lower()]
+            except KeyError:
+                raise ValueError(f'Unsupported extension: {extension}')
 
         super().__init__(
             savepath=savepath,

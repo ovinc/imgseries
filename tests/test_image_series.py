@@ -22,7 +22,10 @@ images = ImgSeries(folders, savepath=basefolder)
 images.load_times('Img_Files.tsv')  # in case files have changed creation time
 
 tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
-img_stack = ImgStack(tiff_stack)
+img_stack_tiff = ImgStack(tiff_stack)
+
+avi_stack = Path('examples/data/video') / 'video.avi'
+img_stack_avi = ImgStack(avi_stack)
 
 # ======================== Test general image series =========================
 
@@ -83,12 +86,6 @@ def test_img_time_update():
     images.load_times('Img_Files.tsv')  # resset to previous state
 
 
-def test_read_stack():
-    """Read data from ImgStack file"""
-    img = img_stack.read(num=10)
-    assert img.shape == (100, 112)
-
-
 def test_slicing_images():
     """Test looping using slicing of nums"""
     for num in images.nums[::20]:
@@ -96,8 +93,23 @@ def test_slicing_images():
     assert val_max > 0
 
 
+# =========================== Stacks (TIFF / AVI) ============================
+
+
+def test_read_stack_tiff():
+    """Read data from ImgStack file"""
+    img = img_stack_tiff.read(num=10)
+    assert img.shape == (100, 112)
+
+
+def test_read_stack_avi():
+    """Read data from ImgStack file"""
+    img = img_stack_avi.read(num=6)
+    assert img.shape == (400, 1200, 3)
+
+
 def test_slicing_stack():
     """Test looping using slicing of nums"""
-    for num in img_stack.nums[::20]:
-        val_max = img_stack.read(num).max()
+    for num in img_stack_tiff.nums[::20]:
+        val_max = img_stack_tiff.read(num).max()
     assert val_max > 0

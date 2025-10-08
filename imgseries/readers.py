@@ -1,11 +1,24 @@
 """Class ImgSeries for image series manipulation"""
 
+# Standard library
+from abc import abstractmethod
+
 # Non-standard
 from filo import DataSeriesReaderBase
 
 # local imports
 from .config import CONFIG
 from .fileio import FileIO
+
+# optional imports
+try:
+    import av
+    from pims import PyAVVideoReader
+except ModuleNotFoundError:
+    pass
+
+
+# =============================== Base classes ===============================
 
 
 class ImageReaderBase(DataSeriesReaderBase):
@@ -14,7 +27,9 @@ class ImageReaderBase(DataSeriesReaderBase):
     (for reading images and applying transforms/corrections on them).
     This is a base class, children:
         - SingleImageReader
-        - TiffStackReader
+        - StackReaderBase
+            - TiffStackReader
+            - AviReader
         - HDF5Reader (not implemented yet)
     """
     def __init__(self, img_series, cache=False):
@@ -33,6 +48,43 @@ class ImageReaderBase(DataSeriesReaderBase):
             transform_cache_size=CONFIG['transform cache size'],
         )
         self.img_series = img_series
+
+    # To subclass ------------------------------------------------------------
+
+    @abstractmethod
+    def _read(self, num):
+        """How to read image #num from series/stack. Returns np.array"""
+        pass
+
+
+class StackReaderBase(ImageReaderBase):
+    """Image reader when all images are in a single file (stack or video)"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data = self._read_stack(filepath=self.img_series.path)
+
+    def _read(self, num):
+        """How to read image #num from series/stack. Returns np.array"""
+        return self.data[num]
+
+    @property
+    def number_of_images(self):
+        """number of images in the stack"""
+        npts, *_ = self.data.shape
+        return npts
+
+    # To subclass ------------------------------------------------------------
+
+    @staticmethod
+    @abstractmethod
+    def _read_stack(filepath):
+        """Read whole stack of images into memory (to be done on init)
+
+        I do it this way so that it's easier to subclass
+        (User can provide own stack reader)
+        """
+        return FileIO.read_tiff_stack_whole(filepath=filepath)
 
 
 # ============================= Children classes =============================
@@ -62,16 +114,13 @@ class SingleImageReader(ImageReaderBase):
         return FileIO.read_single_image(filepath=filepath)
 
     def _read(self, num):
-        """read raw image from image series"""
+        """How to read image #num from series/stack. Returns np.array"""
         filepath = self.img_series.files[num].path
         return self._read_image(filepath=filepath)
 
 
-class TiffStackReader(ImageReaderBase):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data = self._read_stack(filepath=self.img_series.path)
+class TiffStackReader(StackReaderBase):
+    """Reader for TIFF stacks (.tif, .tiff)"""
 
     @staticmethod
     def _read_stack(filepath):
@@ -82,21 +131,20 @@ class TiffStackReader(ImageReaderBase):
         """
         return FileIO.read_tiff_stack_whole(filepath=filepath)
 
-    def _read(self, num):
-        """read single image (slice) from stack"""
-        return self.data[num]
-
-    @property
-    def number_of_images(self):
-        """number of images in the stack"""
-        npts, *_ = self.data.shape
-        return npts
-
     # This is an alternative method to avoid loading all in memory
     # BUT it's more difficult to get total number of images
     # def _read(self, num):
     #     """read raw image from stack"""
     #     return FileIO._read_tiff_stack_slice(filepath=self.img_series.path, num=num)
+
+
+class AviReader(StackReaderBase):
+    """Reader for AVI videos (.avi)"""
+
+    @staticmethod
+    def _read_stack(filepath):
+        """Read video (at the moment with PIMS)"""
+        return PyAVVideoReader(filepath)
 
 
 class HDF5Reader(ImageReaderBase):
