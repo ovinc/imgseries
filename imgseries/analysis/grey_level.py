@@ -122,13 +122,13 @@ class GreyLevelViewer(AnalysisViewer):
         glevels = data.get('glevels', None)
 
         self._update_image(data)
-        self.bar.set_xdata(num)
+        self.bar.set_xdata((num,))
 
         if glevels is None:
             return
 
         for zname, pt, glevel in zip(self.zone_names, self.current_pts, glevels):
-            pt.set_data((num, glevel))
+            pt.set_data((num,), (glevel,))
 
         if self.live:
             analysis_data = self.analysis.formatter.data

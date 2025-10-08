@@ -225,7 +225,8 @@ class ContourTrackingViewer(AnalysisViewer):
 
         for analysis, pt in zip(data['contour properties'], self.centroid_pts):
             pt.set_visible(True)
-            pt.set_data(*analysis[:2])
+            x, y = analysis[:2]
+            pt.set_data((x,), (y,))
 
     def _update_raw_contours(self, data):
         if not self._contains_raw_contours(data):
