@@ -9,7 +9,8 @@ authors = [
 ]
 description = "Image inspection and analysis tools for image series."
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">= 3.6"
+
 keywords = [
     "image",
     "analysis",
@@ -23,23 +24,26 @@ keywords = [
     'stack',
     'video',
 ]
+
 license = {text = "CeCILL-2.1"}
+
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: CEA CNRS Inria Logiciel Libre License, version 2.1 (CeCILL-2.1)",
 ]
+
 dependencies = [
     "scikit-image",
     "matplotlib",
     "numpy",
-    "tqdm",
     "importlib-metadata",
-    "imgbasics >= 0.3.0",
+    "tqdm",
     "filo >= 2.0.0",
-    "gittools >= 0.5",
+    "imgbasics >= 0.3.0",
     "drapo >= 1.2.1",
 ]
+
 dynamic = ["version"]
 
 [project.urls]
@@ -48,7 +52,8 @@ Documentation = "https://github.com/ovinc/imgseries/README.md"
 Repository = "https://github.com/ovinc/imgseries.git"
 
 [project.optional-dependencies]
-opencv = ["opencv-python",]
+avi = ["pims", "av"]  # avi video loading
+git = ["gittools >= 0.5"]    # git saving of code metadata
 
 [tool.setuptools.packages.find]
 exclude = ["examples",]

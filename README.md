@@ -25,6 +25,13 @@ How to install:
 pip install imgseries
 ```
 
+In order to install optional dependencies for .avi video reading and/or for saving metadata with git info
+```bash
+pip install imgseries[avi]
+pip install imgseries[git]
+pip install imgseries[avi,git]
+```
+
 The package is under CeCILL license (equivalent to - and compatible with - GNU GPL, see below).
 
 Quick start
@@ -283,19 +290,19 @@ Several customizations are possible :
 
 ## Python packages
 
-(installed by pip automatically if necessary)
-- skimage (scikit-image)
-- matplotlib
-- numpy
-- importlib-metadata
-- tqdm (waitbars)
-- filo (file series management) >= 2.0
-- gittools (get git commit info) >= 0.5
-- imgbasics (basic image processing) >= 0.3.0
-- drapo (interactive tools for matplotlib figures) >= 1.2.1
+### Required packages
+- `skimage` (scikit-image)
+- `matplotlib`
+- `numpy`
+- `importlib-metadata`
+- `tqdm` (waitbars)
+- `filo` (file series management) >= 2.0
+- `imgbasics` (basic image processing) >= 0.3.0
+- `drapo` (interactive tools for matplotlib figures) >= 1.2.1
 
-(optional:)
-- opencv (cv2)
+### Optional packages
+- *avi* configuration: `av`, `pims` (for AVI video reading)
+- *git* configuration: `gittools` (>= 0.5) (for metadata saving using git info)
 
 
 ## Python version

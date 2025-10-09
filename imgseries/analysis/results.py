@@ -2,7 +2,11 @@
 
 
 # Nonstandard
-import gittools
+try:
+    import gittools
+except ModuleNotFoundError:
+    pass
+
 from filo import ResultsBase
 
 # local imports
@@ -97,12 +101,18 @@ class PandasTsvJsonResults(Results):
         -------
         None
         """
-        gittools.save_metadata(
-            file=filepath,
-            info=metadata,
-            module=CONFIG['checked modules'],
-            dirty_warning=True,
-            notag_warning=True,
-            nogit_ok=True,
-            nogit_warning=True,
-        )
+        try:
+            gittools.save_metadata(
+                file=filepath,
+                info=metadata,
+                module=CONFIG['checked modules'],
+                dirty_warning=True,
+                notag_warning=True,
+                nogit_ok=True,
+                nogit_warning=True,
+            )
+        except ModuleNotFoundError:  # in case git / gittools not installed
+            FileIO.to_json(
+                data=metadata,
+                filepath=filepath,
+            )
