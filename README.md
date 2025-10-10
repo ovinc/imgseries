@@ -6,6 +6,7 @@ Image inspection and analysis tools for image series, based on the following cla
 *Representation of image sequences:*
 - `ImgSeries` (sequence stored in multiple individual files, e.g. PNG, JPG etc.),
 - `ImgStack` (sequence stored in a stack, e.g. TIF, TIFF, AVI, HDF5 etc.).
+- `ImgSequence` (sequence stored in array, e.g. `pims.ImageSequence`)
 
 *Analysis of image sequences:*
 - `GreyLevel`: evolution of average gray level of selected zone(s),
@@ -48,13 +49,16 @@ The management of file series, possibly spread out over multiple folders, follow
 If running on a Windows machine and using the parallel option in some of the analysis codes, the call of the function must not be run during import of the python file containing the script (e.g. by using a `if __name__ == '__main__'` block). This is because in Windows, multiprocessing imports the main program when setting up processes, which causes recursive problems. The problem does not arise on Linux / MacOS.
 
 
-`ImgSeries`, `ImgStack`: general image series manipulation
-----------------------------------------------------------
+`ImgSeries`, `ImgStack`, `ImgSequence`: general image series manipulation
+-------------------------------------------------------------------------
 
 See also the notebooks with examples and details in the `examples/` folder.
 
 ```python
-from imgseries import ImgSeries, ImgStack
+from imgseries import ImgSeries, ImgStack, ImgSequence
+
+# See further below to see how to work with tiff stacks, avi videos
+# or image sequences from pims
 
 # ----------------------------------------------------------------------------
 # ======= WORKING WITH IMAGE SERIES (distinct, individual image files) =======
@@ -160,13 +164,26 @@ images.load_times('Time_File.txt')  # Keep images.files but update its time info
 images = ImgStack('video.avi')
 images = ImgSeries('ImgStack.tif')
 
-# All methods/attributes above available, except those associated with timestamps
+# All methods/attributes described above are also available, except those
+# associated with timestamps
+
+# ----------------------------------------------------------------------------
+# ================ WORKING WITH ARRAYS (e.g. PIMS SEQUENCES) =================
+# ----------------------------------------------------------------------------
+
+imseq = pims.open('video.avi')
+images = ImgSequence(imseq)
+
+# All methods/attributes described above are also available, except those
+# associated with timestamps
 ```
 
 ### Caching images for speed improvement
 
 ```python
 images = ImgSeries(paths=['img1', 'img2'], cache=True)
+# (also works with ImgStack, ImgSequence)
+
 images.inspect()  # inspection should be significantly faster
 ```
 See *ImgSeries_Caching.ipynb* for examples, details and options.

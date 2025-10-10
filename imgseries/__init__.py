@@ -39,8 +39,7 @@ from .parameters.parameters_base import TransformParameter, CorrectionParameter
 from .parameters.transform import Grayscale, Rotation, Crop
 from .parameters.transform import Filter, Subtraction, Threshold
 
-from .series import ImgSeries
-from .series import ImgStack
+from .series import ImgSeries, ImgStack, ImgSequence
 
 from .analysis import GreyLevel, ContourTracking, Front1D, Flicker
 from .analysis import GreyLevelResults, ContourTrackingResults

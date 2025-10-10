@@ -9,8 +9,15 @@ from pathlib import Path
 
 # Local imports
 import imgseries
-from imgseries import ImgSeries, ImgStack
+from imgseries import ImgSeries, ImgStack, ImgSequence
 
+try:
+    import pims
+    import av
+except ModuleNotFoundError:
+    pims_available = False
+else:
+    pims_available = True
 
 # =============================== Misc. config ===============================
 
@@ -24,8 +31,14 @@ images.load_times('Img_Files.tsv')  # in case files have changed creation time
 tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 img_stack_tiff = ImgStack(tiff_stack)
 
-avi_stack = Path('examples/data/video') / 'video.avi'
-img_stack_avi = ImgStack(avi_stack)
+if pims_available:
+
+    avi_stack = Path('examples/data/video') / 'video.avi'
+    img_stack_avi = ImgStack(avi_stack)
+
+    # At the moment, pims does not accept pathlib.Path
+    pims_seq_avi = pims.open(str(avi_stack))
+    img_seq_avi = ImgSequence(pims_seq_avi)
 
 # ======================== Test general image series =========================
 
@@ -97,15 +110,23 @@ def test_slicing_images():
 
 
 def test_read_stack_tiff():
-    """Read data from ImgStack file"""
+    """Read data from .tiff file"""
     img = img_stack_tiff.read(num=10)
     assert img.shape == (100, 112)
 
 
 def test_read_stack_avi():
-    """Read data from ImgStack file"""
-    img = img_stack_avi.read(num=6)
-    assert img.shape == (400, 1200, 3)
+    """Read data from .avi file"""
+    if pims_available:
+        img = img_stack_avi.read(num=6)
+        assert img.shape == (400, 1200, 3)
+
+
+def test_read_pims_avi():
+    """Read data from pims image sequence"""
+    if pims_available:
+        img = img_seq_avi.read(num=6)
+        assert img.shape == (400, 1200, 3)
 
 
 def test_slicing_stack():

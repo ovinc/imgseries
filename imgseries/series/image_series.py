@@ -28,14 +28,14 @@ class ImgSeries(ImgSeriesBase):
         corrections=None,
         transforms=None,
         cache=False,
-        Viewer=ImgSeriesViewer,
-        Reader=SingleImageReader,
+        Viewer=None,
+        Reader=None,
     ):
         """Init image series object.
 
         Parameters
         ----------
-        paths : str, path object or iterable of those
+        folders : str, path object or iterable of those
             can be a string, path object, or a list of str/paths if data
             is stored in multiple folders.
 
@@ -81,8 +81,8 @@ class ImgSeries(ImgSeriesBase):
             corrections=corrections,
             transforms=transforms,
             cache=cache,
-            Viewer=Viewer,
-            Reader=Reader,
+            Viewer=ImgSeriesViewer if Viewer is None else Viewer,
+            Reader=SingleImageReader if Reader is None else Reader,
         )
 
         self._get_initial_image_dims()

@@ -1,4 +1,4 @@
-"""Class ImgSeries for image series manipulation"""
+"""Readers for loading image data into image series object"""
 
 # Standard library
 from abc import abstractmethod
@@ -27,6 +27,7 @@ class ImageReaderBase(DataSeriesReaderBase):
     (for reading images and applying transforms/corrections on them).
     This is a base class, children:
         - SingleImageReader
+        - SequenceReader
         - StackReaderBase
             - TiffStackReader
             - AviReader
@@ -119,6 +120,13 @@ class SingleImageReader(ImageReaderBase):
         return self._read_image(filepath=filepath)
 
 
+class ImgSequenceReader(ImageReaderBase):
+
+    def _read(self, num):
+        """How to read image #num from series/stack. Returns np.array"""
+        return self.img_series.img_sequence[num]
+
+
 class TiffStackReader(StackReaderBase):
     """Reader for TIFF stacks (.tif, .tiff)"""
 
@@ -143,7 +151,7 @@ class AviReader(StackReaderBase):
 
     @staticmethod
     def _read_stack(filepath):
-        """Read video (at the moment with PIMS)"""
+        """Read video (at the moment with Sequence)"""
         return PyAVVideoReader(filepath)
 
 

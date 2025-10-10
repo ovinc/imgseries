@@ -2,3 +2,4 @@
 
 from .image_series import ImgSeries
 from .image_stacks import ImgStack
+from .image_sequence import ImgSequence

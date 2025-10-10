@@ -1,31 +1,20 @@
-"""Class ImgStack for image series manipulation (.tiff / .avi)"""
-
-# Standard library imports
-from pathlib import Path
+"""ImgSequence, using array structures as inputs (e.g. pims image sequences)"""
 
 # local imports
-from ..readers import HDF5Reader, TiffStackReader, AviReader
 from ..viewers import ImgSeriesViewer
-
 from .image_base import ImgSeriesBase
+from ..readers import ImgSequenceReader
 
 
-DEFAULT_READERS = {
-    '.tif': TiffStackReader,
-    '.tiff': TiffStackReader,
-    '.avi': AviReader,
-    '.hdf5': HDF5Reader,
-}
+class ImgSequence(ImgSeriesBase):
+    """Class to manage img sequences from array-like sequences (e.g. pims)"""
 
-
-class ImgStack(ImgSeriesBase):
-    """Class to manage stacks of images (e.g., tiff, HDF5, etc.)"""
-
+    # Is condidered a stack because no individual files for each image
     is_stack = True
 
     def __init__(
         self,
-        path,
+        img_sequence,
         savepath='.',
         corrections=None,
         transforms=None,
@@ -37,7 +26,8 @@ class ImgStack(ImgSeriesBase):
 
         Parameters
         ----------
-        path : str or path object
+        img_sequence : array-like
+            pims.ImageSequence object or equivalent
 
         savepath : str or path object
             folder in which to save parameters (transform, display etc.)
@@ -63,18 +53,13 @@ class ImgStack(ImgSeriesBase):
         ImgViewer : subclass of ImageViewerBase
             which Viewer class to use for show(), inspect() etc.
             if None, use default viewer class
-
-        ImgReader : subclass of ImageReaderBase
-            class (or object) that defines how to read images
         """
-        self.path = Path(path)
-        extension = self.path.suffix.lower()
+        self.img_sequence = img_sequence
 
-        if Reader is None:
-            try:
-                Reader = DEFAULT_READERS[extension]
-            except KeyError:
-                raise ValueError(f'Unsupported extension: {extension}')
+        try:
+            self.path = self.img_sequence.pathname   # defined by pims
+        except AttributeError:
+            self.path = savepath  # useful only for analysis metadata
 
         super().__init__(
             savepath=savepath,
@@ -82,14 +67,12 @@ class ImgStack(ImgSeriesBase):
             transforms=transforms,
             cache=cache,
             Viewer=ImgSeriesViewer if Viewer is None else Viewer,
-            Reader=Reader,
+            Reader=ImgSequenceReader if Reader is None else Reader,
         )
-
-        self.data = self.reader.data
         self._get_initial_image_dims()
 
     def __repr__(self):
-        return f"{super().__repr__()}\nfrom {self.path}"
+        return f"{super().__repr__()}\nfrom {self.img_sequence}"
 
     @property
     def nums(self):
@@ -101,8 +84,7 @@ class ImgStack(ImgSeriesBase):
         >>> for num in images.nums[::3]:
         >>>     images.read(num)
         """
-        npts = self.reader.number_of_images
-        return range(npts)
+        return range(self.ntot)
 
     @property
     def ntot(self):
@@ -114,4 +96,4 @@ class ImgStack(ImgSeriesBase):
         -------
         int
         """
-        return self.reader.number_of_images
+        return len(self.img_sequence)
