@@ -9,23 +9,24 @@ import imgbasics
 
 # Local imports
 from .analysis_base import Analysis
-from .formatters import PandasFormatter
+from .formatters import PandasFormatter, Formatter
 from .results import PandasTsvJsonResults
 from ..process import rgb_to_grey
 from ..fileio import FileIO
-from ..parameters.analysis import Contours, Threshold, ContourProperties
+from ..parameters.analysis import Contours, Threshold
+from ..parameters.analysis import ContourProperties, ContourCoordinates
 from ..viewers import AnalysisViewer
 
 
 # ============================ Results formatting ============================
 
 
-class ContourTrackingFormatter(PandasFormatter):
+class ContourTrackingFormatter(Formatter):
     """Formatting of results spit out by analysis methods"""
 
     @property
     def n_contours(self):
-        return len(self.analysis.contours.data['position'])
+        return len(self.analysis.reference_contours.properties)
 
     @property
     def results_have_raw_contours(self):
@@ -49,23 +50,41 @@ class ContourTrackingFormatter(PandasFormatter):
 
     def _data_to_results_row(self, data):
         """Generate iterable of data that fits in the defined columns."""
-        return sum(data['contour properties'], start=())  # "Flatten" list of tuples
+        all_info = []
+        for contour in data['contours']:
+            ppties = contour.properties
+            info = (*ppties.centroid, ppties.area, ppties.perimeter)
+            all_info.append(info)
+        return sum(info, start=())  # "Flatten" list of tuples
 
     def _results_row_to_data(self, row):
         """Go from row of data to raw data"""
-        data = {'contour properties': []}
+        data = {'contours': []}
 
         for k in range(self.n_contours):
+
             lim1 = 'x' + str(k + 1)  # contour positions and perimeters
             lim2 = 'a' + str(k + 1)
             xc, yc, perimeter, area = row.loc[lim1:lim2]
-            data['contour properties'].append((xc, yc, perimeter, area))
+
+            ppties = ContourProperties(
+                centroid=(xc, yc),
+                perimeter=perimeter,
+                area=area,
+            )
+
+            if self.results_have_raw_contours:
+                coordinates = self._coordinates_from_
+
+
+            contour = Contour(properties=ppties)
+            data['contours'].append(contour)
 
         return data
 
     def _to_metadata(self):
         """Get analysis metadata excluding paths and transforms"""
-        return {'contours': self.analysis.contours.data}
+        return {'reference contours': self.analysis.reference_contours.data}
 
     # -------- Redefinition of Formatter methods to add raw contours ---------
 
@@ -186,7 +205,7 @@ class ContourTrackingViewer(AnalysisViewer):
 
     @property
     def n_contours(self):
-        return len(self.analysis.contours.data['position'])
+        return len(self.analysis.contours.data['properties'])
 
     def _contains_contour_properties(self, data):
         try:
@@ -269,15 +288,18 @@ class ContourTrackingViewer(AnalysisViewer):
 # =================== Contour management and calculations ====================
 
 
-
 class Contour:
     """Class that represents contour data and properties"""
 
-    def __init__(self, x, y):
-        """x, y are the coordinates of the contour"""
-        self.x = x
-        self.y = y
-        self.properties = None  # not None when calculate_properties() called
+    def __init__(self, coordinates=None, properties=None):
+        """x, y are the coordinates of the contour
+
+        Either coordinates and properties can be None, because contour data
+        can store coortinates, properties, or both.
+        """
+        self.coordinates = coordinates
+        # not None when calculate_properties() called
+        self.properties = properties
 
     def calculate_properties(self):
         """Calculate centroid, perimeter, area and store it in self.properties"""
@@ -291,12 +313,12 @@ class Contour:
     @classmethod
     def from_opencv(cls, contour_data):
         x, y = imgbasics.contour_coords(contour_data, source='opencv')
-        return cls(x=x, y=y)
+        return cls(coordinates=ContourCoordinates(x=x, y=y))
 
     @classmethod
     def from_scikit(cls, contour_data):
         x, y = imgbasics.contour_coords(contour_data, source='scikit')
-        return cls(x=x, y=y)
+        return cls(coordinates=ContourCoordinates(x=x, y=y))
 
 
 # =========================== Main ANALYSIS class ============================
@@ -458,7 +480,7 @@ class ContourTracking(Analysis):
             )
             raise AttributeError(msg)
 
-        self.reference_positions = list(self.contours.data['position'].values())
+        self.reference_contour_ppties = self.contours.properties
 
     def _analyze(self, img):
         """Find contours at level in file i closest to the reference positions.
@@ -480,28 +502,20 @@ class ContourTracking(Analysis):
         data = {'contour properties': []}     # Stores analysis data (centroid etc.)
         data['raw contours'] = []       # Stores full (x, y) contour data
 
-        for refpos in self.reference_positions:
+        for ref_contour_ppties in self.reference_contour_ppties.values():
 
             try:
-                # this time edge=false, because trying to find contour closest
-                # to the recorded centroid position, not edges
-                contour = imgbasics.closest_contour(
-                    contours=contours,
-                    position=refpos,
-                    edge=True,
-                )
-
+                # can return None if no contour matching criteria
+                contour = self._match(contours, ref_contour_ppties)
             except imgbasics.ContourError:
-                # No contour at all detected on image --> return NaN
+                contour = None
+
+            # No contour at all detected on image --> return NaN
+            if contour is None:
                 xc, yc, perimeter, area = (NaN,) * 4
                 data['raw contours'].append(None)
 
             else:
-
-                x, y = imgbasics.contour_coords(contour, source='scikit')
-
-                contprops = imgbasics.contour_properties(x, y)
-
                 xc, yc = contprops['centroid']
                 perimeter = contprops['perimeter']
                 area = contprops['area']

@@ -121,6 +121,18 @@ class Zones(AnalysisParameter):
 
 
 @dataclass
+class ContourCoordinates:
+    """Stores contour property data"""
+
+    x: float
+    y: float
+
+    @property
+    def data(self):
+        return vars(self)
+
+
+@dataclass
 class ContourProperties:
     """Stores contour property data"""
 
@@ -176,7 +188,7 @@ class Contours(AnalysisParameter):
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
-            ax.plot(contour.x, contour.y, linewidth=2, c='r')
+            ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
 
         # Interactively select contours of interest on image -----------------
 
@@ -195,7 +207,7 @@ class Contours(AnalysisParameter):
                 clickpt,
             )
 
-            ax.plot(contour.x, contour.y, linewidth=1, c='y')
+            ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=1, c='y')
             plt.pause(0.01)
 
             name = f'contour {k}'
@@ -210,6 +222,14 @@ class Contours(AnalysisParameter):
             'level': level,
             'image': num,
         }
+
+    @property
+    def properties(self):
+        """Generate contour properties objects based on dicts"""
+        ppties = {}
+        for name, ppty in self.data['properties'].items():
+            ppties[name] = ContourProperties(**ppty)
+        return ppties
 
     def show(self, **kwargs):
         """Show reference contours used for contour tracking.
@@ -234,13 +254,13 @@ class Contours(AnalysisParameter):
 
         # Find contours closest to reference positions and plot them ---------
         for contour in contours:
-            ax.plot(contour.x, contour.y, linewidth=1, c='b')
+            ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=1, c='b')
 
         # Interactively select contours of interest on image -----------------
         for properties in all_properties.values():
             contour_properties = ContourProperties(**properties)
             contour = self.analysis._match(contours, contour_properties)
-            ax.plot(contour.x, contour.y, linewidth=2, c='r')
+            ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
 
         ax.set_title(f'img #{num}, grey level {level}')
 
@@ -304,7 +324,7 @@ class Threshold(AnalysisParameter):
         def draw_contours(level):
             contours = calculate_contours(level)
             for contour in contours:
-                line, = ax.plot(contour.x, contour.y, linewidth=2, c='r')
+                line, = ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
                 self.lines.append(line)
 
         level_min, level_max = max_pixel_range(img)
