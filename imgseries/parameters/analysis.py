@@ -1,6 +1,7 @@
 """Classes to store parameters specific to analyses: contours, ROIs etc."""
 
 # Standard library
+from dataclasses import dataclass
 from functools import lru_cache
 
 # Non-standard modules
@@ -12,6 +13,9 @@ from imgbasics.cropping import _cropzone_draw
 # Local imports
 from .parameters_base import AnalysisParameter
 from ..process import max_pixel_range
+
+
+# ============================ Zones of interest =============================
 
 
 class Zones(AnalysisParameter):
@@ -113,6 +117,22 @@ class Zones(AnalysisParameter):
         return ax
 
 
+# ================================= Contours =================================
+
+
+@dataclass
+class ContourProperties:
+    """Stores contour property data"""
+
+    centroid: tuple
+    perimeter: float
+    area: float
+
+    @property
+    def data(self):
+        return vars(self)
+
+
 class Contours(AnalysisParameter):
     """Class to store and manage reference contours param in image series."""
 
@@ -156,12 +176,11 @@ class Contours(AnalysisParameter):
         ax.set_xlabel('Left click on vicinity of contour to select.')
 
         for contour in contours:
-            x, y = imgbasics.contour_coords(contour, source='scikit')
-            ax.plot(x, y, linewidth=2, c='r')
+            ax.plot(contour.x, contour.y, linewidth=2, c='r')
 
         # Interactively select contours of interest on image -----------------
 
-        positions = {}
+        properties = {}
 
         for k in range(1, n + 1):
 
@@ -169,23 +188,25 @@ class Contours(AnalysisParameter):
             fig.canvas.draw()
             fig.canvas.flush_events()
 
-            pt, = plt.ginput()
+            clickpt, = plt.ginput()
 
-            contour = imgbasics.closest_contour(contours, pt, edge=True)
-            x, y = imgbasics.contour_coords(contour, source='scikit')
+            contour = self.analysis._closest_contour_to_click(
+                contours,
+                clickpt,
+            )
 
-            ax.plot(x, y, linewidth=1, c='y')
+            ax.plot(contour.x, contour.y, linewidth=1, c='y')
             plt.pause(0.01)
 
-            xc, yc = imgbasics.contour_properties(x, y)['centroid']
-
             name = f'contour {k}'
-            positions[name] = (xc, yc)  # store position of centroid
+
+            contour.calculate_properties()
+            properties[name] = contour.properties.data
 
         plt.close(fig)
 
         self.data = {
-            'position': positions,
+            'properties': properties,
             'level': level,
             'image': num,
         }
@@ -202,25 +223,24 @@ class Contours(AnalysisParameter):
         """
         num = self.data['image']
         level = self.data['level']
-        positions = self.data['position']
+        all_properties = self.data['properties']
 
-        # Load image, crop it, and calculate contours
+        # Load image, crop it, and calculate contours ------------------------
         img = self.analysis.img_series.read(num)
         contours = self.analysis._find_contours(img, level)
 
         _, ax = plt.subplots()
         self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
-        # Find contours closest to reference positions and plot them
+        # Find contours closest to reference positions and plot them ---------
         for contour in contours:
-            x, y = imgbasics.contour_coords(contour, source='scikit')
-            ax.plot(x, y, linewidth=1, c='b')
+            ax.plot(contour.x, contour.y, linewidth=1, c='b')
 
         # Interactively select contours of interest on image -----------------
-        for pt in positions.values():
-            contour = imgbasics.closest_contour(contours, pt, edge=False)
-            x, y = imgbasics.contour_coords(contour, source='scikit')
-            ax.plot(x, y, linewidth=2, c='r')
+        for properties in all_properties.values():
+            contour_properties = ContourProperties(**properties)
+            contour = self.analysis._match(contours, contour_properties)
+            ax.plot(contour.x, contour.y, linewidth=2, c='r')
 
         ax.set_title(f'img #{num}, grey level {level}')
 
@@ -235,6 +255,9 @@ class Contours(AnalysisParameter):
         all_data = self._load(filename=filename)
         self.data = all_data[self.name]
         self.analysis.threshold.value = self.data['level']
+
+
+# ================================ Threshold =================================
 
 
 class Threshold(AnalysisParameter):
@@ -281,12 +304,11 @@ class Threshold(AnalysisParameter):
         def draw_contours(level):
             contours = calculate_contours(level)
             for contour in contours:
-                x, y = imgbasics.contour_coords(contour, source='scikit')
-                line, = ax.plot(x, y, linewidth=2, c='r')
+                line, = ax.plot(contour.x, contour.y, linewidth=2, c='r')
                 self.lines.append(line)
 
         level_min, level_max = max_pixel_range(img)
-        level_step = 1 if type(level_max) == int else None
+        level_step = 1 if type(level_max) is int else None
 
         level_start = level_max // 2
         draw_contours(level_start)

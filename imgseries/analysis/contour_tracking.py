@@ -3,6 +3,7 @@
 # Misc. package imports
 from skimage import measure
 from numpy import nan as NaN
+import numpy as np
 import matplotlib.pyplot as plt
 import imgbasics
 
@@ -12,7 +13,7 @@ from .formatters import PandasFormatter
 from .results import PandasTsvJsonResults
 from ..process import rgb_to_grey
 from ..fileio import FileIO
-from ..parameters.analysis import Contours, Threshold
+from ..parameters.analysis import Contours, Threshold, ContourProperties
 from ..viewers import AnalysisViewer
 
 
@@ -265,6 +266,39 @@ class ContourTrackingViewer(AnalysisViewer):
         self._update_raw_contours(data)
 
 
+# =================== Contour management and calculations ====================
+
+
+
+class Contour:
+    """Class that represents contour data and properties"""
+
+    def __init__(self, x, y):
+        """x, y are the coordinates of the contour"""
+        self.x = x
+        self.y = y
+        self.properties = None  # not None when calculate_properties() called
+
+    def calculate_properties(self):
+        """Calculate centroid, perimeter, area and store it in self.properties"""
+        ppties = imgbasics.contour_properties(x=self.x, y=self.y)
+        self.properties = ContourProperties(**ppties)
+
+    def reset_properties(self):
+        """Remove calculated properties data."""
+        self.properties = None
+
+    @classmethod
+    def from_opencv(cls, contour_data):
+        x, y = imgbasics.contour_coords(contour_data, source='opencv')
+        return cls(x=x, y=y)
+
+    @classmethod
+    def from_scikit(cls, contour_data):
+        x, y = imgbasics.contour_coords(contour_data, source='scikit')
+        return cls(x=x, y=y)
+
+
 # =========================== Main ANALYSIS class ============================
 
 
@@ -326,13 +360,29 @@ class ContourTracking(Analysis):
         self.contours = Contours(self)
         self.threshold = Threshold(self)
 
+        # Tolerance in displacement and areas to match contours
+        self.tolerance_displacement = None
+        self.tolerance_area = None
+
+    # ======================= Contour analysis methods =======================
+
     def _find_contours(self, img, level):
         """Define how contours are found on an image."""
         if img.ndim == 2:
             image = img
         else:
             image = rgb_to_grey(img)
-        return measure.find_contours(image, level)
+
+        raw_contours = measure.find_contours(image, level)
+        contours = [Contour.from_scikit(c) for c in raw_contours]
+
+        return contours
+
+    def _closest_contour_to_click(self, contours, click_position):
+        """Define closest contour to position (x, y) for click selection"""
+        raw_contours = [(contour.x, contour.y) for contour in contours]
+        x, y = imgbasics.closest_contour(raw_contours, click_position, edge=True)
+        return Contour(x=x, y=y)
 
     def _update_reference_positions(self, data):
         """Next iteration will look for contours close to the current ones."""
@@ -344,6 +394,57 @@ class ContourTracking(Analysis):
                 # if position correctly detected, update where to look next
                 xc, yc, *_ = contour_analysis
                 self.reference_positions[i] = (xc, yc)
+
+    def _find_tolerable_contours(self, contours, contour_properties):
+        """Find all contours that match tolerance criteria for matching given contour"""
+
+        ok_contours = []
+
+        for contour in contours:
+
+            if self.tolerance_displacement is not None:
+                x1, y1 = contour_properties.centroid
+                x2, y2 = contour.properties.centroid
+                d = np.hypot(x2 - x1, y2 - y1)
+                if d > self.tolerance_displacement:
+                    continue
+
+            if self.tolerance_area is not None:
+                a = abs(contour.properties.area)
+                a0 = abs(contour_properties.area)
+                x = abs((a - a0)) / a0
+                if x > self.tolerance_area:
+                    continue
+
+            ok_contours.append(contour)
+
+        return ok_contours
+
+    def _match(self, contours, contour_properties):
+        """Find closest contour matching reference contour properties
+
+        tolerance_displacement: max displacement in px
+        tolerance_area: max relative change in area
+        """
+        for contour in contours:
+            if contour.properties is None:
+                contour.calculate_properties()
+
+        tolerable_contours = self._find_tolerable_contours(contours, contour_properties)
+
+        if len(tolerable_contours) < 1:
+            return
+
+        # Among all tolerated contours, return that that is closest (centroid)
+        displacements = []
+        for contour in tolerable_contours:
+            x1, y1 = contour_properties.centroid
+            x2, y2 = contour.properties.centroid
+            d = np.hypot(x2 - x1, y2 - y1)
+            displacements.append(d)
+
+        imin = displacements.index(min(displacements))
+        return tolerable_contours[imin]
 
     # ------------------- Subclassed methods from Analysis -------------------
 
