@@ -9,6 +9,11 @@ from filo import to_json, load_json
 # local imports
 from .config import CONFIG
 
+try:
+    import gittools
+except ModuleNotFoundError:
+    pass
+
 
 class FileIO:
 
@@ -122,3 +127,21 @@ class FileIO:
             (writes data to file)
         """
         data.to_csv(filepath, sep=CONFIG['csv separator'])
+
+    def to_json_with_gitinfo(data, filepath):
+        """similar to to_json but adds gitinfo if possible"""
+        try:
+            gittools.save_metadata(
+                file=filepath,
+                info=data,
+                module=CONFIG['checked modules'],
+                dirty_warning=True,
+                notag_warning=True,
+                nogit_ok=True,
+                nogit_warning=True,
+            )
+        except ModuleNotFoundError:  # in case git / gittools not installed
+            FileIO.to_json(
+                data=data,
+                filepath=filepath,
+            )

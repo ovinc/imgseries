@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # Local imports
 from .analysis_base import Analysis
-from .formatters import PandasFormatter
+from .formatters import AnalysisPandasFormatterBase
 from .results import PandasTsvJsonResults
 from ..viewers import AnalysisViewer
 
@@ -14,7 +14,7 @@ from ..viewers import AnalysisViewer
 # ============================ Results formatting ============================
 
 
-class Front1DFormatter(PandasFormatter):
+class Front1DFormatter(AnalysisPandasFormatterBase):
 
     def _column_names(self):
         """Prepare structure(s) that will hold the analyzed data."""

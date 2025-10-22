@@ -8,7 +8,7 @@ import imgbasics
 # Local imports
 from ..parameters.analysis import Zones
 from ..viewers import AnalysisViewer
-from .formatters import PandasFormatter
+from .formatters import AnalysisPandasFormatterBase
 from .results import PandasTsvJsonResults
 from .analysis_base import Analysis
 
@@ -16,7 +16,7 @@ from .analysis_base import Analysis
 # ============================ Results formatting ============================
 
 
-class GreyLevelFormatter(PandasFormatter):
+class GreyLevelFormatter(AnalysisPandasFormatterBase):
 
     def _column_names(self):
         """Prepare structure(s) that will hold the analyzed data."""

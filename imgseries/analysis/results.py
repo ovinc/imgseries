@@ -1,12 +1,6 @@
 """Analysis of image series (base class)"""
 
 
-# Nonstandard
-try:
-    import gittools
-except ModuleNotFoundError:
-    pass
-
 from filo import ResultsBase
 
 # local imports
@@ -14,28 +8,11 @@ from ..config import CONFIG
 from ..fileio import FileIO
 
 
-class Results(ResultsBase):
-    """Base class for results, can be used as is but won't be able to
-    interact with files.
-    In order to interact (save/load) with files, define the following methods:
-    - _load_data()
-    - _save_data()
-    - _load_metadata()
-    - _save_metadata()
-    """
-    pass
-
-
-class PandasTsvJsonResults(Results):
+class PandasTsvJsonResults(ResultsBase):
     """"Store data as a pandas dataframe and saves it as a tsv file.
 
     Metadata is saved as .json
     """
-    # define in subclass (e.g. 'Img_GreyLevel')
-    # Note that the program will add .tsv or .json depending on context
-    default_filename = 'Results'
-    data_extension = '.tsv'
-    metadata_extension = '.json'
 
     def _load_data(self, filepath):
         """Return analysis data from file.
@@ -101,18 +78,4 @@ class PandasTsvJsonResults(Results):
         -------
         None
         """
-        try:
-            gittools.save_metadata(
-                file=filepath,
-                info=metadata,
-                module=CONFIG['checked modules'],
-                dirty_warning=True,
-                notag_warning=True,
-                nogit_ok=True,
-                nogit_warning=True,
-            )
-        except ModuleNotFoundError:  # in case git / gittools not installed
-            FileIO.to_json(
-                data=metadata,
-                filepath=filepath,
-            )
+        return FileIO.to_json_with_gitinfo(data=metadata, filepath=filepath)

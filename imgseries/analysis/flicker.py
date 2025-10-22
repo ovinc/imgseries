@@ -5,7 +5,7 @@
 import numpy as np
 
 # Local imports
-from .formatters import PandasFormatter
+from .formatters import AnalysisPandasFormatterBase
 from .results import PandasTsvJsonResults
 from .grey_level import GreyLevel, GreyLevelViewer
 from .grey_level import GreyLevelFormatter
@@ -14,7 +14,7 @@ from .grey_level import GreyLevelFormatter
 # ============================ Results formatting ============================
 
 
-class FlickerFormatter(PandasFormatter):
+class FlickerFormatter(AnalysisPandasFormatterBase):
 
     # If results are independent (results from one num do not depend from
     # analysis on other nums), one do not need to re-do the analysis when
