@@ -239,6 +239,14 @@ from imgseries import ContourTracking, ContourTrackingResults
 # Create analysis object
 ct = ContourTracking(images)
 
+# In order to put criteria on maximum displacements (pixels) or relative area
+# variations of the contour, use:
+# (max 10 px displacement from one image to the other)
+ct = ContourTracking(images, tolerance_displacement=10)
+# (max 10% area variation from one image to the other)
+ct = ContourTracking(images, tolerance_area=0.1)
+```
+
 # Prepare and run analysis ---------------------------------------------------
 ct.threshold.define()  # interactively select threshold level
 ct.contours.define()   # interactively select contours at the above level
@@ -259,7 +267,9 @@ ct.inspect()   # browse through results with a slider (same options)
 # Load analysis results afterwards (need save() to have been called) ---------
 results = ContourTrackingResults()
 results.load()   # load analysis results (data + metadata)
-results.data, results.raw_contour_data, results.metadata  # useful attributes
+results.data, results.metadata  # useful attributes
+results.data['properties']    # properties of contours (centroid, area, perim.)
+results.data['coordinates']   # coordinates of contours
 ```
 
 ### `Front1D`: Analyze 1D propagating fronts with grey level analysis
@@ -313,7 +323,7 @@ Several customizations are possible :
 - `numpy`
 - `importlib-metadata`
 - `tqdm` (waitbars)
-- `filo` (file series management) >= 2.2
+- `filo` (file series management) >= 2.2.0
 - `imgbasics` (basic image processing) >= 0.4.1
 - `drapo` (interactive tools for matplotlib figures) >= 1.2.1
 

@@ -132,6 +132,9 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
 
     def _prepare_data_storage(self):
         """Prepare structure(s) that will hold the analyzed data"""
+        if not self.analysis.save_contours:
+            return
+
         self.contour_coord_data = {
             f'contour {k + 1}': {}
             for k in range(self.analysis.n_contours)
@@ -145,6 +148,9 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
         data : dict
             Dictionary of data, output of Analysis.analyze()
         """
+        if not self.analysis.save_contours:
+            return
+
         num = data['num']
 
         for k, contour in enumerate(data['contours']):
@@ -163,17 +169,22 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
 
     def _to_results_data(self):
         """Return partial data that will be combined with the multiformatter"""
+        if not self.analysis.save_contours:
+            return
         return self.contour_coord_data
 
     def _regenerate_analysis_data(self, num):
         """How to go back to raw data (as spit out by the analysis methods
         during analysis) from data saved in results or files."""
-        coord_data = self.analysis.results.data['coordinates']
+        try:
+            coord_data = self.analysis.results.data['coordinates']
+        except KeyError:
+            return  # No coordinates data in results -> return None
 
         try:
             coord_data['contour 1'][str(num)]
-        except KeyError:  # this particular num not analyzed
-            return None
+        except KeyError:  # this particular num not analyzed -> return None
+            return
 
         data = []
 
@@ -208,10 +219,14 @@ class ContourTrackingFormatter(MultiFormatterBase):
         Returns data that will be stored in results.data
         """
         contour_ppties, contour_coords = individual_data
-        return {
-            'properties': contour_ppties,
-            'coordinates': contour_coords,
-        }
+
+        coords_dict = {'coordinates': contour_coords}
+        ppties_dict = {'properties': contour_ppties}
+
+        if self.analysis.save_contours:
+            return {**ppties_dict, **coords_dict}
+        else:
+            return ppties_dict
 
     def _combine_regenerated_data(self, individual_regenerated_data):
         """How to combine individual data obtained from _to_results_data()
@@ -295,7 +310,7 @@ class ContourTrackingResults(ResultsBase):
         try:
             data = FileIO.from_json(filepath=filepath)
         except FileNotFoundError:  # no coordinates saved
-            data = {}
+            data = None
         return data
 
     def loaded_data_to_data(self, loaded_data):
@@ -304,11 +319,12 @@ class ContourTrackingResults(ResultsBase):
         Possibility to subclass, by default assumes just one
         data returned that goes directly into self.data
         """
-        data_properties, data_coordinates = loaded_data
-        return {
-            'properties': data_properties,
-            'coordinates': data_coordinates,
-        }
+        data_props, data_coords = loaded_data
+
+        coords_dict = {'coordinates': data_coords} if data_coords else {}
+        ppties_dict = {'properties': data_props}
+
+        return {**ppties_dict, **coords_dict}
 
     # Saving data ------------------------------------------------------------
 
@@ -316,7 +332,11 @@ class ContourTrackingResults(ResultsBase):
         FileIO.to_tsv(data=data['properties'], filepath=filepath)
 
     def _save_data_coordinates(self, data, filepath):
-        FileIO.to_json(data=data['coordinates'], filepath=filepath)
+        try:
+            coord_data = data['coordinates']
+        except KeyError:
+            return
+        FileIO.to_json(data=coord_data, filepath=filepath)
 
     # Loading and saving metadata --------------------------------------------
 
@@ -338,8 +358,8 @@ class ContourTrackingViewer(AnalysisViewer):
         self.contour_lines = []
 
         for _ in range(self.analysis.n_contours):
-            centroid_pt, = self.ax_img.plot([], [], '+b')
-            contour_line, = self.ax_img.plot([], [], '-r')
+            centroid_pt, = self.ax_img.plot([], [], '+')
+            contour_line, = self.ax_img.plot([], [], '-', c=centroid_pt.get_color())
             self.centroid_pts.append(centroid_pt)
             self.contour_lines.append(contour_line)
 
@@ -436,6 +456,8 @@ class ContourTracking(Analysis):
         img_series,
         savepath=None,
         save_contours=True,
+        tolerance_displacement=None,
+        tolerance_area=None,
     ):
         """Analysis of iso-grey-level contours and their evolution in series.
 
@@ -451,8 +473,22 @@ class ContourTracking(Analysis):
         save_contours : bool
             if True (default), all coordinates of contour lines are saved in
             addition to contour positions, centroids and areas.
+
+        save_contours : bool
+            if True (default), all coordinates of contour lines are saved in
+            addition to contour positions, centroids and areas.
+
+        tolerance_displacement : float
+            if None (default), no restriction on displacements
+            if value = d > 0, do not consider displacements more than d pixels
+
+        tolerance_area : float
+            if None (default), no restriction on area variations of contours
+            if value = x > 0, do not consider relative variation in area of
+            more than x.
         """
         super().__init__(img_series=img_series, savepath=savepath)
+
         self.save_contours = save_contours
 
         # empty contour param object, needs to be filled with contours.define()
@@ -461,8 +497,8 @@ class ContourTracking(Analysis):
         self.threshold = Threshold(self)
 
         # Tolerance in displacement and areas to match contours
-        self.tolerance_displacement = None
-        self.tolerance_area = None
+        self.tolerance_displacement = tolerance_displacement
+        self.tolerance_area = tolerance_area
 
     @property
     def n_contours(self):
@@ -535,7 +571,7 @@ class ContourTracking(Analysis):
         if len(tolerable_contours) < 1:
             return
 
-        # Among all tolerated contours, return that that is closest (centroid)
+        # Among all tolerated contours, return that which is closest (centroid)
         displacements = []
         for contour in tolerable_contours:
             x1, y1 = contour_properties.centroid

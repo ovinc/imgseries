@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 # Non-standard modules
+import drapo
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import imgbasics
@@ -200,7 +201,7 @@ class Contours(AnalysisParameter):
             fig.canvas.draw()
             fig.canvas.flush_events()
 
-            clickpt, = plt.ginput()
+            clickpt, = drapo.ginput()
 
             contour = self.analysis._closest_contour_to_click(
                 contours,
