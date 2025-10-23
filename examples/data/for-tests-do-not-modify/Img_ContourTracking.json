@@ -1,31 +1,42 @@
 {
-    "path": [
-        "/Users/olivier.vincent/Python-OV/imgseries/data/untracked_data"
-    ],
+    "path": "/Users/olivier.vincent/Python-OV/imgseries/examples/data/untracked_data",
     "folders": [
         "../img1",
         "../img2"
     ],
     "contours": {
-        "position": {
-            "contour 1": [
-                186.38107291551614,
-                268.8803487163035
-            ],
-            "contour 2": [
-                258.93756035280825,
-                269.7894418257783
-            ],
-            "contour 3": [
-                322.9357384733174,
-                234.14933143477805
-            ]
+        "properties": {
+            "contour 1": {
+                "centroid": [
+                    258.91821206447423,
+                    268.55855369455435
+                ],
+                "perimeter": 49.51328604738248,
+                "area": -187.87977759868332
+            },
+            "contour 2": {
+                "centroid": [
+                    343.46924604384037,
+                    183.99690799508085
+                ],
+                "perimeter": 34.975858347870194,
+                "area": -94.10940133105035
+            },
+            "contour 3": {
+                "centroid": [
+                    321.20603888980366,
+                    233.5737575740049
+                ],
+                "perimeter": 43.69244739061277,
+                "area": -149.38499575660785
+            }
         },
-        "level": 182,
-        "image": 0
+        "level": 205,
+        "image": 10
     },
-    "time (utc)": "2024-02-19 11:38:36",
     "transforms": {
+        "flicker": false,
+        "shaking": false,
         "grayscale": {},
         "rotation": {
             "angle": 22.765009107511496
@@ -42,31 +53,32 @@
         "subtraction": {},
         "threshold": {}
     },
+    "time (utc)": "2025-10-22 15:37:09",
     "code version": {
         "skimage": {
             "status": "not a git repository",
-            "tag": "v0.19.3"
+            "tag": "v0.25.0"
         },
         "imgseries": {
-            "hash": "9cd9673f60328c205afe3ac5fcad64c7124e0982",
+            "hash": "4141aa95ae4460f8a8df9a4fb122f3d133d8aa1d",
             "status": "dirty"
         },
         "imgbasics": {
-            "status": "not a git repository",
-            "tag": "v0.3.0"
+            "hash": "7a8ee808fe7c9e834a95d979e9b23c71727fc60a",
+            "status": "dirty",
+            "tag": "v0.4.0"
         },
         "filo": {
-            "hash": "150574b5ae82c74d0c500b3fdb494e8f9c7631f7",
-            "status": "clean",
-            "tag": "v1.1.5"
+            "hash": "d51c93722fbce558bb2649a00a1d74136fa58261",
+            "status": "dirty"
         },
         "matplotlib": {
             "status": "not a git repository",
-            "tag": "v3.7.0"
+            "tag": "v3.10.0"
         },
         "numpy": {
             "status": "not a git repository",
-            "tag": "v1.23.5"
+            "tag": "v1.26.4"
         }
     }
 }

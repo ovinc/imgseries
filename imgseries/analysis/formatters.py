@@ -32,7 +32,9 @@ class AnalysisFormatterBase(FormatterBase):
     # ================ Redefinition of FormatterBase methods =================
 
     def _to_results_metadata(self):
-        metadata = self._to_metadata()
+        # allows to add transforms automatically (calls to_metadata()) -------
+        metadata = super()._to_results_metadata()
+        # --------------------------------------------------------------------
         path_metadata = _get_path_metadata(self.analysis)
         return {**path_metadata, **metadata}
 
@@ -120,7 +122,9 @@ class AnalysisPandasFormatterBase(PandasFormatterBase):
     # ================ Redefinition of FormatterBase methods =================
 
     def _to_results_metadata(self):
+        # allows to add transforms automatically (calls to_metadata()) -------
         metadata = super()._to_results_metadata()
+        # --------------------------------------------------------------------
         path_metadata = _get_path_metadata(self.analysis)
         return {**path_metadata, **metadata}
 
@@ -278,7 +282,9 @@ class MultiFormatterBase(AnalysisFormatterBase):
         """
         individual_regenerated_data = []
         for formatter in self.formatters:
-            individual_regenerated_data.append(formatter._to_results_data())
+            individual_regenerated_data.append(
+                formatter._regenerate_analysis_data(num)
+            )
         return self._combine_regenerated_data(individual_regenerated_data)
 
     # ======================= To define in subclasses ========================

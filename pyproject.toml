@@ -39,8 +39,8 @@ dependencies = [
     "numpy",
     "importlib-metadata",
     "tqdm",
-    "filo >= 2.0.0",
-    "imgbasics >= 0.3.0",
+    "filo >= 2.2.0",
+    "imgbasics >= 0.4.1",
     "drapo >= 1.2.1",
 ]
 

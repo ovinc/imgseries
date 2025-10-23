@@ -8,7 +8,7 @@ from pathlib import Path
 from filo import FormattedAnalysisBase
 
 # Local imports
-from .results import Results
+from .results import ResultsBase
 
 
 class Analysis(FormattedAnalysisBase):
@@ -27,13 +27,13 @@ class Analysis(FormattedAnalysisBase):
         something storable/saveable by the Results class.
 
     Results : class
-        (subclass of Results)
+        (subclass of ResultsBase)
         Results class/subclasses that is used to store, save and load
         analysis data and metadata.
     """
     Viewer = None
     Formatter = None
-    Results = Results
+    Results = ResultsBase
 
     def __init__(
         self,

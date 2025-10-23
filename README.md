@@ -313,8 +313,8 @@ Several customizations are possible :
 - `numpy`
 - `importlib-metadata`
 - `tqdm` (waitbars)
-- `filo` (file series management) >= 2.0
-- `imgbasics` (basic image processing) >= 0.3.0
+- `filo` (file series management) >= 2.2
+- `imgbasics` (basic image processing) >= 0.4.1
 - `drapo` (interactive tools for matplotlib figures) >= 1.2.1
 
 ### Optional packages

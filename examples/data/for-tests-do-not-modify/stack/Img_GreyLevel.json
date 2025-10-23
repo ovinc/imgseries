@@ -1,34 +1,50 @@
 {
-    "stack": "ImgStack.tif",
+    "stack": "../data/stack/ImgStack.tif",
     "zones": {
         "zone 1": [
-            5,
-            2,
-            100,
-            92
+            0,
+            0,
+            112,
+            100
         ]
     },
-    "time (utc)": "2021-01-09 21:25:45",
+    "function": "numpy.mean",
+    "transforms": {
+        "flicker": false,
+        "shaking": false,
+        "grayscale": {},
+        "rotation": {},
+        "crop": {},
+        "filter": {},
+        "subtraction": {},
+        "threshold": {}
+    },
+    "time (utc)": "2025-10-22 17:23:50",
     "code version": {
-        "imov": {
-            "hash": "48feb116dea5950c6158c0ae3e142ef6b4474b49",
+        "skimage": {
+            "status": "not a git repository",
+            "tag": "v0.25.0"
+        },
+        "imgseries": {
+            "hash": "4141aa95ae4460f8a8df9a4fb122f3d133d8aa1d",
+            "status": "dirty"
+        },
+        "imgbasics": {
+            "hash": "7a8ee808fe7c9e834a95d979e9b23c71727fc60a",
             "status": "dirty",
-            "tag": "v2.1.3"
+            "tag": "v0.4.0"
         },
         "filo": {
-            "hash": "2125bc2e5e11593b51671dc692c193f098df2041",
-            "status": "clean",
-            "tag": "v1.1.2"
+            "hash": "d51c93722fbce558bb2649a00a1d74136fa58261",
+            "status": "dirty"
         },
-        "gittools": {
-            "hash": "2d4738814492d38a3f706e6445cbacff47e54e45",
-            "status": "clean",
-            "tag": "v0.4.1"
+        "matplotlib": {
+            "status": "not a git repository",
+            "tag": "v3.10.0"
         },
-        "plov": {
-            "hash": "f567e5b98a4a32ae2aaa4adb498ce21f18c58a9c",
-            "status": "clean",
-            "tag": "v1.1.1"
+        "numpy": {
+            "status": "not a git repository",
+            "tag": "v1.26.4"
         }
     }
 }

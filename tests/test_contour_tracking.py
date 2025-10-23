@@ -32,18 +32,18 @@ ct.contours.load('Img_ContourTracking')
 
 def test_contour_tracking_basic():
     ct.run()
-    assert len(ct.results.data) == 50
+    assert len(ct.results.data['properties']) == 50
 
 
 def test_contour_tracking_range():
     ct.run(start=10, skip=3)
-    assert ct.results.data.shape == (14, 15)
+    assert ct.results.data['properties'].shape == (14, 15)
 
 
 def test_contour_tracking_load():
     ctresults = ContourTrackingResults(savepath=basefolder)
     ctresults.load('Img_ContourTracking')
-    assert round(ctresults.data.at[4, 'x3']) == 322
+    assert round(ctresults.data['properties'].at[4, 'x3']) == 322
 
 
 # ================== Test contour tracking on image stack ===================
@@ -51,10 +51,10 @@ def test_contour_tracking_load():
 img_stack = ImgStack(tiff_stack)
 
 ctstack = ContourTracking(img_stack, savepath=basefolder / 'stack')
-ctstack.contours.load('Img_ContourTracking')
+ctstack.contours.load()
 
 
 def test_contourstack_tracking_basic():
     ctstack.run()
     assert ctstack.img_series.data.shape == (200, 100, 112)
-    assert len(ctstack.results.data) == 200
+    assert len(ctstack.results.data['properties']) == 200

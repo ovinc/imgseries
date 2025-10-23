@@ -194,9 +194,9 @@ class Contours(AnalysisParameter):
 
         properties = {}
 
-        for k in range(1, n + 1):
+        for k in range(n):
 
-            ax.set_title(f'Contour {k} / {n}')
+            ax.set_title(f'Contour {k + 1} / {n}')
             fig.canvas.draw()
             fig.canvas.flush_events()
 
@@ -210,7 +210,7 @@ class Contours(AnalysisParameter):
             ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=1, c='y')
             plt.pause(0.01)
 
-            name = f'contour {k}'
+            name = f'contour {k + 1}'
 
             contour.calculate_properties()
             properties[name] = contour.properties.data
