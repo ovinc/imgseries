@@ -14,6 +14,7 @@ from imgbasics.cropping import _cropzone_draw
 # Local imports
 from .parameters_base import AnalysisParameter
 from ..process import max_pixel_range
+from ..contours import ContourProperties
 
 
 # ============================ Zones of interest =============================
@@ -121,31 +122,6 @@ class Zones(AnalysisParameter):
 # ================================= Contours =================================
 
 
-@dataclass
-class ContourCoordinates:
-    """Stores contour property data"""
-
-    x: float
-    y: float
-
-    @property
-    def data(self):
-        return vars(self)
-
-
-@dataclass
-class ContourProperties:
-    """Stores contour property data"""
-
-    centroid: tuple
-    perimeter: float
-    area: float
-
-    @property
-    def data(self):
-        return vars(self)
-
-
 class Contours(AnalysisParameter):
     """Class to store and manage reference contours param in image series."""
 
@@ -181,7 +157,7 @@ class Contours(AnalysisParameter):
         fig, ax = plt.subplots()
 
         img = self.analysis.img_series.read(num=num)
-        contours = self.analysis._find_contours(img, level)
+        contours = self.analysis.contour_calculator.find_contours(img, level)
 
         # Plot all contours found --------------------------------------------
 
@@ -203,7 +179,7 @@ class Contours(AnalysisParameter):
 
             clickpt, = drapo.ginput()
 
-            contour = self.analysis._closest_contour_to_click(
+            contour = self.analysis.contour_calculator.closest_contour_to_click(
                 contours,
                 clickpt,
             )
@@ -248,7 +224,7 @@ class Contours(AnalysisParameter):
 
         # Load image, crop it, and calculate contours ------------------------
         img = self.analysis.img_series.read(num)
-        contours = self.analysis._find_contours(img, level)
+        contours = self.analysis.contour_calculator.find_contours(img, level)
 
         _, ax = plt.subplots()
         self.analysis.img_series._imshow(img, ax=ax, **kwargs)
@@ -318,14 +294,19 @@ class Threshold(AnalysisParameter):
 
         @lru_cache(maxsize=516)
         def calculate_contours(level):
-            return self.analysis._find_contours(img, level)
+            return self.analysis.contour_calculator.find_contours(img, level)
 
         self.lines = []
 
         def draw_contours(level):
             contours = calculate_contours(level)
             for contour in contours:
-                line, = ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
+                line, = ax.plot(
+                    contour.coordinates.x,
+                    contour.coordinates.y,
+                    linewidth=2,
+                    c='r',
+                )
                 self.lines.append(line)
 
         level_min, level_max = max_pixel_range(img)
