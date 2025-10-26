@@ -236,7 +236,7 @@ class Contours(AnalysisParameter):
         # Interactively select contours of interest on image -----------------
         for properties in all_properties.values():
             contour_properties = ContourProperties(**properties)
-            contour = self.analysis._match(contours, contour_properties)
+            contour = self.analysis.contour_calculator.match(contours, contour_properties)
             ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
 
         ax.set_title(f'img #{num}, grey level {level}')

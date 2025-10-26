@@ -128,7 +128,8 @@ class FileIO:
         """
         data.to_csv(filepath, sep=CONFIG['csv separator'])
 
-    def to_json_with_gitinfo(data, filepath):
+    @classmethod
+    def to_json_with_gitinfo(cls, data, filepath):
         """similar to to_json but adds gitinfo if possible"""
         try:
             gittools.save_metadata(
@@ -141,7 +142,7 @@ class FileIO:
                 nogit_warning=True,
             )
         except ModuleNotFoundError:  # in case git / gittools not installed
-            FileIO.to_json(
+            cls.to_json(
                 data=data,
                 filepath=filepath,
             )

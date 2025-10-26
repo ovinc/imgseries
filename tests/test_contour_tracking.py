@@ -40,10 +40,16 @@ def test_contour_tracking_range():
     assert ct.results.data['properties'].shape == (14, 15)
 
 
-def test_contour_tracking_load():
+def test_contour_tracking_load_hdf5():
     ctresults = ContourTrackingResults(savepath=basefolder)
-    ctresults.load('Img_ContourTracking')
-    assert round(ctresults.data['properties'].at[4, 'x3']) == 322
+    ctresults.load()
+    assert round(ctresults.data['properties'].at[4, 'x_03']) == 322
+
+
+def test_contour_tracking_load_json():
+    ctresults = ContourTrackingResults.json(savepath=basefolder)
+    ctresults.load()
+    assert round(ctresults.data['properties'].at[4, 'x_03']) == 322
 
 
 # ================== Test contour tracking on image stack ===================

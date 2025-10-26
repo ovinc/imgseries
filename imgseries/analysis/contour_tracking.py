@@ -1,5 +1,9 @@
 """Contour tracking on image series."""
 
+# Standard library
+from abc import abstractmethod
+from warnings import warn
+
 # Misc. package imports
 from skimage import measure
 from numpy import nan as NaN
@@ -16,8 +20,15 @@ from ..process import rgb_to_grey
 from ..fileio import FileIO
 from ..parameters.analysis import Contours, Threshold
 from ..contours import Contour, ContourProperties, ContourCoordinates
-from ..contours import ContourCalculator
+from ..contours import ContourCalculator, Names
 from ..viewers import AnalysisViewer
+
+try:
+    import h5py
+except ModuleNotFoundError:
+    h5py_installed = False
+else:
+    h5py_installed = True
 
 
 # ============================ Results formatting ============================
@@ -40,7 +51,7 @@ class ContourTrackingPropertiesFormatter(AnalysisPandasFormatterBase):
         """Prepare structure(s) that will hold the analyzed data."""
         names = 'x', 'y', 'p', 'a'  # measurement names (p, a perimeter, area)
         return [
-            f'{name}{k + 1}'
+            Names.property(name, k)
             for k in range(self.analysis.n_contours)
             for name in names
         ]
@@ -70,8 +81,8 @@ class ContourTrackingPropertiesFormatter(AnalysisPandasFormatterBase):
 
         for k in range(self.analysis.n_contours):
 
-            lim1 = 'x' + str(k + 1)  # contour positions and perimeters
-            lim2 = 'a' + str(k + 1)
+            lim1 = Names.property('x', k)  # contour positions and perimeters
+            lim2 = Names.property('a', k)
             xc, yc, perimeter, area = row.loc[lim1:lim2]
 
             ppties = ContourProperties(
@@ -98,7 +109,7 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
             return
 
         self.contour_coord_data = {
-            f'contour {k + 1}': {}
+            Names.contour(k): {}
             for k in range(self.analysis.n_contours)
         }
 
@@ -127,7 +138,7 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
 
             # The str is because JSON converts to str, and so this makes
             # live data compatible with reloaded data from JSON
-            self.contour_coord_data[f'contour {k + 1}'][str(num)] = coords
+            self.contour_coord_data[Names.contour(k)][Names.image(num)] = coords
 
     def _to_results_data(self):
         """Return partial data that will be combined with the multiformatter"""
@@ -144,7 +155,7 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
             return  # No coordinates data in results -> return None
 
         try:
-            coord_data['contour 1'][str(num)]
+            coord_data[Names.contour(k=0)][Names.image(num)]
         except KeyError:  # this particular num not analyzed -> return None
             return
 
@@ -152,7 +163,7 @@ class ContourTrackingCoordinatesFormatter(AnalysisFormatterBase):
 
         for k in range(self.analysis.n_contours):
 
-            contour_coords = coord_data[f'contour {k + 1}'][str(num)]
+            contour_coords = coord_data[Names.contour(k)][Names.image(num)]
 
             if contour_coords is None:
                 coords = None
@@ -226,7 +237,7 @@ class ContourTrackingFormatter(MultiFormatterBase):
 # ============================= Results classes ==============================
 
 
-class ContourTrackingResults(ResultsBase):
+class ContourTrackingResultsBase(ResultsBase):
 
     # define in subclass (e.g. 'Img_GreyLevel')
     # Note that the program will add extensions depending on context
@@ -235,10 +246,9 @@ class ContourTrackingResults(ResultsBase):
 
     # Define type of data (e.g. data / metadata and corresponding extensions)
     # Possible to change in subclasses.
-    # Possible to put
     extensions = {
-        'data': ('.tsv', '.json'),
-        'metadata': ('.json',),
+        'data': ('.tsv', None),  # <-- REPLACE NONE BY ADEQUATE IN SUBCLASSES
+        'metadata': ('.json',),  # ....() e.g. .json or .hdf5
     }
 
     # What to add to the default filename or specified filename
@@ -268,12 +278,10 @@ class ContourTrackingResults(ResultsBase):
     def _load_data_properties(self, filepath):
         return FileIO.from_tsv(filepath=filepath)
 
+    @abstractmethod
     def _load_data_coordinates(self, filepath):
-        try:
-            data = FileIO.from_json(filepath=filepath)
-        except FileNotFoundError:  # no coordinates saved
-            data = None
-        return data
+        """Define in subclasses"""
+        pass
 
     def loaded_data_to_data(self, loaded_data):
         """How to go from the results of load_data into self.data
@@ -293,12 +301,10 @@ class ContourTrackingResults(ResultsBase):
     def _save_data_properties(self, data, filepath):
         FileIO.to_tsv(data=data['properties'], filepath=filepath)
 
+    @abstractmethod
     def _save_data_coordinates(self, data, filepath):
-        try:
-            coord_data = data['coordinates']
-        except KeyError:
-            return
-        FileIO.to_json(data=coord_data, filepath=filepath)
+        """Define in subclasses"""
+        pass
 
     # Loading and saving metadata --------------------------------------------
 
@@ -307,6 +313,93 @@ class ContourTrackingResults(ResultsBase):
 
     def _save_metadata(self, metadata, filepath):
         return FileIO.to_json_with_gitinfo(data=metadata, filepath=filepath)
+
+
+class ContourTrackingResults_Json(ContourTrackingResultsBase):
+
+    # Define type of data (e.g. data / metadata and corresponding extensions)
+    # Possible to change in subclasses.
+    extensions = {
+        'data': ('.tsv', '.json'),
+        'metadata': ('.json',),
+    }
+
+    def _load_data_coordinates(self, filepath):
+        return FileIO.from_json(filepath) if filepath.exists else None
+
+    def _save_data_coordinates(self, data, filepath):
+        try:
+            coord_data = data['coordinates']
+        except KeyError:
+            return
+        FileIO.to_json(data=coord_data, filepath=filepath)
+
+
+class ContourTrackingResults_HDF5(ContourTrackingResultsBase):
+
+    # Define type of data (e.g. data / metadata and corresponding extensions)
+    # Possible to change in subclasses.
+    extensions = {
+        'data': ('.tsv', '.hdf5'),
+        'metadata': ('.json',),
+    }
+
+    def _save_data_coordinates(self, data, filepath):
+
+        try:
+            coord_data = data['coordinates']
+        except KeyError:
+            return
+
+        with h5py.File(filepath, 'w') as f:
+
+            for contour_name, contour_data in coord_data.items():
+                for img_name, coords in contour_data.items():
+
+                    if coords is None:  # HDF5 cannot store None
+                        continue
+
+                    group = f.create_group(f'{contour_name}/{img_name}')
+                    group.attrs['num'] = Names.get_num(img_name)
+                    group.attrs['contour'] = Names.get_contour_number(contour_name)
+
+                    xy = np.array((coords['x'], coords['y'])).T
+                    group.create_dataset('coordinates', data=xy)
+
+    def _load_data_coordinates(self, filepath):
+
+        if not filepath.exists():
+            return
+
+        coord_data = {}
+
+        with h5py.File(filepath, 'r') as f:
+
+            for contour_name, contour_data in f.items():
+
+                coord_data[contour_name] = {}
+
+                for img_name, group in contour_data.items():
+
+                    xy = group['coordinates'][:]
+                    x, y = xy.T
+                    coord_data[contour_name][img_name] = {'x': x, 'y': y}
+
+        return coord_data
+
+
+ResultsClasses = {
+    '.json': ContourTrackingResults_Json,
+    '.hdf5': ContourTrackingResults_HDF5,
+}
+
+
+class ContourTrackingResults(ContourTrackingResults_HDF5):
+    """Generic convenience class"""
+
+    @classmethod
+    def json(cls, *args, **kwargs):
+        return ContourTrackingResults_Json(*args, **kwargs)
 
 
 # ======================= Plotting / Animation classes =======================
@@ -381,7 +474,9 @@ class ContourTrackingViewer(AnalysisViewer):
         self._update_contours_and_centroids(data)
 
 
+# ----------------------------------------------------------------------------
 # =========================== Main ANALYSIS class ============================
+# ----------------------------------------------------------------------------
 
 
 class ContourTracking(Analysis):
@@ -406,7 +501,7 @@ class ContourTracking(Analysis):
     """
     Viewer = ContourTrackingViewer
     Formatter = ContourTrackingFormatter
-    Results = ContourTrackingResults
+    # Results = ContourTrackingResults
 
     # If results are independent (results from one num do not depend from
     # analysis on other nums), one do not need to re-do the analysis when
@@ -418,6 +513,7 @@ class ContourTracking(Analysis):
         img_series,
         savepath=None,
         save_contours=True,
+        extension=None,
         tolerance_displacement=None,
         tolerance_area=None,
     ):
@@ -440,6 +536,10 @@ class ContourTracking(Analysis):
             if True (default), all coordinates of contour lines are saved in
             addition to contour positions, centroids and areas.
 
+        extension : str
+            can be '.hdf5' or '.json'.
+            If None (default), use hdf5 if h5py installed, if not use json
+
         tolerance_displacement : float
             if None (default), no restriction on displacements
             if value = d > 0, do not consider displacements more than d pixels
@@ -449,9 +549,11 @@ class ContourTracking(Analysis):
             if value = x > 0, do not consider relative variation in area of
             more than x.
         """
-        super().__init__(img_series=img_series, savepath=savepath)
-
         self.save_contours = save_contours
+        self.Results = self._get_results_class(extension)
+
+        # Needs to be after the definition of self.Results
+        super().__init__(img_series=img_series, savepath=savepath)
 
         # empty contour param object, needs to be filled with contours.define()
         # or contours.load() prior to starting analysis with self.run()
@@ -467,6 +569,28 @@ class ContourTracking(Analysis):
     @property
     def n_contours(self):
         return len(self.contours.properties)
+
+    def _get_results_class(self, extension):
+        """Get appropriate results class depending on saving extension"""
+        if extension is None:
+            if h5py_installed:
+                extension = '.hdf5'
+            else:
+                extension = '.json'
+                # no need to warn if contours not saved, but one still needs
+                # to instantiate a Results object that will not contain
+                # contour coordinate data
+                if self.save_contours:
+                    warn(
+                        'h5py not installed, defaulting to .json '
+                        'for contour coordinates saving.'
+                    )
+        try:
+            Results = ResultsClasses[extension]
+        except KeyError:
+            raise ValueError("extension can only be '.hdf5' or '.json'")
+
+        return Results
 
     # ------------------- Subclassed methods from Analysis -------------------
 

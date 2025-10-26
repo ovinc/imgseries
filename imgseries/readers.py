@@ -15,7 +15,9 @@ try:
     import av
     from pims import PyAVVideoReader
 except ModuleNotFoundError:
-    pass
+    pims_installed = False
+else:
+    pims_installed = True
 
 
 # =============================== Base classes ===============================
@@ -148,6 +150,13 @@ class TiffStackReader(StackReaderBase):
 
 class AviReader(StackReaderBase):
     """Reader for AVI videos (.avi)"""
+
+    def __init__(self, *args, **kwargs):
+        if not pims_installed:
+            raise RuntimeError(
+                'AVI video reader not available. Please install pims and av.'
+            )
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def _read_stack(filepath):

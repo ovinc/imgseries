@@ -176,3 +176,45 @@ class ContourCalculator:
 
         imin = displacements.index(min(displacements))
         return tolerable_contours[imin]
+
+
+# ================================ Misc tools ================================
+
+class Names:
+    """class to indicate how to label images, contours etc. when saving data"""
+
+    # Image identifiers ------------------------------------------------------
+
+    @staticmethod
+    def image(num):
+        """Name of the num-th image"""
+        return f'num_{num:05}'
+
+    @staticmethod
+    def get_num(name):
+        """Get back image number from img name"""
+        _, num_str = name.split('_')
+        return int(num_str)
+
+    # Contour identifiers ----------------------------------------------------
+
+    @staticmethod
+    def _contour_number(k):
+        """Contour ID of k-th contour (k starting from 0)"""
+        return k + 1
+
+    @classmethod
+    def contour(cls, k):
+        """Name of the k-th contour"""
+        return f'contour_{cls._contour_number(k):02}'
+
+    @classmethod
+    def property(cls, kind, k):
+        """Name of properties such as perimeter etc."""
+        return f'{kind}_{cls._contour_number(k):02}'
+
+    @staticmethod
+    def get_contour_number(name):
+        """Get back image number from img name"""
+        _, num_str = name.split('_')
+        return int(num_str)
