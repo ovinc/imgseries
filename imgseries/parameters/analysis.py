@@ -122,10 +122,10 @@ class Zones(AnalysisParameter):
 # ================================= Contours =================================
 
 
-class Contours(AnalysisParameter):
+class ContourSelection(AnalysisParameter):
     """Class to store and manage reference contours param in image series."""
 
-    name = 'contours'
+    name = 'contour selection'
 
     def define(self, n=1, num=0, **kwargs):
         """Interactively define n contours on an image at level level.
@@ -157,7 +157,7 @@ class Contours(AnalysisParameter):
         fig, ax = plt.subplots()
 
         img = self.analysis.img_series.read(num=num)
-        contours = self.analysis.contour_calculator.find_contours(img, level)
+        contours = self.analysis.contour_finder.find_contours(img, level)
 
         # Plot all contours found --------------------------------------------
 
@@ -173,25 +173,31 @@ class Contours(AnalysisParameter):
 
         for k in range(n):
 
-            ax.set_title(f'Contour {k + 1} / {n}')
+            ax.set_title(f'Contour {k + 1} / {n} [#{k}]')
             fig.canvas.draw()
             fig.canvas.flush_events()
 
             clickpt, = drapo.ginput()
 
-            contour = self.analysis.contour_calculator.closest_contour_to_click(
-                contours,
-                clickpt,
+            contour = self.analysis.contour_finder.closest_contour_to_click(
+                contours=contours,
+                click_position=clickpt,
             )
 
-            ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=1, c='y')
+            ax.plot(
+                contour.coordinates.x,
+                contour.coordinates.y,
+                linewidth=1,
+                c='y',
+            )
             plt.pause(0.01)
 
-            name = f'contour {k + 1}'
+            name = f'contour {k}'
 
             contour.calculate_properties()
             properties[name] = contour.properties.data
 
+        plt.pause(0.5)
         plt.close(fig)
 
         self.data = {
@@ -220,23 +226,21 @@ class Contours(AnalysisParameter):
         """
         num = self.data['image']
         level = self.data['level']
-        all_properties = self.data['properties']
 
-        # Load image, crop it, and calculate contours ------------------------
+        # Load image and calculate all contours ------------------------------
         img = self.analysis.img_series.read(num)
-        contours = self.analysis.contour_calculator.find_contours(img, level)
+        contours = self.analysis.contour_finder.find_contours(img, level)
 
         _, ax = plt.subplots()
         self.analysis.img_series._imshow(img, ax=ax, **kwargs)
 
-        # Find contours closest to reference positions and plot them ---------
         for contour in contours:
             ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=1, c='b')
 
         # Interactively select contours of interest on image -----------------
-        for properties in all_properties.values():
+        for properties in self.data['properties'].values():
             contour_properties = ContourProperties(**properties)
-            contour = self.analysis.contour_calculator.match(contours, contour_properties)
+            contour = self.analysis.contour_finder.match(contours, contour_properties)
             ax.plot(contour.coordinates.x, contour.coordinates.y, linewidth=2, c='r')
 
         ax.set_title(f'img #{num}, grey level {level}')
@@ -294,7 +298,7 @@ class Threshold(AnalysisParameter):
 
         @lru_cache(maxsize=516)
         def calculate_contours(level):
-            return self.analysis.contour_calculator.find_contours(img, level)
+            return self.analysis.contour_finder.find_contours(img, level)
 
         self.lines = []
 
@@ -348,7 +352,7 @@ class Threshold(AnalysisParameter):
         try:
             self.data = all_data[self.name]
         except KeyError:
-            self.value = all_data['contours']['level']
+            self.value = all_data['contour selection']['level']
 
     @property
     def value(self):

@@ -2,6 +2,8 @@
 
 # Standard library
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from typing import Iterable
 
 # Misc. package imports
 from skimage import measure
@@ -15,35 +17,53 @@ from .process import rgb_to_grey
 # =================== Contour management and calculations ====================
 
 
-@dataclass
-class ContourCoordinates:
-    """Stores contour property data"""
-
-    x: float
-    y: float
-
-    @property
-    def data(self):
-        return vars(self)
+# ------------------------------- Base classes -------------------------------
 
 
-@dataclass
-class ContourProperties:
-    """Stores contour property data"""
+class ContourCoordinatesBase(ABC):
+    """General representation of contour coordinates"""
+    pass
 
-    centroid: tuple
-    perimeter: float
-    area: float
+
+class ContourPropertiesBase(ABC):
 
     @property
-    def data(self):
-        return vars(self)
+    @abstractmethod
+    def data(self) -> dict:
+        """Dictionary of data that can be saved in json file.
+
+        Does not necessarily have the same keys as the table_columns below
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def table_columns(self) -> Iterable[str]:
+        """Title of columns if one were to display the properties in a dataframe.
+
+        Combines with self.to_row()
+        """
+        pass
+
+    @abstractmethod
+    def to_table_row(self) -> Iterable:
+        """Iterable of data of same length as self.table_columns"""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_table_row(cls, row):
+        """Create ContourProperties object from row (iterable)"""
+        pass
 
 
-class Contour:
-    """Class that represents contour data and properties"""
+class ContourBase(ABC):
 
-    def __init__(self, coordinates=None, properties=None):
+    def __init__(
+        self,
+        coordinates: ContourCoordinatesBase | None = None,
+        properties: ContourPropertiesBase | None = None,
+    ):
         """x, y are the coordinates of the contour
 
         Either coordinates and properties can be None, because contour data
@@ -53,36 +73,128 @@ class Contour:
         # not None when calculate_properties() called
         self.properties = properties
 
-    def calculate_properties(self):
+    @abstractmethod
+    def _calculate_properties(self) -> ContourPropertiesBase:
+        """Calculate properties from coordinates"""
+        pass
+
+    def calculate_properties(self) -> None:
+        """Calculate centroid, perimeter, area and store it in self.properties"""
+        self.properties = self._calculate_properties()
+
+    def reset_properties(self) -> None:
+        """Remove calculated properties data."""
+        self.properties = None
+
+
+class ContourFinderBase(ABC):
+    """How to extract contours from images and select them following criteria"""
+
+    @abstractmethod
+    def find_contours(
+        self,
+        img: Iterable[float],
+        level: float,
+    ) -> Iterable[ContourBase]:
+        """Define how contours are found on an image given an input level"""
+        pass
+
+    @abstractmethod
+    def closest_contour_to_click(
+        self,
+        contours: Iterable[ContourBase],
+        click_position: Iterable[float],
+    ) -> ContourBase:
+        """Define closest contour to position (x, y) for click selection"""
+        pass
+
+    @abstractmethod
+    def match(
+        self,
+        contours: Iterable[ContourBase],
+        contour_properties: Iterable[ContourPropertiesBase],
+    ) -> ContourBase | None:
+        """Find closest contour matching reference contour properties
+
+        Return None if no contour found
+        """
+        pass
+
+
+# ============================== Usable classes ==============================
+
+
+@dataclass
+class ContourCoordinates(ContourCoordinatesBase):
+    """Stores contour property data"""
+    x: float
+    y: float
+
+
+class ContourProperties(ContourPropertiesBase):
+    """Stores contour property data"""
+
+    table_columns = ('x', 'y', 'p', 'a')
+
+    def __init__(
+        self,
+        centroid: Iterable[float],
+        perimeter: float,
+        area: float,
+    ):
+        self.centroid = centroid
+        self.perimeter = perimeter
+        self.area = area
+
+    @property
+    def data(self) -> dict:
+        return vars(self)
+
+    def to_table_row(self) -> Iterable[float]:
+        xc, yc = self.centroid
+        return (xc, yc, self.perimeter, self.area)
+
+    @classmethod
+    def from_table_row(cls, row):
+        """Create ContourProperties object from row (iterable)"""
+        xc, yc, perimeter, area = row
+        return cls(centroid=(xc, yc), perimeter=perimeter, area=area)
+
+
+class Contour(ContourBase):
+    """Class that represents contour data and properties"""
+
+    def _calculate_properties(self):
         """Calculate centroid, perimeter, area and store it in self.properties"""
         ppties = imgbasics.contour_properties(
             x=self.coordinates.x,
             y=self.coordinates.y
         )
-        self.properties = ContourProperties(**ppties)
-
-    def reset_properties(self):
-        """Remove calculated properties data."""
-        self.properties = None
+        return ContourProperties(**ppties)
 
     @classmethod
-    def from_opencv(cls, contour_data):
+    def from_opencv(cls, contour_data: Iterable[float]):
         x, y = imgbasics.contour_coords(contour_data, source='opencv')
         return cls(coordinates=ContourCoordinates(x=x, y=y))
 
     @classmethod
-    def from_scikit(cls, contour_data):
+    def from_scikit(cls, contour_data: Iterable[float]):
         x, y = imgbasics.contour_coords(contour_data, source='scikit')
         return cls(coordinates=ContourCoordinates(x=x, y=y))
 
+    @classmethod
+    def from_hdf5(cls, group):
+        pass
 
-# ======================= Contour calculation methods ========================
 
-
-class ContourCalculator:
+class ContourFinder(ContourFinderBase):
     """How to extract contours from images and select them following criteria"""
 
-    def __init__(self, tolerance_displacement=None, tolerance_area=None):
+    def __init__(
+        self,
+        tolerance_displacement: float | None = None,
+        tolerance_area: float | None = None,
+    ):
         """Init contour calculator object
 
         Parameters
@@ -101,7 +213,11 @@ class ContourCalculator:
         self.tolerance_displacement = tolerance_displacement
         self.tolerance_area = tolerance_area
 
-    def find_contours(self, img, level):
+    def find_contours(
+        self,
+        img: Iterable[float],
+        level: float,
+    ) -> Iterable[Contour]:
         """Define how contours are found on an image."""
         if img.ndim == 2:
             image = img
@@ -113,7 +229,11 @@ class ContourCalculator:
 
         return contours
 
-    def closest_contour_to_click(self, contours, click_position):
+    def closest_contour_to_click(
+        self,
+        contours: Iterable[Contour],
+        click_position: Iterable[float],
+    ) -> Contour:
         """Define closest contour to position (x, y) for click selection"""
         raw_contours = [
             (contour.coordinates.x, contour.coordinates.y)
@@ -122,7 +242,11 @@ class ContourCalculator:
         x, y = imgbasics.closest_contour(raw_contours, click_position, edge=True)
         return Contour(coordinates=ContourCoordinates(x=x, y=y))
 
-    def find_tolerable_contours(self, contours, contour_properties):
+    def find_tolerable_contours(
+        self,
+        contours: Iterable[Contour],
+        contour_properties: Iterable[ContourProperties],
+    ) -> Iterable[Contour]:
         """Find all contours that match tolerance criteria for matching given contour"""
 
         ok_contours = []
@@ -147,7 +271,11 @@ class ContourCalculator:
 
         return ok_contours
 
-    def match(self, contours, contour_properties):
+    def match(
+        self,
+        contours: Iterable[Contour],
+        contour_properties: Iterable[ContourProperties],
+    ) -> Contour | None:
         """Find closest contour matching reference contour properties
 
         tolerance_displacement: max displacement in px
@@ -176,45 +304,3 @@ class ContourCalculator:
 
         imin = displacements.index(min(displacements))
         return tolerable_contours[imin]
-
-
-# ================================ Misc tools ================================
-
-class Names:
-    """class to indicate how to label images, contours etc. when saving data"""
-
-    # Image identifiers ------------------------------------------------------
-
-    @staticmethod
-    def image(num):
-        """Name of the num-th image"""
-        return f'num_{num:05}'
-
-    @staticmethod
-    def get_num(name):
-        """Get back image number from img name"""
-        _, num_str = name.split('_')
-        return int(num_str)
-
-    # Contour identifiers ----------------------------------------------------
-
-    @staticmethod
-    def _contour_number(k):
-        """Contour ID of k-th contour (k starting from 0)"""
-        return k + 1
-
-    @classmethod
-    def contour(cls, k):
-        """Name of the k-th contour"""
-        return f'contour_{cls._contour_number(k):02}'
-
-    @classmethod
-    def property(cls, kind, k):
-        """Name of properties such as perimeter etc."""
-        return f'{kind}_{cls._contour_number(k):02}'
-
-    @staticmethod
-    def get_contour_number(name):
-        """Get back image number from img name"""
-        _, num_str = name.split('_')
-        return int(num_str)

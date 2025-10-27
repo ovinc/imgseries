@@ -1,76 +1,52 @@
 {
-    "path": "/Users/olivier.vincent/Python-OV/imgseries/examples/data/untracked_data",
-    "folders": [
-        "../img1",
-        "../img2"
-    ],
-    "contours": {
+    "contour selection": {
         "properties": {
+            "contour 0": {
+                "centroid": [
+                    258.91971771176395,
+                    268.56105261167784
+                ],
+                "perimeter": 49.21791294683056,
+                "area": -185.55859760532715
+            },
             "contour 1": {
                 "centroid": [
-                    258.91821206447423,
-                    268.55855369455435
+                    321.1994688210141,
+                    233.57527180813884
                 ],
-                "perimeter": 49.51328604738248,
-                "area": -187.87977759868332
+                "perimeter": 43.40386973919024,
+                "area": -147.45162297356632
             },
             "contour 2": {
                 "centroid": [
-                    343.46924604384037,
-                    183.99690799508085
+                    343.46649093385753,
+                    183.99377183456244
                 ],
-                "perimeter": 34.975858347870194,
-                "area": -94.10940133105035
-            },
-            "contour 3": {
-                "centroid": [
-                    321.20603888980366,
-                    233.5737575740049
-                ],
-                "perimeter": 43.69244739061277,
-                "area": -149.38499575660785
+                "perimeter": 34.7021950664108,
+                "area": -92.59459704615058
             }
         },
-        "level": 205,
+        "level": 208,
         "image": 10
     },
-    "transforms": {
-        "flicker": false,
-        "shaking": false,
-        "grayscale": {},
-        "rotation": {
-            "angle": 22.765009107511496
-        },
-        "crop": {
-            "zone": [
-                159,
-                171,
-                467,
-                380
-            ]
-        },
-        "filter": {},
-        "subtraction": {},
-        "threshold": {}
-    },
-    "time (utc)": "2025-10-22 15:37:09",
+    "time (utc)": "2025-10-27 14:31:56",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.25.0"
         },
         "imgseries": {
-            "hash": "4141aa95ae4460f8a8df9a4fb122f3d133d8aa1d",
+            "hash": "5e1fc9ea34513b9fad2914d12df53f7bee923a15",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "7a8ee808fe7c9e834a95d979e9b23c71727fc60a",
-            "status": "dirty",
-            "tag": "v0.4.0"
+            "hash": "935036fbd20327ac8decf9f53c2471e18b7588f1",
+            "status": "dirty"
         },
         "filo": {
-            "hash": "d51c93722fbce558bb2649a00a1d74136fa58261",
-            "status": "dirty"
+            "hash": "4f24a52696ddb9ab10e817e2dd6bfd231fa03b4a",
+            "status": "dirty",
+            "tag": "v2.2.0"
         },
         "matplotlib": {
             "status": "not a git repository",
