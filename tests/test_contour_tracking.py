@@ -32,18 +32,18 @@ ct.contour_selection.load('Img_ContourTracking')
 
 def test_contour_tracking_basic():
     ct.run()
-    assert len(ct.results.data['table']) == 50
+    assert len(ct.results.table) == 50
 
 
 def test_contour_tracking_range():
     ct.run(start=10, skip=3)
-    assert ct.results.data['table'].shape == (14, 15)
+    assert ct.results.table.shape == (14, 15)
 
 
 def test_contour_tracking_load_hdf5():
     ctresults = ContourTrackingResults(savepath=basefolder)
     ctresults.load()
-    assert round(ctresults.data['table'].at[4, 'x_02']) == 344
+    assert round(ctresults.table.at[4, 'x_02']) == 344
 
 
 # ================== Test contour tracking on image stack ===================
@@ -57,4 +57,4 @@ ctstack.contour_selection.load()
 def test_contourstack_tracking_basic():
     ctstack.run()
     assert ctstack.img_series.data.shape == (200, 100, 112)
-    assert len(ctstack.results.data['table']) == 200
+    assert len(ctstack.results.table) == 200

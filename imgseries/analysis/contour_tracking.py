@@ -132,31 +132,17 @@ class ContourTrackingFullFormatter(AnalysisFormatterBase):
     def _regenerate_analysis_data(self, num):
         """How to go back to raw data (as spit out by the analysis methods
         during analysis) from data saved in results or files."""
-        # try:
-        #     coord_data = self.analysis.results.data['coordinates']
-        # except KeyError:
-        #     return  # No coordinates data in results -> return None
+        try:
+            contour_data = self.analysis.results.data['contours']
+        except KeyError:
+            return
 
-        # try:
-        #     coord_data[Names.image(num)][Names.contour(k=0)]
-        # except KeyError:  # this particular num not analyzed -> return None
-        #     return
+        try:
+            contours = contour_data[num]
+        except KeyError:  # this particular num not analyzed -> return None
+            return
 
-        # data = []
-
-        # for k in range(self.analysis.n_contours):
-
-        #     contour_coords = coord_data[Names.image(num)][Names.contour(k)]
-
-        #     if contour_coords is None:
-        #         coords = None
-        #     else:
-        #         coords = ContourCoordinates(**contour_coords)
-
-        #     data.append(coords)
-
-        # return data
-        pass
+        return contours
 
 
 class ContourTrackingFormatter(MultiFormatterBase):
@@ -192,26 +178,9 @@ class ContourTrackingFormatter(MultiFormatterBase):
 
         Returns regenrated data that will sent to viewers etc.
         """
-        contour_ppties, contour_coords = individual_regenerated_data
-
-        # No data at all (e.g. required num not analyzed)
-        if not (contour_ppties or contour_coords):
-            # It's important to return a dict here, because of the
-            # way filo.FormatterBase combined data with
-            # _regenerate_data_from_results()
+        _, contours = individual_regenerated_data
+        if contours is None:
             return {}
-
-        if not contour_coords:
-            contour_coords = [None] * self.analysis.n_contours
-
-        if not contour_ppties:
-            contour_coords = [None] * self.analysis.n_contours
-
-        contours = [
-            Contour(coordinates=coords, properties=ppties)
-            for coords, ppties in zip(contour_coords, contour_ppties)
-        ]
-
         return {'contours': contours}
 
 
@@ -386,6 +355,17 @@ class ContourTrackingResults(ResultsBase):
         None
         """
         return FileIO.to_json_with_gitinfo(data=metadata, filepath=filepath)
+
+    # ============== Methods specific to ContourTrackingResults ==============
+
+    @property
+    def table(self):
+        """Returns the table of properties data, if exists"""
+        return self.data.get('table')
+
+    def get_contour(self, k=0, num=0):
+        """Return specific contour number k, on image num"""
+        return self.data['contours'][num][k]
 
 
 # ======================= Plotting / Animation classes =======================

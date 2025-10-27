@@ -42,6 +42,7 @@ dependencies = [
     "filo >= 2.2.0",
     "imgbasics >= 0.4.1",
     "drapo >= 1.2.1",
+    "h5py",
 ]
 
 dynamic = ["version"]

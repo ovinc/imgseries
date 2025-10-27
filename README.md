@@ -245,7 +245,6 @@ ct = ContourTracking(images)
 ct = ContourTracking(images, tolerance_displacement=10)
 # (max 10% area variation from one image to the other)
 ct = ContourTracking(images, tolerance_area=0.1)
-```
 
 # Prepare and run analysis ---------------------------------------------------
 ct.threshold.define()  # interactively select threshold level
@@ -268,8 +267,9 @@ ct.inspect()   # browse through results with a slider (same options)
 results = ContourTrackingResults()
 results.load()   # load analysis results (data + metadata)
 results.data, results.metadata  # useful attributes
-results.data['properties']    # properties of contours (centroid, area, perim.)
-results.data['coordinates']   # coordinates of contours
+results.table              # properties of contours (centroid, area, perim.)
+results.data['contours']   # dict of contour objects including coordinates
+results.get_contour()      # get specific contour object from results
 ```
 
 ### `Front1D`: Analyze 1D propagating fronts with grey level analysis
@@ -326,6 +326,7 @@ Several customizations are possible :
 - `filo` (file series management) >= 2.2.0
 - `imgbasics` (basic image processing) >= 0.4.1
 - `drapo` (interactive tools for matplotlib figures) >= 1.2.1
+- `h5py` (saving and loading with HDF5 data format)
 
 ### Optional packages
 - *avi* configuration: `av`, `pims` (for AVI video reading)
