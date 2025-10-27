@@ -1,4 +1,9 @@
 {
+    "path": "/Users/olivier.vincent/Python-OV/imgseries/examples/data/untracked_data",
+    "folders": [
+        "../img1",
+        "../img2"
+    ],
     "contour selection": {
         "properties": {
             "contour 0": {
@@ -29,14 +34,33 @@
         "level": 208,
         "image": 10
     },
-    "time (utc)": "2025-10-27 14:31:56",
+    "transforms": {
+        "flicker": false,
+        "shaking": false,
+        "grayscale": {},
+        "rotation": {
+            "angle": 22.765009107511496
+        },
+        "crop": {
+            "zone": [
+                159,
+                171,
+                467,
+                380
+            ]
+        },
+        "filter": {},
+        "subtraction": {},
+        "threshold": {}
+    },
+    "time (utc)": "2025-10-27 15:51:30",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.25.0"
         },
         "imgseries": {
-            "hash": "5e1fc9ea34513b9fad2914d12df53f7bee923a15",
+            "hash": "d69321c9adb2b678f46e4516fbeac24fae7e5921",
             "status": "dirty"
         },
         "imgbasics": {

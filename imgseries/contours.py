@@ -9,6 +9,7 @@ from typing import Iterable
 from skimage import measure
 import numpy as np
 import imgbasics
+import h5py
 
 # Local imports
 from .process import rgb_to_grey
@@ -23,6 +24,17 @@ from .process import rgb_to_grey
 class ContourCoordinatesBase(ABC):
     """General representation of contour coordinates"""
     pass
+
+    @abstractmethod
+    def to_hdf5_group(self) -> None:
+        """How to put coordinates into a group in a HDF5 file"""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_hdf5_group(cls, group):
+        """Create ContourCoordinates object from HDF5 group"""
+        pass
 
 
 class ContourPropertiesBase(ABC):
@@ -54,6 +66,17 @@ class ContourPropertiesBase(ABC):
     @abstractmethod
     def from_table_row(cls, row):
         """Create ContourProperties object from row (iterable)"""
+        pass
+
+    @abstractmethod
+    def to_hdf5_group(self) -> None:
+        """How to put properties into a group in a HDF5 file"""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_hdf5_group(cls, group):
+        """Create ContourProperties object from HDF5 group"""
         pass
 
 
@@ -130,6 +153,21 @@ class ContourCoordinates(ContourCoordinatesBase):
     x: float
     y: float
 
+    def to_hdf5_group(self, group) -> None:
+        """How to put properties into a group in a HDF5 file"""
+        xy = np.array((self.x, self.y)).T
+        group.create_dataset('coordinates', data=xy)
+
+    @classmethod
+    def from_hdf5_group(cls, group):
+        """Create ContourProperties object from HDF5 group"""
+        try:
+            xy = group['coordinates'][:]
+        except KeyError:
+            return
+        x, y = xy.T
+        return cls(x=x, y=y)
+
 
 class ContourProperties(ContourPropertiesBase):
     """Stores contour property data"""
@@ -160,6 +198,21 @@ class ContourProperties(ContourPropertiesBase):
         xc, yc, perimeter, area = row
         return cls(centroid=(xc, yc), perimeter=perimeter, area=area)
 
+    def to_hdf5_group(self, group) -> None:
+        """How to put properties into a group in a HDF5 file"""
+        group.create_dataset('centroid', data=self.centroid)
+        group.create_dataset('perimeter', data=self.perimeter)
+        group.create_dataset('area', data=self.area)
+
+    @classmethod
+    def from_hdf5_group(cls, group):
+        """Create ContourProperties object from HDF5 group"""
+        return cls(
+            centroid=tuple(group['centroid']),
+            perimeter=group['perimeter'][()],
+            area=group['area'][()],
+        )
+
 
 class Contour(ContourBase):
     """Class that represents contour data and properties"""
@@ -170,6 +223,8 @@ class Contour(ContourBase):
             x=self.coordinates.x,
             y=self.coordinates.y
         )
+        ppties['perimeter'] = abs(ppties['perimeter'])
+        ppties['area'] = abs(ppties['area'])
         return ContourProperties(**ppties)
 
     @classmethod

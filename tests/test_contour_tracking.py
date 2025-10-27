@@ -26,30 +26,24 @@ tiff_stack = Path('examples/data/stack') / 'ImgStack.tif'
 images = ImgSeries(folders, savepath=basefolder)
 images.load_times('Img_Files.tsv')  # in case files have changed creation time
 
-ct = ContourTracking(images)
-ct.contours.load('Img_ContourTracking')
+ct = ContourTracking(images, savepath=basefolder)
+ct.contour_selection.load('Img_ContourTracking')
 
 
 def test_contour_tracking_basic():
     ct.run()
-    assert len(ct.results.data['properties']) == 50
+    assert len(ct.results.data['table']) == 50
 
 
 def test_contour_tracking_range():
     ct.run(start=10, skip=3)
-    assert ct.results.data['properties'].shape == (14, 15)
+    assert ct.results.data['table'].shape == (14, 15)
 
 
 def test_contour_tracking_load_hdf5():
     ctresults = ContourTrackingResults(savepath=basefolder)
     ctresults.load()
-    assert round(ctresults.data['properties'].at[4, 'x_03']) == 322
-
-
-def test_contour_tracking_load_json():
-    ctresults = ContourTrackingResults.json(savepath=basefolder)
-    ctresults.load()
-    assert round(ctresults.data['properties'].at[4, 'x_03']) == 322
+    assert round(ctresults.data['table'].at[4, 'x_02']) == 344
 
 
 # ================== Test contour tracking on image stack ===================
@@ -57,10 +51,10 @@ def test_contour_tracking_load_json():
 img_stack = ImgStack(tiff_stack)
 
 ctstack = ContourTracking(img_stack, savepath=basefolder / 'stack')
-ctstack.contours.load()
+ctstack.contour_selection.load()
 
 
 def test_contourstack_tracking_basic():
     ctstack.run()
     assert ctstack.img_series.data.shape == (200, 100, 112)
-    assert len(ctstack.results.data['properties']) == 200
+    assert len(ctstack.results.data['table']) == 200

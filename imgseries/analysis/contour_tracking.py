@@ -52,7 +52,7 @@ class ContourTrackingTableFormatter(AnalysisPandasFormatterBase):
     @staticmethod
     def property_name(kind, k):
         """How to move from property data to column name"""
-        return f'{kind}_{k}'
+        return f'{kind}_{k:02}'
 
     @property
     def results_dataframe(self):
@@ -254,6 +254,10 @@ class ContourTrackingResults(ResultsBase):
         'metadata': ('_save_metadata',),
     }
 
+    @property
+    def n_contours(self):
+        return len(self.metadata['contour selection']['properties'])
+
     # Loading data -----------------------------------------------------------
 
     def _load_data_tsv(self, filepath):
@@ -265,25 +269,34 @@ class ContourTrackingResults(ResultsBase):
 
     def _load_data_hdf5(self, filepath):
         """Load data from hdf5 file (both properties and coordinates)"""
-        # if not self.use_h5:
-        #     return
 
-        # coord_data = {}
+        contours = {}
 
-        # with h5py.File(filepath, 'r') as f:
+        with h5py.File(filepath, 'r') as f:
 
-        #     for img_name, contour_data in f.items():
+            n_contours = f.attrs['number of contours']
 
-        #         coord_data[img_name] = {}
+            for img_name, img_group in f.items():
 
-        #         for contour_name, group in contour_data.items():
+                num = img_group.attrs['num']
+                contours[num] = []
 
-        #             xy = group['coordinates'][:]
-        #             x, y = xy.T
-        #             coord_data[img_name][contour_name] = {'x': x, 'y': y}
+                for k in range(n_contours):
 
-        # return coord_data
-        pass
+                    ctr_name = f'contour_{k:02}'
+                    try:
+                        ctr_group = img_group[ctr_name]
+                    except KeyError:
+                        contour = None
+                    else:
+                        contour = Contour(
+                            coordinates=ContourCoordinates.from_hdf5_group(ctr_group),
+                            properties=ContourProperties.from_hdf5_group(ctr_group),
+                        )
+                    finally:
+                        contours[num].append(contour)
+
+        return contours
 
     def loaded_data_to_data(self, loaded_data):
         """How to go from the results of load_data into self.data
@@ -293,60 +306,52 @@ class ContourTrackingResults(ResultsBase):
         """
         data_tsv, data_hdf5 = loaded_data
 
-        coords_dict = {'contours': data_hdf5} if data_hdf5 else {}
-        ppties_dict = {'table': data_tsv} if data_tsv else {}
+        coords_dict = {'contours': data_hdf5}
+        ppties_dict = {'table': data_tsv} if data_tsv is not None else {}
 
         return {**ppties_dict, **coords_dict}
 
     # Saving data ------------------------------------------------------------
 
     def _save_data_tsv(self, data, filepath):
+
         try:
             table = data['table']
         except KeyError:
             return
+
         FileIO.to_tsv(data=table, filepath=filepath)
 
     def _save_data_hdf5(self, data, filepath):
-        pass
 
-        # try:
-        #     coord_data = data['coordinates']
-        # except KeyError:
-        #     return
+        try:
+            contour_data = data['contours']
+        except KeyError:
+            return
 
-        # ppties_data = data['properties']
+        with h5py.File(filepath, 'w') as f:
 
-        # with h5py.File(filepath, 'w') as f:
+            f.attrs['number of contours'] = self.n_contours
 
-        #     for img_name, contour_data in coord_data.items():
-        #         for contour_name, coords in contour_data.items():
+            for num, contours in contour_data.items():
 
-        #             if coords is None:  # HDF5 cannot store None
-        #                 continue
+                numgrp = f.create_group(f'num_{num:05}', track_order=True)
+                numgrp.attrs['num'] = num
 
-        #             group = f.create_group(
-        #                 f'{img_name}/{contour_name}',
-        #                 track_order=True,
-        #             )
+                for k, contour in enumerate(contours):
 
-        #             xy = np.array((coords['x'], coords['y'])).T
-        #             group.create_dataset('coordinates', data=xy)
+                    if contour is None:  # HDF5 cannot store None data
+                        continue
 
-        #             num = Names.get_num(img_name)
-        #             cid = Names.get_contour_number(contour_name)
+                    group = numgrp.create_group(f'contour_{k:02}', track_order=True)
+                    group.attrs['num'] = num
+                    group.attrs['contour'] = k
 
-        #             xc = ppties_data.loc[num, Names.property('x', cid - 1)]
-        #             yc = ppties_data.loc[num, Names.property('y', cid - 1)]
-        #             p = ppties_data.loc[num, Names.property('p', cid - 1)]
-        #             a = ppties_data.loc[num, Names.property('a', cid - 1)]
+                    if contour.coordinates is not None:
+                        contour.coordinates.to_hdf5_group(group)
 
-        #             group.create_dataset('centroid', data=(xc, yc))
-        #             group.create_dataset('perimeter', data=p)
-        #             group.create_dataset('area', data=a)
-
-        #             group.attrs['num'] = num
-        #             group.attrs['contour'] = cid
+                    if contour.properties is not None:
+                        contour.properties.to_hdf5_group(group)
 
     # --------------------- Loading and saving metadata ----------------------
 
@@ -381,7 +386,6 @@ class ContourTrackingResults(ResultsBase):
         None
         """
         return FileIO.to_json_with_gitinfo(data=metadata, filepath=filepath)
-
 
 
 # ======================= Plotting / Animation classes =======================

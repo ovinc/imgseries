@@ -1,17 +1,17 @@
 {
     "stack": "ImgStack.tif",
-    "contours": {
+    "contour selection": {
         "properties": {
-            "contour 1": {
+            "contour 0": {
                 "centroid": [
-                    89.54904711634468,
-                    49.14917641542326
+                    89.55029547625269,
+                    49.12498052492908
                 ],
-                "perimeter": 17.394808192232734,
-                "area": -23.169382900840063
+                "perimeter": 16.064111289347547,
+                "area": 19.30011360768479
             }
         },
-        "level": 58367,
+        "level": 62015,
         "image": 0
     },
     "transforms": {
@@ -24,24 +24,24 @@
         "subtraction": {},
         "threshold": {}
     },
-    "time (utc)": "2025-10-22 17:09:44",
+    "time (utc)": "2025-10-27 16:04:05",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.25.0"
         },
         "imgseries": {
-            "hash": "4141aa95ae4460f8a8df9a4fb122f3d133d8aa1d",
+            "hash": "d69321c9adb2b678f46e4516fbeac24fae7e5921",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "7a8ee808fe7c9e834a95d979e9b23c71727fc60a",
-            "status": "dirty",
-            "tag": "v0.4.0"
+            "hash": "935036fbd20327ac8decf9f53c2471e18b7588f1",
+            "status": "dirty"
         },
         "filo": {
-            "hash": "d51c93722fbce558bb2649a00a1d74136fa58261",
-            "status": "dirty"
+            "hash": "4f24a52696ddb9ab10e817e2dd6bfd231fa03b4a",
+            "status": "dirty",
+            "tag": "v2.2.0"
         },
         "matplotlib": {
             "status": "not a git repository",
