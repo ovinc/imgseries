@@ -197,7 +197,7 @@ class ContourSelection(AnalysisParameter):
             contour.calculate_properties()
             properties[name] = contour.properties.data
 
-        plt.pause(0.5)
+        plt.pause(0.2)
         plt.close(fig)
 
         self.data = {

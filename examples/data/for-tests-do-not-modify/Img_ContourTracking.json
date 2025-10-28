@@ -53,24 +53,24 @@
         "subtraction": {},
         "threshold": {}
     },
-    "time (utc)": "2025-10-27 15:51:30",
+    "time (utc)": "2025-10-28 13:44:26",
     "code version": {
         "skimage": {
             "status": "not a git repository",
             "tag": "v0.25.0"
         },
         "imgseries": {
-            "hash": "d69321c9adb2b678f46e4516fbeac24fae7e5921",
+            "hash": "72ac183260608797bf4564d79661c7b7dcf7ae6f",
             "status": "dirty"
         },
         "imgbasics": {
-            "hash": "935036fbd20327ac8decf9f53c2471e18b7588f1",
-            "status": "dirty"
+            "hash": "892f8a0d3ba7172fe3a4204aee58e92c1ba7ae16",
+            "status": "clean"
         },
         "filo": {
-            "hash": "4f24a52696ddb9ab10e817e2dd6bfd231fa03b4a",
-            "status": "dirty",
-            "tag": "v2.2.0"
+            "hash": "a208d795d935c7de7954f6bcf2a2f0ee1f52f9a0",
+            "status": "clean",
+            "tag": "v2.2.1"
         },
         "matplotlib": {
             "status": "not a git repository",

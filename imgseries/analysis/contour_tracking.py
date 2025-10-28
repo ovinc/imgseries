@@ -237,24 +237,29 @@ class ContourTrackingResults(ResultsBase):
         return FileIO.from_tsv(filepath=filepath)
 
     def _load_data_hdf5(self, filepath):
-        """Load data from hdf5 file (both properties and coordinates)"""
+        """Load data from hdf5 file (both properties and coordinates)
+
+        Data structure is
+        contour tracking/num/17/contour/0/...
+        """
 
         contours = {}
 
         with h5py.File(filepath, 'r') as f:
 
-            n_contours = f.attrs['number of contours']
+            basegrp = f['contour tracking']
+            n_contours = basegrp.attrs['number of contours']
 
-            for img_name, img_group in f.items():
+            for img_group in basegrp['num'].values():
 
-                num = img_group.attrs['num']
+                ctrgrp = img_group['contour']
+                num = ctrgrp.attrs['num']
                 contours[num] = []
 
                 for k in range(n_contours):
 
-                    ctr_name = f'contour_{k:02}'
                     try:
-                        ctr_group = img_group[ctr_name]
+                        ctr_group = ctrgrp[f'{k}']
                     except KeyError:
                         contour = None
                     else:
@@ -300,21 +305,24 @@ class ContourTrackingResults(ResultsBase):
 
         with h5py.File(filepath, 'w') as f:
 
-            f.attrs['number of contours'] = self.n_contours
+            basegrp = f.create_group('contour tracking')
+            basegrp.attrs['number of contours'] = self.n_contours
+            numgrp = basegrp.create_group('num', track_order=True)
 
             for num, contours in contour_data.items():
 
-                numgrp = f.create_group(f'num_{num:05}', track_order=True)
-                numgrp.attrs['num'] = num
+                ctrgrp = numgrp.create_group(f'{num}/contour', track_order=True)
+                # The line below is useful when re-loading the data
+                ctrgrp.attrs['num'] = num
 
                 for k, contour in enumerate(contours):
 
                     if contour is None:  # HDF5 cannot store None data
                         continue
 
-                    group = numgrp.create_group(f'contour_{k:02}', track_order=True)
+                    group = ctrgrp.create_group(f'{k}', track_order=True)
                     group.attrs['num'] = num
-                    group.attrs['contour'] = k
+                    group.attrs['contour id'] = k
 
                     if contour.coordinates is not None:
                         contour.coordinates.to_hdf5_group(group)

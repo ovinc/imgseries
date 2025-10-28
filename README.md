@@ -323,7 +323,7 @@ Several customizations are possible :
 - `numpy`
 - `importlib-metadata`
 - `tqdm` (waitbars)
-- `filo` (file series management) >= 2.2.0
+- `filo` (file series management) >= 2.2.1
 - `imgbasics` (basic image processing) >= 0.4.1
 - `drapo` (interactive tools for matplotlib figures) >= 1.2.1
 - `h5py` (saving and loading with HDF5 data format)

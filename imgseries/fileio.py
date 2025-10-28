@@ -136,9 +136,10 @@ class FileIO:
                 file=filepath,
                 info=data,
                 module=CONFIG['checked modules'],
+                dirty_ok=True,
+                nogit_ok=True,
                 dirty_warning=True,
                 notag_warning=True,
-                nogit_ok=True,
                 nogit_warning=True,
             )
         except ModuleNotFoundError:  # in case git / gittools not installed
