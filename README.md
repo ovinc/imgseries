@@ -330,7 +330,7 @@ Several customizations are possible :
 
 ### Optional packages
 - *avi* configuration: `av`, `pims` (for AVI video reading)
-- *git* configuration: `gittools` (>= 0.5) (for metadata saving using git info)
+- *git* configuration: `gittools` (>= 0.7) (for metadata saving using git info)
 
 
 ## Python version

@@ -54,7 +54,7 @@ Repository = "https://github.com/ovinc/imgseries.git"
 
 [project.optional-dependencies]
 avi = ["pims", "av"]  # avi video loading
-git = ["gittools >= 0.5"]    # git saving of code metadata
+git = ["gittools >= 0.7"]    # git saving of code metadata
 
 [tool.setuptools.packages.find]
 exclude = ["examples",]

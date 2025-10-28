@@ -135,7 +135,7 @@ class FileIO:
             gittools.save_metadata(
                 file=filepath,
                 info=data,
-                module=CONFIG['checked modules'],
+                modules=CONFIG['checked modules'],
                 dirty_ok=True,
                 nogit_ok=True,
                 dirty_warning=True,
