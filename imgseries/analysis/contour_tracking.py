@@ -52,7 +52,7 @@ class ContourTrackingTableFormatter(AnalysisPandasFormatterBase):
     @staticmethod
     def property_name(kind, k):
         """How to move from property data to column name"""
-        return f'{kind}_{k:02}'
+        return f'{kind}_{k}'
 
     @property
     def results_dataframe(self):

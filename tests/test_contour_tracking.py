@@ -43,7 +43,7 @@ def test_contour_tracking_range():
 def test_contour_tracking_load_hdf5():
     ctresults = ContourTrackingResults(savepath=basefolder)
     ctresults.load()
-    assert round(ctresults.table.at[4, 'x_02']) == 344
+    assert round(ctresults.table.at[4, 'x_2']) == 344
 
 
 # ================== Test contour tracking on image stack ===================
