@@ -413,6 +413,7 @@ class ContourTrackingViewer(AnalysisViewer):
             self.contour_lines,
         ):
             if contour is None:
+                self._hide_all()
                 continue
 
             if contour.properties is None:

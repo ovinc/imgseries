@@ -139,8 +139,8 @@ class FileIO:
                 dirty_ok=True,
                 nogit_ok=True,
                 dirty_warning=True,
-                notag_warning=True,
-                nogit_warning=True,
+                notag_warning=False,
+                nogit_warning=False,
             )
         except ModuleNotFoundError:  # in case git / gittools not installed
             cls.to_json(
