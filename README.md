@@ -13,7 +13,8 @@ Image inspection and analysis tools for image series, based on the following cla
 - `ContourTracking`: track objects by contour(s) detection,
 - `Front1D`: measure fronts propagating in one direction,
 - `Flicker`: analyze image flicker with reference zone(s).
-These classes act on `ImgSeries` or `ImgStack` objects.
+
+These classes act on `ImgSeries`, `ImgStack` or `ImgSequence` objects.
 
 *Legacy*
 - The *legacy* module contains tools to fix compatibility with older versions of **imgseries**, see *Legacy.ipynb* notebook.
@@ -39,10 +40,9 @@ Quick start
 ===========
 
 Below is some information to use the functions available in **imgseries**.
-For more details and examples, please also consult docstrings and the Jupyter notebooks in the `examples` folder: *ImgSeries_Static.ipynb*, *ImgSeries_Interactive.ipynb*, *GreyLevel.ipynb* and *ContourTracking.ipynb*.
+For more details and examples, please also consult docstrings and the Jupyter notebooks in the `examples` folder.
 
-
-The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.Series`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.Series`.
+The management of file series, possibly spread out over multiple folders, follows the scheme of `filo.FileSeries`. In particular, image files are attributed a unique `num` identifier that starts at 0 in the first folder. See `filo` documentation for details. The `ImgSeries` thus directly inherits from `filo.FileSeries`.
 
 *Warning*
 
@@ -54,33 +54,42 @@ If running on a Windows machine and using the parallel option in some of the ana
 
 See also the notebooks with examples and details in the `examples/` folder.
 
+
+### Create series object
+
 ```python
 from imgseries import ImgSeries, ImgStack, ImgSequence
 
-# See further below to see how to work with tiff stacks, avi videos
-# or image sequences from pims
+# distinct, individual image files)
+images = ImgSeries(paths=['img1', 'img2'])
 
-# ----------------------------------------------------------------------------
-# ======= WORKING WITH IMAGE SERIES (distinct, individual image files) =======
-# ----------------------------------------------------------------------------
+# tiff stack, avi files or equivalent
+images = ImgStack('video.avi')
+images = ImgStack('ImgStack.tif')
 
-# EITHER:
-images = ImgSeries(paths=['img1', 'img2'])  # implicitly, savepath is current directory
+# pims image sequence or equivalent (array)
+imseq = pims.open('video.avi')
+images = ImgSequence(imseq)
+```
 
-# Images info
+Most attributes and methods below are common to all image series object (`ImgSeries`, `ImgStack`, `ImgSequence`), but some of them are specific to `ImgSeries` (e.g. those associated with file names and associated timestamps)
+
+### Info on images
+
+```python
 images.nx, images.ny  # image dimensions in x and y
 images.ndim           # 2 for grayscale, 3 for color
 images.ntot           # total number of images in the series
 images.nums           # (sliceable iterator, see looping below)
+```
 
-# Access individual images in the series -------------------------------------
+### Access individual images in the series
 
-images.files[10]       # filo.File object of image number num=10
-images.files[10].path  # actual pathlib.Path file object
+```python
 images.read(10)        # read image number num=10 into numpy array
 images.show(10)        # show image in a matplotlib graph
 
-# Loop on images -------------------------------------------------------------
+# Loop on images -----------------------------
 
 for num in images.nums:  # loop on all images
     images.read(num)
@@ -92,8 +101,14 @@ for num in images.nums[::2]:  # every two images
 for num in images.nums[10:25]  # Images 10 to 24
     ...
 
-# Interactive views of image sequence ----------------------------------------
+# Only for ImgSeries --------------------------
+images.files[10]       # filo.File object of image number num=10
+images.files[10].path  # actual pathlib.Path file object
+```
 
+### Interactive views of images
+
+```python
 images.animate()       # see image series as a movie (start, end, skip options)
 images.inspect()       # browse through image series with a slider (same options)
 images.profile()         # object that also has inspect(), animate() methods etc.
@@ -109,10 +124,11 @@ images.display.cmap = 'viridis'
 
 images.save_display()  # save rotation and crop parameters in a json file
 images.load_display()  # load rotation and crop parameters from json file
+```
 
-# Define global transform applied on all images (rotation + crop) ------------
-# (see details in notebook)
+### Define transforms applied on all images
 
+```python
 # Note: the transforms to be considered and the order with which they are
 # applied on the images can be modified by passing the argument
 # transforms= in ImgSeries. For example:
@@ -151,31 +167,17 @@ images.reset_corrections()  # reset all corrections
 
 # Exporting images (with transforms and/or corrections)
 images.export()  # see examples/Export.ipynb for examples
+```
 
+### Manage image timestamp info
+
+At the moment, only available for `ImgSeries` objects.
+
+```python
 # Manage image timestamps ----------------------------------------------------
 images.info  # see correspondence num / file info + automatically extracted image time
 images.save_info()  # save above info in a csv file
 images.load_times('Time_File.txt')  # Keep images.files but update its time information with data from an external csv file.
-
-# ----------------------------------------------------------------------------
-# ================== WORKING WITH IMAGE STACKS (TIFF / AVI) ==================
-# ----------------------------------------------------------------------------
-
-images = ImgStack('video.avi')
-images = ImgSeries('ImgStack.tif')
-
-# All methods/attributes described above are also available, except those
-# associated with timestamps
-
-# ----------------------------------------------------------------------------
-# ================ WORKING WITH ARRAYS (e.g. PIMS SEQUENCES) =================
-# ----------------------------------------------------------------------------
-
-imseq = pims.open('video.avi')
-images = ImgSequence(imseq)
-
-# All methods/attributes described above are also available, except those
-# associated with timestamps
 ```
 
 ### Caching images for speed improvement
